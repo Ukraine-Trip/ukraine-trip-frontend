@@ -1,9 +1,12 @@
 import './App.css'
+import {Layout} from './components/Layout/Layout.tsx';
 
 function App() {
 
   return(
-    <h1>We can start!</h1>
+    <Layout>
+      <h1>Main content</h1>
+    </Layout>
   )
 }
 

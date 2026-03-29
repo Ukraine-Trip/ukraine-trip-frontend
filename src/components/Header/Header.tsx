@@ -22,7 +22,7 @@ export const Header: React.FC = () => {
 
     // Дані для навігації (закриваємо AC 2)
     const navItems = [
-        { label: 'Oblasts', path: '/oblasts' },
+        { label: 'Places', path: '/oblasts' },
         { label: 'Itinerary', path: '/itinerary' },
         { label: "Traveler's Diary", path: '/diary' }
     ];

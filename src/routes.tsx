@@ -7,7 +7,7 @@ import {AccountPage} from './pages/AccountPage/AccountPage';
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <Layout />, // Ваш Layout уже містить Header/Footer та Outlet
+    element: <Layout />,
     children: [
       {
         index: true,

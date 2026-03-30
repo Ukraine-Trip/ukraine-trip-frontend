@@ -1,21 +1,15 @@
-import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { Header } from '../Header/Header.tsx';
+import { Header } from '../Header';
 import Menu from '../Menu/Menu.tsx';
 
-interface LayoutProps {
-  children?: React.ReactNode;
-}
 
-export const Layout = ({ children }: LayoutProps) => {
+export const Layout = () => {
   return (
     <>
-      <header>
         <Header />
-      </header>
 
       <main>
-        {children || <Outlet />}
+        <Outlet />
       </main>
 
       <div>

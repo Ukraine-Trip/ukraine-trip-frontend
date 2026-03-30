@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-    AppBar, Toolbar, Typography, Box, Button, Container,
+    Toolbar, Typography, Box, Button, Container,
     IconButton, Drawer, List, ListItem, ListItemButton, ListItemText, Divider
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
+import {AppBar} from './styled';
 
 export const Header: React.FC = () => {
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -23,13 +24,7 @@ export const Header: React.FC = () => {
 
     return (
         <>
-            <AppBar position="fixed" elevation={0} sx={{
-                bgcolor: 'rgba(255, 255, 255, 0.9)',
-                backdropFilter: 'blur(10px)',
-                borderBottom: '1px solid #e0e0e0',
-                color: '#000',
-                pt: 'env(safe-area-inset-top)'
-            }}>
+            <AppBar position="fixed" elevation={0}>
                 <Container maxWidth="xl">
                     <Toolbar disableGutters sx={{ height: { xs: 64, md: 80 }, justifyContent: 'space-between' }}>
 
@@ -105,5 +100,3 @@ export const Header: React.FC = () => {
         </>
     );
 };
-
-export default Header;

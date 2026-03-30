@@ -1,13 +1,10 @@
-import './App.css'
-import {Layout} from './components/Layout/Layout.tsx';
+import { RouterProvider } from 'react-router-dom';
+import { router } from './routes';
 
 function App() {
-
-  return(
-    <Layout>
-      <h1>Main content</h1>
-    </Layout>
-  )
+  return (
+    <RouterProvider router={router} />
+  );
 }
 
 export default App;

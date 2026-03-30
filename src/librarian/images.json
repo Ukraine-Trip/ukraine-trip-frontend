@@ -1,0 +1,14 @@
+[
+  {
+    "id": 1,
+    "cityName": "Lviv",
+    "imageUrl": "https://...",
+    "linkUrl": "/explore/lviv"
+  },
+  {
+    "id": 2,
+    "cityName": "Chernivtsi",
+    "imageUrl": "https://...",
+    "linkUrl": "/explore/chernivtsi"
+  }
+]

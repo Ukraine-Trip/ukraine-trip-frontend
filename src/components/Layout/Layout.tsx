@@ -1,13 +1,16 @@
+import React from 'react';
+import {Header} from '../Header/Header.tsx';
+import {Menu} from '../Menu/Menu.tsx';
+import {Footer} from '../Footer/Footer.tsx';
 import { Outlet } from 'react-router-dom';
-import { Header } from '../Header';
-import Menu from '../Menu/Menu.tsx';
+
 
 
 export const Layout = () => {
   return (
     <>
-        <Header />
-
+      <Header />
+      
       <main>
         <Outlet />
       </main>
@@ -15,6 +18,8 @@ export const Layout = () => {
       <div>
         <Menu />
       </div>
+      
+      <Footer />
     </>
   );
 }

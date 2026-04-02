@@ -20,6 +20,7 @@ const Menu: React.FC = () => {
                 borderTopLeftRadius: '24px',
                 borderTopRightRadius: '24px',
                 overflow: 'hidden',
+                zIndex: 100,
             }}
             elevation={3}
         >

@@ -74,7 +74,7 @@
         },
     }));
 
-    const HomePage: React.FC = () => {
+    export const HomePage: React.FC = () => {
         return (
             <Box sx={{ flexGrow: 1 }}>
                 <AppBar position="absolute" elevation={0} sx={{ background: 'transparent' }}>
@@ -145,5 +145,3 @@
             </Box>
         );
     };
-
-    export default HomePage;

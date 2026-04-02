@@ -1,7 +1,6 @@
-import React from 'react';
-import {Header} from '../Header/Header.tsx';
-import {Menu} from '../Menu/Menu.tsx';
-import {Footer} from '../Footer/Footer.tsx';
+import {Header} from '../Header';
+import {Menu} from '../Menu';
+import {Footer} from '../Footer';
 import { Outlet } from 'react-router-dom';
 
 

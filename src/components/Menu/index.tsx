@@ -5,7 +5,7 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 
-const Menu: React.FC = () => {
+export const Menu: React.FC = () => {
     const [value, setValue] = useState(0);
 
     return (
@@ -63,4 +63,3 @@ const Menu: React.FC = () => {
     );
 };
 
-export default Menu;

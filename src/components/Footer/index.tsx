@@ -1,7 +1,7 @@
 import React from 'react';
 
 // Використовуємо іменований експорт (export const), як ви просили.
-// Тепер у Layout.tsx можна писати import { Footer } ...
+// Тепер у Layoutindex.tsx можна писати import { Footer } ...
 export const Footer: React.FC = () => {
   return (
     // Задаємо базовий темний фон і світлий текст, щоб нагадувало референс

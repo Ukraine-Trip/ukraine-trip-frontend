@@ -1,8 +1,8 @@
 import { createBrowserRouter } from 'react-router-dom';
-import {Layout} from './components/Layout/Layout';
-import HomePage from './pages/HomePage/HomePage.tsx';
-import {CreateRoutePage} from './pages/CreateRoutePage/CreateRoutePage';
-import {AccountPage} from './pages/AccountPage/AccountPage';
+import {Layout} from './components/Layout';
+import {HomePage} from './pages/HomePage';
+import {CreateRoutePage} from './pages/CreateRoutePage';
+import {AccountPage} from './pages/AccountPage';
 
 export const router = createBrowserRouter([
   {

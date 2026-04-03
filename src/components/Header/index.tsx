@@ -8,7 +8,8 @@ import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
 
 
-import { AppBar, StyledToolbar, LogoText, NavButton, RegisterButton } from './styled';
+import { AppBar, StyledToolbar, LogoText, NavButton,  } from './styled';
+import {PrimaryButton} from '../../style/common.tsx';
 
 export const Header: React.FC = () => {
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -53,9 +54,9 @@ export const Header: React.FC = () => {
                                 <NavButton component={Link} to="/login" sx={{ fontSize: '0.7rem' }}>
                                     Sign In
                                 </NavButton>
-                                <RegisterButton variant="contained" component={Link} to="/register">
+                                <PrimaryButton variant="contained" component={Link} to="/register">
                                     Register
-                                </RegisterButton>
+                                </PrimaryButton>
                             </Box>
                         </Box>
 

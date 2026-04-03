@@ -36,13 +36,5 @@ export const NavButton = styled(Button)({
     textTransform: 'none', // щоб текст не був тільки великими літерами
 }) as typeof Button;
 
-export const RegisterButton = styled(Button)({
-    backgroundColor: '#000',
-    color: '#fff',
-    borderRadius: 0,
-    fontSize: '0.7rem',
-    padding: '6px 20px',
-    '&:hover': {
-        backgroundColor: '#333',
-    },
-}) as typeof Button;
+
+

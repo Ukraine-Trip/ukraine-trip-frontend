@@ -1,5 +1,5 @@
 import { styled } from "@mui/material/styles";
-import { Button, Typography, Box, TextField, Paper, BottomNavigationAction } from "@mui/material";
+import { Button, Typography, Box, TextField } from "@mui/material";
 
 
 
@@ -72,26 +72,5 @@ export const PageWrapper = styled(Box)(({ theme }) => ({
 }));
 
 
-export const MobileStickyContainer = styled(Paper)(({ theme }) => ({
-    display: 'block',
-    [theme.breakpoints.up('sm')]: { display: 'none' },
-    position: 'fixed',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#302d2c',
-    borderTopLeftRadius: '24px',
-    borderTopRightRadius: '24px',
-    overflow: 'hidden',
-    zIndex: 100,
-    paddingBottom: 'env(safe-area-inset-bottom)',
-}));
 
 
-export const BaseNavAction = styled(BottomNavigationAction)({
-    color: 'rgba(255, 255, 255, 0.6)',
-    '&.Mui-selected': { color: '#ffffff !important' },
-    '&:active': { color: '#ff2400 !important' },
-    '& .MuiSvgIcon-root': { fontSize: '28px' },
-    '&:active .MuiSvgIcon-root': { transform: 'scale(1.1)' }
-}) as typeof BottomNavigationAction;

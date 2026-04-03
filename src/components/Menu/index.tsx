@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { BottomNavigation } from '@mui/material';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 
 // Імпортуємо наші стилізовані елементи, але називаємо їх так, як ти звик
-import {MobileStickyContainer as Paper, BaseNavAction as BottomNavigationAction} from '../../style/common';
+import {MenuPaper as Paper, NavigationAction as BottomNavigationAction, StyledBottomNavigation as BottomNavigation} from './styled.tsx';
 
 export const Menu: React.FC = () => {
     const [value, setValue] = useState(0);
@@ -20,7 +19,7 @@ export const Menu: React.FC = () => {
                 onChange={(_event, newValue) => {
                     setValue(newValue);
                 }}
-                sx={{ backgroundColor: 'transparent', height: '70px' }}
+
             >
                 <BottomNavigationAction
                     id="nav-home-btn"

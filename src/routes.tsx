@@ -1,6 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom';
 import {Layout} from './components/Layout/Layout';
-import HomePage from './pages/HomePage/HomePage.tsx';
+import {HomePage} from './pages/HomePage/HomePage.tsx';
 import {CreateRoutePage} from './pages/CreateRoutePage/CreateRoutePage';
 import {AccountPage} from './pages/AccountPage/AccountPage';
 

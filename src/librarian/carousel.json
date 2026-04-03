@@ -1,0 +1,20 @@
+[
+  {
+    "id": 12,
+    "location": "Uzhorod &Ukraine",
+    "description": "Independence Embankment, the longest alley",
+    "imageUrl": "https://images.unsplash.com/photo-1540206395-68808572332f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"
+  },
+  {
+    "id": 22,
+    "location": "Mukachevo &Ukraine",
+    "description": "Palanok Castle, majestic fortress on the hill",
+    "imageUrl": "https://i.pinimg.com/1200x/7f/75/42/7f7542f4b9bf5573df68d8b2feef2787.jpg"
+  },
+  {
+    "id": 32,
+    "location": "Lviv &Ukraine",
+    "description": "Old Town square, heart of the cultural capital",
+    "imageUrl": "https://i.pinimg.com/736x/94/08/ab/9408ab73bcd13776d221cf013461b29d.jpg"
+  }
+]

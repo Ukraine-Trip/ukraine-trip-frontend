@@ -1,6 +1,12 @@
+import React from 'react';
 import { Typography, Box, Container, Button, Card, CardMedia } from '@mui/material';
 import type { CarouselItemData } from '../ContentData/types.ts';
-import {PageTitle} from '../../../../style/common.tsx';
+import { PageTitle } from '../../../../style/common.tsx';
+import {
+    CarouselSection as StyledCarouselSection,
+    CarouselContainer,
+    CarouselCard
+} from '../../style.tsx';
 
 interface CarouselSectionProps {
     carousel: CarouselItemData[];
@@ -8,21 +14,21 @@ interface CarouselSectionProps {
 
 export const CarouselSection: React.FC<CarouselSectionProps> = ({ carousel }) => {
     return (
-        <Box className="carousel-section">
+        <StyledCarouselSection>
             <Container maxWidth="lg" sx={{ pl: { xs: 2, md: 4 }, pr: 0 }}>
                 <Box sx={{ mb: 4 }}>
-                  <PageTitle>
-                      Explore our trips
-                  </PageTitle>
+                    <PageTitle>
+                        Explore our trips
+                    </PageTitle>
 
                     <Typography variant="h5" sx={{ color: '#e0e0e0', fontWeight: 300 }}>
                         Incredible, breathtaking sensations
                     </Typography>
                 </Box>
 
-                <Box className="carousel-container">
+                <CarouselContainer>
                     {carousel.map((item) => (
-                        <Card className="carousel-card" key={item.id}>
+                        <CarouselCard as={Card} key={item.id}>
                             <CardMedia
                                 component="img"
                                 height="100%"
@@ -58,10 +64,10 @@ export const CarouselSection: React.FC<CarouselSectionProps> = ({ carousel }) =>
                                     EXPLORE TRIP
                                 </Button>
                             </Box>
-                        </Card>
+                        </CarouselCard>
                     ))}
-                </Box>
+                </CarouselContainer>
             </Container>
-        </Box>
+        </StyledCarouselSection>
     );
 };

@@ -1,14 +1,11 @@
-// index.tsx (або HomePage.tsx)
 import React, { useState } from 'react';
 import { Box } from '@mui/material';
-import './style.css';
 
 import type { CityCardData, CarouselItemData } from './componentHomePage/ContentData/types';
 import { HeroSection } from './componentHomePage/HeroSection';
 import { TitleBlock } from './componentHomePage/TitleBlock';
 import { CityCardsSection } from './componentHomePage/CityCardSection';
 import { CarouselSection } from './componentHomePage/CarouselSection';
-
 
 import cityCardsData from '../../librarian/images.json';
 import carouselData from '../../librarian/carousel.json';
@@ -27,6 +24,7 @@ export const HomePage: React.FC = () => {
     const [cities] = useState<CityCardData[]>(() =>
         shuffleArray(cityCardsData as CityCardData[])
     );
+
     const [carousel] = useState<CarouselItemData[]>(() =>
         shuffleArray(carouselData as CarouselItemData[])
     );

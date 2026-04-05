@@ -1,6 +1,7 @@
 import React from 'react';
-import { Typography, Box, Container, Button, Card, CardMedia, CardActionArea } from '@mui/material';
+import { Box, Container, Button, Card, CardMedia, CardActionArea } from '@mui/material';
 import type { CityCardData } from '../ContentData/types';
+import { CardsSection, CityCard, CityNameOverlay } from '../../style.tsx';
 
 interface CityCardsSectionProps {
     cities: CityCardData[];
@@ -8,18 +9,18 @@ interface CityCardsSectionProps {
 
 export const CityCardsSection: React.FC<CityCardsSectionProps> = ({ cities }) => {
     return (
-        <Box className="cards-section">
+        <CardsSection>
             <Container maxWidth="lg">
                 <Box sx={{ display: 'grid', gap: 3, gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' }, mb: 3 }}>
                     {cities.map((city) => (
-                        <Card className="city-card" key={city.id}>
+                        <CityCard as={Card} key={city.id}>
                             <CardActionArea href={city.linkUrl}>
                                 <CardMedia component="img" height="214" image={city.imageUrl} alt={city.cityName} />
-                                <Typography variant="h3" component="div" className="city-name-overlay">
+                                <CityNameOverlay variant="h3" component="div">
                                     {city.cityName}
-                                </Typography>
+                                </CityNameOverlay>
                             </CardActionArea>
-                        </Card>
+                        </CityCard>
                     ))}
                 </Box>
 
@@ -29,6 +30,6 @@ export const CityCardsSection: React.FC<CityCardsSectionProps> = ({ cities }) =>
                     </Button>
                 </Box>
             </Container>
-        </Box>
+        </CardsSection>
     );
 };

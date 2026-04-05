@@ -37,7 +37,7 @@ export const PageTitle = styled(Typography)(({ theme }) => ({
     letterSpacing: '2px',
     marginBottom: theme.spacing(4),
     [theme.breakpoints.down('sm')]: { fontSize: '1.8rem' },
-}));
+})) as typeof Typography;
 
 export const SubTitle = styled(Typography)({
     fontSize: '0.75rem',

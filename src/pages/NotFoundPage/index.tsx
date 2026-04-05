@@ -28,8 +28,8 @@ export const NotFoundPage: React.FC = () => {
             lineHeight: 1.8,
             letterSpacing: '0.5px'
           }}>
-            Сторінка, яку ви шукаєте, не існує або була переміщена.
-            Спробуйте повернутися на головну сторінку, щоб продовжити свою подорож.
+            The page you are looking for does not exist or has been moved.
+            Try returning to the main page to continue your journey.
           </Box>
 
           <PrimaryButton

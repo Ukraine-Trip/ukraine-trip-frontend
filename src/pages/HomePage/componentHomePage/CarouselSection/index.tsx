@@ -1,12 +1,12 @@
 import { Typography, Box, Container, Button, Card, CardMedia } from '@mui/material';
-import type { CarouselItemData } from '../../../../../../types.ts';
+import type { CarouselItemData } from '../ContentData/types.ts';
 import {PageTitle} from '../../../../style/common.tsx';
 
 interface CarouselSectionProps {
     carousel: CarouselItemData[];
 }
 
-export const Index: React.FC<CarouselSectionProps> = ({ carousel }) => {
+export const CarouselSection: React.FC<CarouselSectionProps> = ({ carousel }) => {
     return (
         <Box className="carousel-section">
             <Container maxWidth="lg" sx={{ pl: { xs: 2, md: 4 }, pr: 0 }}>

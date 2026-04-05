@@ -1,50 +1,50 @@
-import { Box, Button, Typography, Container, Stack } from '@mui/material';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import { Link } from 'react-router-dom';
+import { Container, Stack, Box } from '@mui/material';
 
-export const NotFoundPage = () => {
+import {
+  PageWrapper,
+  PageTitle,
+  SubTitle,
+  PrimaryButton
+} from '../../style/common';
+
+export const NotFoundPage: React.FC = () => {
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
-        textAlign: 'center',
-        backgroundColor: 'background.default',
-        px: 2,
-      }}
-    >
-      <Container maxWidth="sm">
-        <Stack spacing={3} alignItems="center">
-          {/* Велика іконка замість картинки */}
-          <ErrorOutlineIcon sx={{ fontSize: '10rem', color: 'primary.light', mb: -2 }} />
+    <PageWrapper sx={{ display: 'flex', alignItems: 'center' }}>
+      <Container maxWidth="md">
+        <Stack spacing={1} alignItems="center" textAlign="center">
 
-          <Typography variant="h1" sx={{ fontWeight: 900, fontSize: { xs: '5rem', md: '8rem' }, lineHeight: 1 }}>
-            404
-          </Typography>
+          <SubTitle>Error 404</SubTitle>
 
-          <Typography variant="h4" component="h2" sx={{ fontWeight: 'bold' }}>
-            Сторінку не знайдено
-          </Typography>
+          <PageTitle variant="h1" component="h1" sx={{ mb: 2 }}>
+            Lost in Ukraine?
+          </PageTitle>
 
-          <Typography variant="body1" color="text.secondary">
-            Вибачте, але ми не змогли знайти сторінку, яку ви шукаєте.
-            Можливо, вона була видалена або ви помилилися в адресі.
-          </Typography>
+          <Box sx={{
+            maxWidth: '500px',
+            mb: 4,
+            color: '#666',
+            fontSize: '0.9rem',
+            lineHeight: 1.8,
+            letterSpacing: '0.5px'
+          }}>
+            Сторінка, яку ви шукаєте, не існує або була переміщена.
+            Спробуйте повернутися на головну сторінку, щоб продовжити свою подорож.
+          </Box>
 
-          <Button
-            variant="contained"
-            size="large"
-            component={Link}
+          <PrimaryButton
+            component={Link as any}
             to="/"
-            sx={{ mt: 2, textTransform: 'none', borderRadius: '10px', px: 5 }}
+            elevation={0}
+            sx={{
+              borderRadius: '10px'
+            }}
           >
-            Повернутися додому
-          </Button>
+            Back to Home
+          </PrimaryButton>
+
         </Stack>
       </Container>
-    </Box>
+    </PageWrapper>
   );
 };

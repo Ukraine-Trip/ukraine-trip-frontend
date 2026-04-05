@@ -1,0 +1,14 @@
+[
+  {
+    "id": 1,
+    "location": "Carpathian Mountains",
+    "description": "Experience the magic of the deep ancient forests and highest peaks of Ukraine.",
+    "imageUrl": "https://i.pinimg.com/1200x/7f/75/42/7f7542f4b9bf5573df68d8b2feef2787.jpg"
+  },
+  {
+    "id": 2,
+    "location": "Black Sea Coast",
+    "description": "Relax on the sunny beaches and explore the historical port cities.",
+    "imageUrl": "https://i.pinimg.com/1200x/ad/67/ba/ad67ba9cf0586f3e526aeb88c52b9b9d.jpg"
+  }
+]

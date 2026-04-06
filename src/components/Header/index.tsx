@@ -15,7 +15,7 @@ export const Header: React.FC = () => {
     const [mobileOpen, setMobileOpen] = useState(false);
 
     const navItems = [
-        { label: 'Regions', path: '/oblasts' },
+        { label: 'Regions', path: '/create-route' },
         { label: 'Itinerary', path: '/itinerary' },
         { label: "Traveler's Diary", path: '/diary' }
     ];

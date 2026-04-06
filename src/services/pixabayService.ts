@@ -1,6 +1,5 @@
 import type {PixabayResponse} from '../types/pixabay.ts';
 
-// Отримуємо ключ із нашого .env (Vite автоматично підтягне його)
 const API_KEY = import.meta.env.VITE_PIXABAY_API_KEY;
 const BASE_URL = 'https://pixabay.com/api/';
 
@@ -9,7 +8,6 @@ export const fetchPhotosByQuery = async (query: string, perPage: number = 12): P
     throw new Error('API Key is missing! Check your .env file.');
   }
 
-  // Використовуємо URLSearchParams для зручного формування запиту
   const params = new URLSearchParams({
     key: API_KEY,
     q: query,
@@ -31,6 +29,6 @@ export const fetchPhotosByQuery = async (query: string, perPage: number = 12): P
     return data;
   } catch (error) {
     console.error('Error fetching data from Pixabay:', error);
-    throw error; // Прокидаємо помилку далі, щоб компонент міг її обробити
+    throw error;
   }
 };

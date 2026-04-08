@@ -4,10 +4,11 @@ import { HomePage } from './pages/HomePage';
 import { CreateRoutePage } from './pages/CreateRoutePage';
 import { AccountPage } from './pages/AccountPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { MapComponent } from './pages/MapPage/Map';
 
 export const router = createBrowserRouter([
   {
-    path: "/",
+    path: '/',
     element: <Layout />,
     children: [
       {
@@ -15,17 +16,21 @@ export const router = createBrowserRouter([
         element: <HomePage />,
       },
       {
-        path: "create-route",
+        path: 'create-route',
         element: <CreateRoutePage />,
       },
       {
-        path: "account",
+        path: 'account',
         element: <AccountPage />,
+      },
+      {
+        path: '/map-page',
+        element: <MapComponent />,
       },
     ],
   },
   {
-    path: "*",
+    path: '*',
     element: <NotFoundPage />,
   },
 ]);

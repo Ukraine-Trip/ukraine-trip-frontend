@@ -1,9 +1,12 @@
-import type {PixabayResponse} from '../types/pixabay.ts';
+import type { PixabayResponse } from '../types/pixabay.ts';
 
 const API_KEY = import.meta.env.VITE_PIXABAY_API_KEY;
 const BASE_URL = 'https://pixabay.com/api/';
 
-export const fetchPhotosByQuery = async (query: string, perPage: number = 12): Promise<PixabayResponse> => {
+export const fetchPhotosByQuery = async (
+  query: string,
+  perPage: number = 12
+): Promise<PixabayResponse> => {
   if (!API_KEY) {
     throw new Error('API Key is missing! Check your .env file.');
   }
@@ -15,14 +18,16 @@ export const fetchPhotosByQuery = async (query: string, perPage: number = 12): P
     orientation: 'horizontal',
     safesearch: 'true',
     per_page: perPage.toString(),
-    lang: 'uk'
+    lang: 'uk',
   });
 
   try {
     const response = await fetch(`${BASE_URL}?${params.toString()}`);
 
     if (!response.ok) {
-      throw new Error(`Pixabay API error: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Pixabay API error: ${response.status} ${response.statusText}`
+      );
     }
 
     const data: PixabayResponse = await response.json();

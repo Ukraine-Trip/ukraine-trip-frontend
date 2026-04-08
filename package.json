@@ -16,8 +16,10 @@
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.3.9",
     "@mui/material": "^7.3.9",
+    "leaflet": "^1.9.4",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.13.2"
   },
   "devDependencies": {

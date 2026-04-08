@@ -4,10 +4,10 @@ import { CssBaseline } from '@mui/material';
 
 function App() {
   return (
-      <>
-        <CssBaseline />
-        <RouterProvider router={router} />
-      </>
+    <>
+      <CssBaseline />
+      <RouterProvider router={router} />
+    </>
   );
 }
 

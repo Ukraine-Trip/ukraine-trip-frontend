@@ -1,47 +1,70 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import BookmarkBorderIcon from '@mui/icons-material/BookmarkBorder';
+import MapOutlinedIcon from '@mui/icons-material/MapOutlined';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 
-// Імпортуємо наші стилізовані елементи, але називаємо їх так, як ти звик
-import {MenuPaper as Paper, NavigationAction as BottomNavigationAction, StyledBottomNavigation as BottomNavigation} from './styled.tsx';
+import {
+  MenuPaper as Paper,
+  NavigationAction as BottomNavigationAction,
+  StyledBottomNavigation as BottomNavigation,
+} from './styled.tsx';
 
 export const Menu: React.FC = () => {
-    const [value, setValue] = useState(0);
+  const [value, setValue] = useState(0);
+  const navigate = useNavigate();
 
-    return (
+  const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setValue(newValue);
 
-        <Paper elevation={3}>
-            <BottomNavigation
-                showLabels={false}
-                value={value}
-                onChange={(_event, newValue) => {
-                    setValue(newValue);
-                }}
+    switch (newValue) {
+      case 0:
+        navigate('/');
+        break;
+      case 1:
+        navigate('/create');
+        break;
+      case 2:
+        navigate('/map-page');
+        break;
+      case 3:
+        navigate('/account');
+        break;
+      default:
+        break;
+    }
+  };
 
-            >
-                <BottomNavigationAction
-                    id="nav-home-btn"
-                    icon={<HomeOutlinedIcon />}
-                    disableRipple
-                />
-                <BottomNavigationAction
-                    id="nav-add-btn"
-                    icon={<AddCircleOutlineIcon />}
-                    disableRipple
-                />
-                <BottomNavigationAction
-                    id="nav-bookmarks-btn"
-                    icon={<BookmarkBorderIcon />}
-                    disableRipple
-                />
-                <BottomNavigationAction
-                    id="nav-profile-btn"
-                    icon={<PersonOutlineIcon />}
-                    disableRipple
-                />
-            </BottomNavigation>
-        </Paper>
-    );
+  return (
+    <Paper elevation={3}>
+      <BottomNavigation
+        showLabels={false}
+        value={value}
+        onChange={handleChange}
+      >
+        <BottomNavigationAction
+          id="nav-home-btn"
+          icon={<HomeOutlinedIcon />}
+          disableRipple
+        />
+        <BottomNavigationAction
+          id="nav-add-btn"
+          icon={<AddCircleOutlineIcon />}
+          disableRipple
+        />
+        <BottomNavigationAction
+          id="nav-bookmarks-btn"
+          icon={<MapOutlinedIcon />}
+          disableRipple
+        />
+        <BottomNavigationAction
+          id="nav-profile-btn"
+          icon={<PersonOutlineIcon />}
+          disableRipple
+        />
+      </BottomNavigation>
+    </Paper>
+  );
 };

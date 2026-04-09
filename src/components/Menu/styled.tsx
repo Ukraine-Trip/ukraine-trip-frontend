@@ -1,44 +1,58 @@
 import { styled } from '@mui/material/styles';
-import { Paper, BottomNavigation, BottomNavigationAction } from '@mui/material';
+import Paper from '@mui/material/Paper';
+import BottomNavigation from '@mui/material/BottomNavigation';
+import BottomNavigationAction from '@mui/material/BottomNavigationAction';
 
 export const MenuPaper = styled(Paper)(({ theme }) => ({
-  display: 'block',
-  [theme.breakpoints.up('sm')]: { display: 'none' },
   position: 'fixed',
-  bottom: 0,
-  left: 0,
-  right: 0,
-  backgroundColor: '#302d2c !important',
-  borderTopLeftRadius: '24px',
-  borderTopRightRadius: '24px',
+  bottom: '6px',
+  left: '50%',
+  transform: 'translateX(-50%)',
+  width: 'calc(100% - 32px)',
+  maxWidth: '400px',
+  borderRadius: '40px',
   overflow: 'hidden',
-  zIndex: 100,
-  paddingBottom: 'env(safe-area-inset-bottom)',
+  boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.12)',
+  zIndex: 1000,
+  backgroundColor: 'rgba(255, 255, 255, 0.75)',
+  backdropFilter: 'blur(12px)',
+  WebkitBackdropFilter: 'blur(12px)',
 }));
 
 export const StyledBottomNavigation = styled(BottomNavigation)({
-  paddingBottom: 'env(safe-area-inset-bottom)',
-  backgroundColor: 'transparent !important',
-  height: '70px',
+  backgroundColor: 'transparent',
+  height: '68px',
 });
 
-export const NavigationAction = styled(BottomNavigationAction)({
-  color: 'rgba(255, 255, 255, 0.6) !important',
-  transition: 'color 0.25s ease',
-
-  '&.Mui-selected': {
-    color: '#ffffff !important',
-  },
+export const NavigationAction = styled(BottomNavigationAction)(({ theme }) => ({
+  color: '#757575',
+  minWidth: 'auto',
+  padding: '6px 0',
 
   '& .MuiSvgIcon-root': {
     fontSize: '28px',
-    transition: 'transform 0.1s ease',
+    transition: 'color 0.2s ease-in-out',
   },
 
-  '&:active': {
-    color: '#ff2400 !important',
+  '& .MuiBottomNavigationAction-label': {
+    fontSize: '0.65rem',
+    marginTop: '4px',
+    fontWeight: 500,
+    transition: 'all 0.2s ease-in-out',
+    '&.Mui-selected': {
+      fontSize: '0.65rem',
+      fontWeight: 600,
+    }
   },
-  '&:active .MuiSvgIcon-root': {
-    transform: 'scale(1.1)',
+
+  '&.Mui-selected': {
+    color: '#000000',
+    '& .MuiSvgIcon-root': {
+      color: '#000000',
+    }
   },
-}) as typeof BottomNavigationAction;
+
+  '&:hover': {
+    backgroundColor: 'transparent',
+  }
+}));

@@ -95,7 +95,7 @@ export const CarouselCard = styled('div')({
   height: '450px',
   position: 'relative',
   scrollSnapAlign: 'start',
-  borderRadius: '0 !important',
+  borderRadius: '30px !important',
   overflow: 'hidden',
   flexShrink: 0,
 });

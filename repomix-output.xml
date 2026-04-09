@@ -1,0 +1,2222 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.gitignore
+.prettierignore
+.prettierrc
+api.env
+eslint.config.js
+index.html
+package.json
+public/favicon.svg
+public/icons.svg
+public/logo.png
+README.md
+src/App.css
+src/App.tsx
+src/components/Footer/index.tsx
+src/components/Header/index.tsx
+src/components/Header/styled.tsx
+src/components/Layout/index.tsx
+src/components/Menu/index.tsx
+src/components/Menu/styled.tsx
+src/index.css
+src/librarian/carousel.json
+src/librarian/cities.json
+src/librarian/images.json
+src/main.tsx
+src/pages/AccountPage/index.tsx
+src/pages/CreateRoutePage/index.tsx
+src/pages/CreateRoutePage/style.tsx
+src/pages/HomePage/componentHomePage/CarouselSection/index.tsx
+src/pages/HomePage/componentHomePage/CityCardSection/index.tsx
+src/pages/HomePage/componentHomePage/ContentData/types.ts
+src/pages/HomePage/componentHomePage/HeroSection/index.tsx
+src/pages/HomePage/componentHomePage/TitleBlock/index.tsx
+src/pages/HomePage/index.tsx
+src/pages/HomePage/style.tsx
+src/pages/MapPage/Map/index.tsx
+src/pages/MapPage/Map/style.tsx
+src/pages/NotFoundPage/index.tsx
+src/routes.tsx
+src/services/pixabayService.ts
+src/style/common.tsx
+src/types/pixabay.ts
+tsconfig.app.json
+tsconfig.json
+tsconfig.node.json
+vite.config.ts
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path=".prettierignore">
+node_modules
+dist
+build
+.vite
+.coverage
+public
+.DS_Store
+*.min.js
+</file>
+
+<file path=".prettierrc">
+{
+  "printWidth": 80,
+  "tabWidth": 2,
+  "useTabs": false,
+  "semi": true,
+  "singleQuote": true,
+  "trailingComma": "es5",
+  "arrowParens": "always",
+  "endOfLine": "auto"
+}
+</file>
+
+<file path="index.html">
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ukraine-trip-frontend</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+</file>
+
+<file path="public/favicon.svg">
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="46" fill="none" viewBox="0 0 48 46"><path fill="#863bff" d="M25.946 44.938c-.664.845-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.287c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.497 0-3.578-1.842-3.578H1.237c-.92 0-1.456-1.04-.92-1.788L10.013.474c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.579 1.842 3.579h11.377c.943 0 1.473 1.088.89 1.83L25.947 44.94z" style="fill:#863bff;fill:color(display-p3 .5252 .23 1);fill-opacity:1"/><mask id="a" width="48" height="46" x="0" y="0" maskUnits="userSpaceOnUse" style="mask-type:alpha"><path fill="#000" d="M25.842 44.938c-.664.844-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.183c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.498 0-3.579-1.842-3.579H1.133c-.92 0-1.456-1.04-.92-1.787L9.91.473c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.578 1.842 3.578h11.377c.943 0 1.473 1.088.89 1.832L25.843 44.94z" style="fill:#000;fill-opacity:1"/></mask><g mask="url(#a)"><g filter="url(#b)"><ellipse cx="5.508" cy="14.704" fill="#ede6ff" rx="5.508" ry="14.704" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -4.47 31.516)"/></g><g filter="url(#c)"><ellipse cx="10.399" cy="29.851" fill="#ede6ff" rx="10.399" ry="29.851" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -39.328 7.883)"/></g><g filter="url(#d)"><ellipse cx="5.508" cy="30.487" fill="#7e14ff" rx="5.508" ry="30.487" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.814 -25.913 -14.639)scale(1 -1)"/></g><g filter="url(#e)"><ellipse cx="5.508" cy="30.599" fill="#7e14ff" rx="5.508" ry="30.599" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.814 -32.644 -3.334)scale(1 -1)"/></g><g filter="url(#f)"><ellipse cx="5.508" cy="30.599" fill="#7e14ff" rx="5.508" ry="30.599" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -34.34 30.47)"/></g><g filter="url(#g)"><ellipse cx="14.072" cy="22.078" fill="#ede6ff" rx="14.072" ry="22.078" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="rotate(93.35 24.506 48.493)scale(-1 1)"/></g><g filter="url(#h)"><ellipse cx="3.47" cy="21.501" fill="#7e14ff" rx="3.47" ry="21.501" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.009 28.708 47.59)scale(-1 1)"/></g><g filter="url(#i)"><ellipse cx="3.47" cy="21.501" fill="#7e14ff" rx="3.47" ry="21.501" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.009 28.708 47.59)scale(-1 1)"/></g><g filter="url(#j)"><ellipse cx=".387" cy="8.972" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(39.51 .387 8.972)"/></g><g filter="url(#k)"><ellipse cx="47.523" cy="-6.092" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 47.523 -6.092)"/></g><g filter="url(#l)"><ellipse cx="41.412" cy="6.333" fill="#47bfff" rx="5.971" ry="9.665" style="fill:#47bfff;fill:color(display-p3 .2799 .748 1);fill-opacity:1" transform="rotate(37.892 41.412 6.333)"/></g><g filter="url(#m)"><ellipse cx="-1.879" cy="38.332" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 -1.88 38.332)"/></g><g filter="url(#n)"><ellipse cx="-1.879" cy="38.332" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 -1.88 38.332)"/></g><g filter="url(#o)"><ellipse cx="35.651" cy="29.907" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 35.651 29.907)"/></g><g filter="url(#p)"><ellipse cx="38.418" cy="32.4" fill="#47bfff" rx="5.971" ry="15.297" style="fill:#47bfff;fill:color(display-p3 .2799 .748 1);fill-opacity:1" transform="rotate(37.892 38.418 32.4)"/></g></g><defs><filter id="b" width="60.045" height="41.654" x="-19.77" y="16.149" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="c" width="90.34" height="51.437" x="-54.613" y="-7.533" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="d" width="79.355" height="29.4" x="-49.64" y="2.03" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="e" width="79.579" height="29.4" x="-45.045" y="20.029" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="f" width="79.579" height="29.4" x="-43.513" y="21.178" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="g" width="74.749" height="58.852" x="15.756" y="-17.901" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="h" width="61.377" height="25.362" x="23.548" y="2.284" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="i" width="61.377" height="25.362" x="23.548" y="2.284" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="j" width="56.045" height="63.649" x="-27.636" y="-22.853" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="k" width="54.814" height="64.646" x="20.116" y="-38.415" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="l" width="33.541" height="35.313" x="24.641" y="-11.323" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="m" width="54.814" height="64.646" x="-29.286" y="6.009" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="n" width="54.814" height="64.646" x="-29.286" y="6.009" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="o" width="54.814" height="64.646" x="8.244" y="-2.416" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="p" width="39.409" height="43.623" x="18.713" y="10.588" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter></defs></svg>
+</file>
+
+<file path="public/icons.svg">
+<svg xmlns="http://www.w3.org/2000/svg">
+  <symbol id="bluesky-icon" viewBox="0 0 16 17">
+    <g clip-path="url(#bluesky-clip)"><path fill="#08060d" d="M7.75 7.735c-.693-1.348-2.58-3.86-4.334-5.097-1.68-1.187-2.32-.981-2.74-.79C.188 2.065.1 2.812.1 3.251s.241 3.602.398 4.13c.52 1.744 2.367 2.333 4.07 2.145-2.495.37-4.71 1.278-1.805 4.512 3.196 3.309 4.38-.71 4.987-2.746.608 2.036 1.307 5.91 4.93 2.746 2.72-2.746.747-4.143-1.747-4.512 1.702.189 3.55-.4 4.07-2.145.156-.528.397-3.691.397-4.13s-.088-1.186-.575-1.406c-.42-.19-1.06-.395-2.741.79-1.755 1.24-3.64 3.752-4.334 5.099"/></g>
+    <defs><clipPath id="bluesky-clip"><path fill="#fff" d="M.1.85h15.3v15.3H.1z"/></clipPath></defs>
+  </symbol>
+  <symbol id="discord-icon" viewBox="0 0 20 19">
+    <path fill="#08060d" d="M16.224 3.768a14.5 14.5 0 0 0-3.67-1.153c-.158.286-.343.67-.47.976a13.5 13.5 0 0 0-4.067 0c-.128-.306-.317-.69-.476-.976A14.4 14.4 0 0 0 3.868 3.77C1.546 7.28.916 10.703 1.231 14.077a14.7 14.7 0 0 0 4.5 2.306q.545-.748.965-1.587a9.5 9.5 0 0 1-1.518-.74q.191-.14.372-.293c2.927 1.369 6.107 1.369 8.999 0q.183.152.372.294-.723.437-1.52.74.418.838.963 1.588a14.6 14.6 0 0 0 4.504-2.308c.37-3.911-.63-7.302-2.644-10.309m-9.13 8.234c-.878 0-1.599-.82-1.599-1.82 0-.998.705-1.82 1.6-1.82.894 0 1.614.82 1.599 1.82.001 1-.705 1.82-1.6 1.82m5.91 0c-.878 0-1.599-.82-1.599-1.82 0-.998.705-1.82 1.6-1.82.893 0 1.614.82 1.599 1.82 0 1-.706 1.82-1.6 1.82"/>
+  </symbol>
+  <symbol id="documentation-icon" viewBox="0 0 21 20">
+    <path fill="none" stroke="#aa3bff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35" d="m15.5 13.333 1.533 1.322c.645.555.967.833.967 1.178s-.322.623-.967 1.179L15.5 18.333m-3.333-5-1.534 1.322c-.644.555-.966.833-.966 1.178s.322.623.966 1.179l1.534 1.321"/>
+    <path fill="none" stroke="#aa3bff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35" d="M17.167 10.836v-4.32c0-1.41 0-2.117-.224-2.68-.359-.906-1.118-1.621-2.08-1.96-.599-.21-1.349-.21-2.848-.21-2.623 0-3.935 0-4.983.369-1.684.591-3.013 1.842-3.641 3.428C3 6.449 3 7.684 3 10.154v2.122c0 2.558 0 3.838.706 4.726q.306.383.713.671c.76.536 1.79.64 3.581.66"/>
+    <path fill="none" stroke="#aa3bff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35" d="M3 10a2.78 2.78 0 0 1 2.778-2.778c.555 0 1.209.097 1.748-.047.48-.129.854-.503.982-.982.145-.54.048-1.194.048-1.749a2.78 2.78 0 0 1 2.777-2.777"/>
+  </symbol>
+  <symbol id="github-icon" viewBox="0 0 19 19">
+    <path fill="#08060d" fill-rule="evenodd" d="M9.356 1.85C5.05 1.85 1.57 5.356 1.57 9.694a7.84 7.84 0 0 0 5.324 7.44c.387.079.528-.168.528-.376 0-.182-.013-.805-.013-1.454-2.165.467-2.616-.935-2.616-.935-.349-.91-.864-1.143-.864-1.143-.71-.48.051-.48.051-.48.787.051 1.2.805 1.2.805.695 1.194 1.817.857 2.268.649.064-.507.27-.857.49-1.052-1.728-.182-3.545-.857-3.545-3.87 0-.857.31-1.558.8-2.104-.078-.195-.349-1 .077-2.078 0 0 .657-.208 2.14.805a7.5 7.5 0 0 1 1.946-.26c.657 0 1.328.092 1.946.26 1.483-1.013 2.14-.805 2.14-.805.426 1.078.155 1.883.078 2.078.502.546.799 1.247.799 2.104 0 3.013-1.818 3.675-3.558 3.87.284.247.528.714.528 1.454 0 1.052-.012 1.896-.012 2.156 0 .208.142.455.528.377a7.84 7.84 0 0 0 5.324-7.441c.013-4.338-3.48-7.844-7.773-7.844" clip-rule="evenodd"/>
+  </symbol>
+  <symbol id="social-icon" viewBox="0 0 20 20">
+    <path fill="none" stroke="#aa3bff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35" d="M12.5 6.667a4.167 4.167 0 1 0-8.334 0 4.167 4.167 0 0 0 8.334 0"/>
+    <path fill="none" stroke="#aa3bff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35" d="M2.5 16.667a5.833 5.833 0 0 1 8.75-5.053m3.837.474.513 1.035c.07.144.257.282.414.309l.93.155c.596.1.736.536.307.965l-.723.73a.64.64 0 0 0-.152.531l.207.903c.164.715-.213.991-.84.618l-.872-.52a.63.63 0 0 0-.577 0l-.872.52c-.624.373-1.003.094-.84-.618l.207-.903a.64.64 0 0 0-.152-.532l-.723-.729c-.426-.43-.289-.864.306-.964l.93-.156a.64.64 0 0 0 .412-.31l.513-1.034c.28-.562.735-.562 1.012 0"/>
+  </symbol>
+  <symbol id="x-icon" viewBox="0 0 19 19">
+    <path fill="#08060d" fill-rule="evenodd" d="M1.893 1.98c.052.072 1.245 1.769 2.653 3.77l2.892 4.114c.183.261.333.48.333.486s-.068.089-.152.183l-.522.593-.765.867-3.597 4.087c-.375.426-.734.834-.798.905a1 1 0 0 0-.118.148c0 .01.236.017.664.017h.663l.729-.83c.4-.457.796-.906.879-.999a692 692 0 0 0 1.794-2.038c.034-.037.301-.34.594-.675l.551-.624.345-.392a7 7 0 0 1 .34-.374c.006 0 .93 1.306 2.052 2.903l2.084 2.965.045.063h2.275c1.87 0 2.273-.003 2.266-.021-.008-.02-1.098-1.572-3.894-5.547-2.013-2.862-2.28-3.246-2.273-3.266.008-.019.282-.332 2.085-2.38l2-2.274 1.567-1.782c.022-.028-.016-.03-.65-.03h-.674l-.3.342a871 871 0 0 1-1.782 2.025c-.067.075-.405.458-.75.852a100 100 0 0 1-.803.91c-.148.172-.299.344-.99 1.127-.304.343-.32.358-.345.327-.015-.019-.904-1.282-1.976-2.808L6.365 1.85H1.8zm1.782.91 8.078 11.294c.772 1.08 1.413 1.973 1.425 1.984.016.017.241.02 1.05.017l1.03-.004-2.694-3.766L7.796 5.75 5.722 2.852l-1.039-.004-1.039-.004z" clip-rule="evenodd"/>
+  </symbol>
+</svg>
+</file>
+
+<file path="README.md">
+# React + TypeScript + Vite
+
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+
+Currently, two official plugins are available:
+
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+
+## React Compiler
+
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
+
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
+
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
+</file>
+
+<file path="src/App.css">
+
+</file>
+
+<file path="src/index.css">
+
+</file>
+
+<file path="src/librarian/cities.json">
+[
+  {
+    "name": "Автономна Республіка Крим",
+    "center": "Сімферополь",
+    "cities": [
+      { "name": "Алупка" }, { "name": "Алушта" }, { "name": "Армянськ" },
+      { "name": "Бахчисарай" }, { "name": "Білогірськ" }, { "name": "Джанкой" },
+      { "name": "Євпаторія" }, { "name": "Керч" }, { "name": "Красноперекопськ" },
+      { "name": "Саки" }, { "name": "Севастополь" }, { "name": "Сімферополь" },
+      { "name": "Старий Крим" }, { "name": "Судак" }, { "name": "Феодосія" },
+      { "name": "Щолкіне" }, { "name": "Ялта" }
+    ]
+  },
+  {
+    "name": "Вінницька область",
+    "center": "Вінниця",
+    "cities": [
+      { "name": "Бар" }, { "name": "Бершадь" }, { "name": "Вінниця" },
+      { "name": "Гайсин" }, { "name": "Жмеринка" }, { "name": "Козятин" },
+      { "name": "Калинівка" }, { "name": "Ладижин" }, { "name": "Могилів-Подільський" },
+      { "name": "Немирів" }, { "name": "Погребище" }, { "name": "Тульчин" },
+      { "name": "Хмільник" }, { "name": "Шаргород" }, { "name": "Ямпіль" }
+    ]
+  },
+  {
+    "name": "Волинська область",
+    "center": "Луцьк",
+    "cities": [
+      { "name": "Берестечко" }, { "name": "Володимир-Волинський" }, { "name": "Горохів" },
+      { "name": "Камень-Каширский" }, { "name": "Камінь-Каширський" }, { "name": "Ковель" },
+      { "name": "Луцьк" }, { "name": "Любомль" }, { "name": "Нововолинськ" },
+      { "name": "Рожище" }, { "name": "Устилуг" }
+    ]
+  },
+  {
+    "name": "Дніпропетровська область",
+    "center": "Дніпро",
+    "cities": [
+      { "name": "Апостолове" }, { "name": "Верхньодніпровськ" }, { "name": "Вільногірськ" },
+      { "name": "Кам'янське" }, { "name": "Дніпро" }, { "name": "Жовті Води" },
+      { "name": "Кривий Ріг" }, { "name": "Марганець" }, { "name": "Нікополь" },
+      { "name": "Новомосковськ" }, { "name": "Покров" }, { "name": "Павлоград" },
+      { "name": "Перещепине" }, { "name": "Першотравенськ" }, { "name": "Підгородне" },
+      { "name": "П'ятихатки" }, { "name": "Синельникове" }, { "name": "Тернівка" }
+    ]
+  },
+  {
+    "name": "Донецька область",
+    "center": "Донецьк",
+    "cities": [
+      { "name": "Авдіївка" }, { "name": "Бахмут" }, { "name": "Волноваха" },
+      { "name": "Горлівка" }, { "name": "Дзержинськ" }, { "name": "Дебальцеве" },
+      { "name": "Мирноград" }, { "name": "Добропілля" }, { "name": "Докучаєвськ" },
+      { "name": "Донецьк" }, { "name": "Дружківка" }, { "name": "Єнакієве" },
+      { "name": "Жданівка" }, { "name": "Зугрес" }, { "name": "Хрестівка" },
+      { "name": "Краматорськ" }, { "name": "Покровськ" }, { "name": "Лиман" },
+      { "name": "Костянтинівка" }, { "name": "Маріуполь" }, { "name": "Макіївка" },
+      { "name": "Новогродівка" }, { "name": "Селидове" }, { "name": "Слов'янськ" },
+      { "name": "Сніжне" }, { "name": "Соледар" }, { "name": "Чистякове" },
+      { "name": "Вугледар" }, { "name": "Харцизьк" }, { "name": "Шахтарськ" },
+      { "name": "Ясинувата" }
+    ]
+  },
+  {
+    "name": "Житомирська область",
+    "center": "Житомир",
+    "cities": [
+      { "name": "Андрушівка" }, { "name": "Баранівка" }, { "name": "Бердичів" },
+      { "name": "Житомир" }, { "name": "Коростень" }, { "name": "Коростишів" },
+      { "name": "Малин" }, { "name": "Новоград-Волинський" }, { "name": "Овруч" },
+      { "name": "Радомишль" }
+    ]
+  },
+  {
+    "name": "Закарпатська область",
+    "center": "Ужгород",
+    "cities": [
+      { "name": "Берегове" }, { "name": "Виноградів" }, { "name": "Іршава" },
+      { "name": "Мукачево" }, { "name": "Перечин" }, { "name": "Рахів" },
+      { "name": "Свалява" }, { "name": "Тячів" }, { "name": "Ужгород" },
+      { "name": "Хуст" }, { "name": "Чоп" }
+    ]
+  },
+  {
+    "name": "Запорізька область",
+    "center": "Запоріжжя",
+    "cities": [
+      { "name": "Бердянськ" }, { "name": "Василівка" }, { "name": "Вільнянськ" },
+      { "name": "Гуляйполе" }, { "name": "Дніпрорудне" }, { "name": "Запоріжжя" },
+      { "name": "Кам'янка-Дніпровська" }, { "name": "Мелітополь" }, { "name": "Молочанськ" },
+      { "name": "Оріхів" }, { "name": "Пологи" }, { "name": "Приморськ" },
+      { "name": "Токмак" }, { "name": "Енергодар" }
+    ]
+  },
+  {
+    "name": "Івано-Франківська область",
+    "center": "Івано-Франківськ",
+    "cities": [
+      { "name": "Болехів" }, { "name": "Бурштин" }, { "name": "Галич" },
+      { "name": "Городенка" }, { "name": "Долина" }, { "name": "Івано-Франківськ" },
+      { "name": "Калуш" }, { "name": "Коломия" }, { "name": "Косів" },
+      { "name": "Надвірна" }, { "name": "Рогатин" }, { "name": "Снятин" },
+      { "name": "Тисмениця" }, { "name": "Тлумач" }, { "name": "Яремче" }
+    ]
+  },
+  {
+    "name": "Київська область",
+    "center": "Київ",
+    "cities": [
+      { "name": "Біла Церква" }, { "name": "Березань" }, { "name": "Богуслав" },
+      { "name": "Бориспіль" }, { "name": "Боярка" }, { "name": "Бровари" },
+      { "name": "Буча" }, { "name": "Васильків" }, { "name": "Вишневе" },
+      { "name": "Вишгород" }, { "name": "Ірпінь" }, { "name": "Кагарлик" },
+      { "name": "Київ" }, { "name": "Миронівка" }, { "name": "Обухів" },
+      { "name": "Переяслав" }, { "name": "Прип'ять" }, { "name": "Ржищів" },
+      { "name": "Сквира" }, { "name": "Славутич" }, { "name": "Тараща" },
+      { "name": "Тетіїв" }, { "name": "Узин" }, { "name": "Українка" },
+      { "name": "Фастів" }, { "name": "Чорнобиль" }, { "name": "Яготин" }
+    ]
+  },
+  {
+    "name": "Кіровоградська область",
+    "center": "Кропивницький",
+    "cities": [
+      { "name": "Олександрія" }, { "name": "Бобринець" }, { "name": "Гайворон" },
+      { "name": "Долинська" }, { "name": "Знам'янка" }, { "name": "Кропивницький" },
+      { "name": "Мала Виска" }, { "name": "Новомиргород" }, { "name": "Новоукраїнка" },
+      { "name": "Світловодськ" }
+    ]
+  },
+  {
+    "name": "Луганська область",
+    "center": "Луганськ",
+    "cities": [
+      { "name": "Олександрівськ" }, { "name": "Алмазна" }, { "name": "Алчевськ" },
+      { "name": "Антрацит" }, { "name": "Брянка" }, { "name": "Боково-Хрустальне" },
+      { "name": "Гірське" }, { "name": "Зимогір'я" }, { "name": "Золоте" },
+      { "name": "Зоринськ" }, { "name": "Сорокине" }, { "name": "Хрустальний" },
+      { "name": "Лисичанськ" }, { "name": "Луганськ" }, { "name": "Лутугине" },
+      { "name": "Міусинськ" }, { "name": "Молодогвардійськ" }, { "name": "Новодружеськ" },
+      { "name": "Новопсков" }, { "name": "Первомайськ" }, { "name": "Перевальськ" },
+      { "name": "Петрово-Красносілля" }, { "name": "Попасна" }, { "name": "Привілля" },
+      { "name": "Ровеньки" }, { "name": "Рубіжне" }, { "name": "Сватово" },
+      { "name": "Свердловськ" }, { "name": "Сєвєродонецьк" }, { "name": "Старобільськ" },
+      { "name": "Кадіївка" }, { "name": "Суходільськ" }, { "name": "Щастя" },
+      { "name": "Ірміно" }, { "name": "Вознесенівка" }
+    ]
+  },
+  {
+    "name": "Львівська область",
+    "center": "Львів",
+    "cities": [
+      { "name": "Белз" }, { "name": "Бібрка" }, { "name": "Борислав" },
+      { "name": "Броди" }, { "name": "Буськ" }, { "name": "Великі Мости" },
+      { "name": "Глиняни" }, { "name": "Городок" }, { "name": "Добромиль" },
+      { "name": "Дрогобич" }, { "name": "Дубляни" }, { "name": "Жидачів" },
+      { "name": "Жовква" }, { "name": "Золочів" }, { "name": "Кам'янка-Бузька" },
+      { "name": "Львів" }, { "name": "Мостиська" }, { "name": "Перемишляни" },
+      { "name": "Пустомити" }, { "name": "Рава-Руська" }, { "name": "Радехів" },
+      { "name": "Рудки" }, { "name": "Самбір" }, { "name": "Сколе" },
+      { "name": "Сокаль" }, { "name": "Старий Самбір" }, { "name": "Стрий" },
+      { "name": "Трускавець" }, { "name": "Угнів" }, { "name": "Хирів" },
+      { "name": "Червоноград" }, { "name": "Яворів" }
+    ]
+  },
+  {
+    "name": "Миколаївська область",
+    "center": "Миколаїв",
+    "cities": [
+      { "name": "Баштанка" }, { "name": "Вознесенськ" }, { "name": "Миколаїв" },
+      { "name": "Нова Одеса" }, { "name": "Новий Буг" }, { "name": "Очаків" },
+      { "name": "Первомайськ" }, { "name": "Снігурівка" }, { "name": "Южноукраїнськ" }
+    ]
+  },
+  {
+    "name": "Одеська область",
+    "center": "Одеса",
+    "cities": [
+      { "name": "Ананьїв" }, { "name": "Арциз" }, { "name": "Балта" },
+      { "name": "Білгород-Дністровський" }, { "name": "Болград" }, { "name": "Ізмаїл" },
+      { "name": "Чорноморськ" }, { "name": "Кілія" }, { "name": "Кодима" },
+      { "name": "Подільськ" }, { "name": "Одеса" }, { "name": "Татарбунари" },
+      { "name": "Теплодар" }, { "name": "Южне" }
+    ]
+  },
+  {
+    "name": "Полтавська область",
+    "center": "Полтава",
+    "cities": [
+      { "name": "Гадяч" }, { "name": "Глобине" }, { "name": "Гребінка" },
+      { "name": "Зіньків" }, { "name": "Карлівка" }, { "name": "Кременчук" },
+      { "name": "Кобеляки" }, { "name": "Горі́шні Плавні" }, { "name": "Лохвиця" },
+      { "name": "Лубни" }, { "name": "Миргород" }, { "name": "Пирятин" },
+      { "name": "Полтава" }, { "name": "Хорол" }, { "name": "Заводське" }
+    ]
+  },
+  {
+    "name": "Рівненська область",
+    "center": "Рівне",
+    "cities": [
+      { "name": "Березне" }, { "name": "Дубно" }, { "name": "Дубровиця" },
+      { "name": "Здолбунів" }, { "name": "Корець" }, { "name": "Костопіль" },
+      { "name": "Вараш" }, { "name": "Острог" }, { "name": "Радивилів" },
+      { "name": "Рівне" }, { "name": "Сарни" }
+    ]
+  },
+  {
+    "name": "Сумська область",
+    "center": "Суми",
+    "cities": [
+      { "name": "Охтирка" }, { "name": "Білопілля" }, { "name": "Буринь" },
+      { "name": "Глухів" }, { "name": "Кролевець" }, { "name": "Конотоп" },
+      { "name": "Лебедин" }, { "name": "Путивль" }, { "name": "Ромни" },
+      { "name": "Середина-Буда" }, { "name": "Суми" }, { "name": "Тростянець" },
+      { "name": "Шостка" }
+    ]
+  },
+  {
+    "name": "Тернопільська область",
+    "center": "Тернопіль",
+    "cities": [
+      { "name": "Бережани" }, { "name": "Борщів" }, { "name": "Бучач" },
+      { "name": "Заліщики" }, { "name": "Збараж" }, { "name": "Зборів" },
+      { "name": "Кременець" }, { "name": "Ланівці" }, { "name": "Монастириська" },
+      { "name": "Підволочиськ" }, { "name": "Підгайці" }, { "name": "Почаїв" },
+      { "name": "Скалат" }, { "name": "Тернопіль" }, { "name": "Теребовля" },
+      { "name": "Чортків" }, { "name": "Шумськ" }
+    ]
+  },
+  {
+    "name": "Харківська область",
+    "center": "Харків",
+    "cities": [
+      { "name": "Балаклія" }, { "name": "Барвінкове" }, { "name": "Богодухів" },
+      { "name": "Валки" }, { "name": "Великий Бурлук" }, { "name": "Вовчанськ" },
+      { "name": "Дергачі" }, { "name": "Зміїв" }, { "name": "Ізюм" },
+      { "name": "Красноград" }, { "name": "Куп'янськ" }, { "name": "Лозова" },
+      { "name": "Люботин" }, { "name": "Мерефа" }, { "name": "Первомайський" },
+      { "name": "Харків" }, { "name": "Чугуїв" }
+    ]
+  },
+  {
+    "name": "Херсонська область",
+    "center": "Херсон",
+    "cities": [
+      { "name": "Берислав" }, { "name": "Генічеськ" }, { "name": "Гола Пристань" },
+      { "name": "Каховка" }, { "name": "Нова Каховка" }, { "name": "Скадовськ" },
+      { "name": "Таврійськ" }, { "name": "Херсон" }, { "name": "Олешки" }
+    ]
+  },
+  {
+    "name": "Хмельницька область",
+    "center": "Хмельницький",
+    "cities": [
+      { "name": "Волочиськ" }, { "name": "Городок" }, { "name": "Деражня" },
+      { "name": "Дунаївці" }, { "name": "Ізяслав" }, { "name": "Кам'янець-Подільський" },
+      { "name": "Красилів" }, { "name": "Нетішин" }, { "name": "Полонне" },
+      { "name": "Славута" }, { "name": "Старокостянтинів" }, { "name": "Хмельницький" },
+      { "name": "Шепетівка" }
+    ]
+  },
+  {
+    "name": "Черкаська область",
+    "center": "Черкаси",
+    "cities": [
+      { "name": "Ватутіне" }, { "name": "Городище" }, { "name": "Жашків" },
+      { "name": "Звенигородка" }, { "name": "Золотоноша" }, { "name": "Кам'янка" },
+      { "name": "Канів" }, { "name": "Корсунь-Шевченківський" }, { "name": "Монастирище" },
+      { "name": "Сміла" }, { "name": "Тальне" }, { "name": "Умань" },
+      { "name": "Христинівка" }, { "name": "Черкаси" }, { "name": "Чигирин" },
+      { "name": "Шпола" }
+    ]
+  },
+  {
+    "name": "Чернігівська область",
+    "center": "Чернігів",
+    "cities": [
+      { "name": "Бахмач" }, { "name": "Бобровиця" }, { "name": "Борзна" },
+      { "name": "Городня" }, { "name": "Десна" }, { "name": "Ічня" },
+      { "name": "Корюківка" }, { "name": "Мена" }, { "name": "Ніжин" },
+      { "name": "Новгород-Сіверський" }, { "name": "Носівка" }, { "name": "Прилуки" },
+      { "name": "Седнів" }, { "name": "Семенівка" }, { "name": "Чернігів" },
+      { "name": "Сновськ" }
+    ]
+  },
+  {
+    "name": "Чернівецька область",
+    "center": "Чернівці",
+    "cities": [
+      { "name": "Вашківці" }, { "name": "Вижниця" }, { "name": "Герца" },
+      { "name": "Заставна" }, { "name": "Кіцмань" }, { "name": "Новодністровськ" },
+      { "name": "Новоселиця" }, { "name": "Сокиряни" }, { "name": "Сторожинець" },
+      { "name": "Хотин" }, { "name": "Чернівці" }
+    ]
+  }
+]
+</file>
+
+<file path="src/pages/MapPage/Map/index.tsx">
+import { MapContainer, TileLayer } from 'react-leaflet';
+import type { LatLngExpression } from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Імпортуємо нашу стилізовану обгортку
+import { MapWrapper } from './style.tsx'; // Вкажіть правильний шлях до вашого файлу зі стилями
+
+const UKRAINE_CENTER: LatLngExpression = [48.3794, 31.1656];
+const DEFAULT_ZOOM = 6;
+
+export const MapComponent = () => {
+  return (
+    <MapWrapper>
+      <MapContainer
+        center={UKRAINE_CENTER}
+        zoom={DEFAULT_ZOOM}
+        scrollWheelZoom={true}
+        className="leaflet-map-container"
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+      </MapContainer>
+    </MapWrapper>
+  );
+};
+</file>
+
+<file path="tsconfig.app.json">
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "ES2023",
+    "useDefineForClassFields": true,
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "types": ["vite/client"],
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true
+  },
+  "include": ["src"]
+}
+</file>
+
+<file path="tsconfig.json">
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
+}
+</file>
+
+<file path="tsconfig.node.json">
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "types": ["node"],
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true
+  },
+  "include": ["vite.config.ts"]
+}
+</file>
+
+<file path=".gitignore">
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+.env
+.env.local
+.env.*.local
+</file>
+
+<file path="api.env">
+VITE_PIXABAY_API_KEY=55332870-e7bbc035273ff8854c4610b7c
+</file>
+
+<file path="eslint.config.js">
+import js from '@eslint/js'
+import globals from 'globals'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+import tseslint from 'typescript-eslint'
+import eslintConfigPrettier from 'eslint-config-prettier'
+import prettierPlugin from 'eslint-plugin-prettier'
+
+export default tseslint.config(
+  { ignores: ['dist', 'node_modules'] },
+  {
+    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    files: ['**/*.{ts,tsx}'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+    },
+    plugins: {
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
+      'prettier': prettierPlugin,
+    },
+    rules: {
+      ...reactHooks.configs.recommended?.rules,
+      ...reactHooks.configs['flat/recommended']?.rules,
+      semi: ['error', 'always'],
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-explicit-any': 'warn',
+      'eqeqeq': ['error', 'always'],
+      'prefer-const': 'error',
+      'prettier/prettier': 'error',
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+      'react-refresh/only-export-components': [
+        'warn',
+        { allowConstantExport: true },
+      ],
+    },
+    settings: {
+      react: {
+        version: 'detect',
+      },
+    },
+  },
+  eslintConfigPrettier,
+)
+</file>
+
+<file path="src/components/Layout/index.tsx">
+import { Header } from '../Header';
+import { Menu } from '../Menu';
+import { Footer } from '../Footer';
+import { Outlet } from 'react-router-dom';
+
+export const Layout = () => {
+  return (
+    <>
+      <Header />
+
+      <main>
+        <Outlet />
+      </main>
+
+      <div>
+        <Menu />
+      </div>
+
+      <Footer />
+    </>
+  );
+};
+</file>
+
+<file path="src/librarian/carousel.json">
+[
+  {
+    "id": 1,
+    "location": "Carpathian Mountains",
+    "description": "Experience the magic of the deep ancient forests and highest peaks of Ukraine.",
+    "imageUrl": "https://i.pinimg.com/1200x/7f/75/42/7f7542f4b9bf5573df68d8b2feef2787.jpg"
+  },
+  {
+    "id": 2,
+    "location": "Black Sea Coast",
+    "description": "Relax on the sunny beaches and explore the historical port cities.",
+    "imageUrl": "https://i.pinimg.com/1200x/ad/67/ba/ad67ba9cf0586f3e526aeb88c52b9b9d.jpg"
+  }
+]
+</file>
+
+<file path="src/librarian/images.json">
+[
+  {
+    "id": 1,
+    "cityName": "Lviv",
+    "imageUrl": "https://i.pinimg.com/1200x/ad/67/ba/ad67ba9cf0586f3e526aeb88c52b9b9d.jpg",
+    "linkUrl": "/explore/lviv"
+  },
+  {
+    "id": 2,
+    "cityName": "Chernivtsi",
+    "imageUrl": "https://i.pinimg.com/1200x/7f/75/42/7f7542f4b9bf5573df68d8b2feef2787.jpg",
+    "linkUrl": "/explore/chernivtsi"
+  },
+  {
+
+    "id": 3,
+    "cityName": "Uzhorod",
+    "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/%D0%A3%D0%B6%D0%B3%D0%BE%D1%80%D0%BE%D0%B4%D1%81%D1%8C%D0%BA%D0%B8%D0%B9_%D0%BA%D0%B0%D1%84%D0%B5%D0%B4%D1%80%D0%B0%D0%BB%D1%8C%D0%BD%D0%B8%D0%B9_%D1%81%D0%BE%D0%B1%D0%BE%D1%80%2C_%D0%B0%D0%B5%D1%80%D0%BE%D1%84%D0%BE%D1%82%D0%BE_2.jpg/500px-%D0%A3%D0%B6%D0%B3%D0%BE%D1%80%D0%BE%D0%B4%D1%81%D1%8C%D0%BA%D0%B8%D0%B9_%D0%BA%D0%B0%D1%84%D0%B5%D0%B4%D1%80%D0%B0%D0%BB%D1%8C%D0%BD%D0%B8%D0%B9_%D1%81%D0%BE%D0%B1%D0%BE%D1%80%2C_%D0%B0%D0%B5%D1%80%D0%BE%D1%84%D0%BE%D1%82%D0%BE_2.jpg",
+    "linkUrl": "/explore/chernivtsi"
+  }
+]
+</file>
+
+<file path="src/main.tsx">
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import './index.css';
+import App from './App.tsx';
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);
+</file>
+
+<file path="src/pages/AccountPage/index.tsx">
+export const AccountPage = () => {
+  return <h1>Сторінка з акаунтом</h1>;
+};
+</file>
+
+<file path="src/pages/CreateRoutePage/style.tsx">
+import { styled } from '@mui/material/styles';
+import { Box, Typography } from '@mui/material';
+
+// Головний контейнер для каскадного меню
+export const MenuContainer = styled(Box)({
+  display: 'flex',
+  width: '100%',
+  maxWidth: '1000px',
+  margin: '0 auto',
+  padding: '0 16px',
+});
+
+// Ліва колонка (Регіони)
+export const RegionsColumn = styled(Box)({
+  flex: '1 1 30%',
+  paddingRight: '16px',
+});
+
+// Окремий пункт регіону (з обробкою активного стану)
+export const RegionItem = styled(Box, {
+  shouldForwardProp: (prop) => prop !== 'active', // Щоб React не сварився на кастомний проп
+})<{ active?: boolean }>(({ active }) => ({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  cursor: 'pointer',
+  color: active ? '#d81b60' : '#000',
+  fontWeight: active ? 700 : 500,
+  '&:hover': { color: '#d81b60' },
+}));
+
+export const RegionText = styled(Typography)({
+  fontSize: '14px',
+  letterSpacing: '1px',
+});
+
+// Середня колонка (Міста)
+export const CitiesColumn = styled(Box)({
+  flex: '1 1 30%',
+  paddingLeft: '32px',
+  paddingRight: '16px',
+  borderLeft: '1px solid #e0e0e0',
+});
+
+// Окремий пункт міста
+export const CityItem = styled(Typography, {
+  shouldForwardProp: (prop) => prop !== 'active',
+})<{ active?: boolean }>(({ active }) => ({
+  fontSize: '15px',
+  cursor: 'pointer',
+  color: active ? '#d81b60' : '#444',
+  fontWeight: active ? 600 : 400,
+  '&:hover': { color: '#d81b60' },
+}));
+
+// Права колонка (Картинка)
+export const ImageColumn = styled(Box)({
+  flex: '1 1 40%',
+  paddingLeft: '16px',
+});
+
+export const DestinationImage = styled('img')({
+  width: '100%',
+  height: '400px',
+  objectFit: 'cover',
+  display: 'block',
+});
+</file>
+
+<file path="src/pages/HomePage/componentHomePage/ContentData/types.ts">
+export interface CityCardData {
+  id: number;
+  cityName: string;
+  imageUrl: string;
+  linkUrl: string;
+}
+
+export interface CarouselItemData {
+  id: number;
+  location: string;
+  description: string;
+  imageUrl: string;
+}
+</file>
+
+<file path="src/pages/HomePage/style.tsx">
+import { styled } from '@mui/material/styles';
+import { Typography } from '@mui/material';
+
+export const HeroSection = styled('section')(() => ({
+  height: '70vh',
+  backgroundImage:
+    "url('https://i.pinimg.com/736x/83/f7/42/83f742c6a773422e37e003b09d163e26.jpg')",
+  backgroundSize: 'cover',
+  backgroundPosition: 'center',
+  position: 'relative',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  alignItems: 'center',
+  color: '#fff',
+  textAlign: 'center',
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    zIndex: 1,
+  },
+  '& > *': {
+    zIndex: 2,
+  },
+}));
+
+export const TitleBlockSection = styled('section')({
+  background: 'rgb(235, 236, 241)',
+  paddingTop: '56px',
+  paddingBottom: '56px',
+  fontWeight: 'bold',
+});
+
+export const CardsSection = styled('section')({
+  backgroundColor: '#ffffff',
+  paddingTop: '32px',
+  paddingBottom: '32px',
+});
+
+export const CityCard = styled('div')({
+  position: 'relative',
+  borderRadius: '4px',
+  overflow: 'hidden',
+  transition: 'transform 0.3s ease-in-out',
+  '&:hover': {
+    transform: 'scale(1.02)',
+  },
+});
+
+export const CityNameOverlay = styled(Typography)(({ theme }) => ({
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  color: '#fff',
+  fontWeight: 'bold',
+  letterSpacing: '0.1rem',
+  zIndex: 2,
+  fontSize: '2rem',
+  [theme.breakpoints.up('sm')]: {
+    fontSize: '2.5rem',
+  },
+  [theme.breakpoints.up('md')]: {
+    fontSize: '3rem',
+  },
+})) as typeof Typography;
+
+export const CarouselSection = styled('section')({
+  backgroundColor: '#1b3224',
+  color: '#ffffff',
+  paddingTop: '40px',
+  paddingBottom: '80px',
+  overflow: 'hidden',
+});
+
+export const CarouselContainer = styled('div')({
+  display: 'flex',
+  overflowX: 'auto',
+  gap: '24px',
+  padding: '16px 0',
+  scrollSnapType: 'x mandatory',
+  scrollbarWidth: 'none',
+  '&::-webkit-scrollbar': {
+    display: 'none',
+  },
+});
+
+export const CarouselCard = styled('div')({
+  minWidth: '300px',
+  height: '450px',
+  position: 'relative',
+  scrollSnapAlign: 'start',
+  borderRadius: '0 !important',
+  overflow: 'hidden',
+  flexShrink: 0,
+});
+</file>
+
+<file path="src/pages/MapPage/Map/style.tsx">
+// Файл: style.tsx
+import { styled } from '@mui/material/styles';
+
+interface MapWrapperProps {
+  customHeight?: string;
+}
+
+// ВАЖЛИВО: Перевірте, чи є тут слово "export"
+export const MapWrapper = styled('div')<MapWrapperProps>(
+  ({ customHeight }) => ({
+    width: '100%',
+    height: customHeight || 'calc(100vh - 150px)',
+    minHeight: '500px',
+
+    '& .leaflet-map-container': {
+      width: '100%',
+      height: '100%',
+    },
+  })
+);
+</file>
+
+<file path="src/types/pixabay.ts">
+export interface PixabayImage {
+  id: number;
+  pageURL: string;
+  type: string;
+  tags: string;
+  previewURL: string;
+  webformatURL: string;
+  largeImageURL: string;
+  imageWidth: number;
+  imageHeight: number;
+  views: number;
+  downloads: number;
+  collections: number;
+  likes: number;
+  comments: number;
+  user_id: number;
+  user: string;
+  userImageURL: string;
+}
+
+export interface PixabayResponse {
+  total: number;
+  totalHits: number;
+  hits: PixabayImage[];
+}
+</file>
+
+<file path="vite.config.ts">
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react()],
+});
+</file>
+
+<file path="src/components/Footer/index.tsx">
+import React from 'react';
+import {
+  Box,
+  Typography,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Stack,
+} from '@mui/material';
+import { SubTitle, CommonInput, PrimaryButton } from '../../style/common';
+
+export const Footer: React.FC = () => {
+  const darkAccordionStyle = {
+    bgcolor: 'transparent',
+    color: '#fff',
+    boxShadow: 'none',
+    borderBottom: '1px solid #333',
+    '&:before': { display: 'none' },
+    m: '0 !important',
+  };
+
+  return (
+    <Box
+      component="footer"
+      sx={{ bgcolor: '#111', color: '#fff', p: { xs: 4, md: 6 } }}
+    >
+      <Box sx={{ mb: 5 }}>
+        <Accordion sx={darkAccordionStyle} disableGutters>
+          <AccordionSummary
+            expandIcon={
+              <Typography color="white" fontSize="20px">
+                +
+              </Typography>
+            }
+          >
+            <Typography sx={{ fontWeight: 'bold', letterSpacing: '1px' }}>
+              UKRAINE TRIP
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Typography variant="body2" sx={{ color: '#ccc' }}>
+              Про нас | Наша команда | Вакансії
+            </Typography>
+          </AccordionDetails>
+        </Accordion>
+
+        <Accordion sx={darkAccordionStyle} disableGutters>
+          <AccordionSummary
+            expandIcon={
+              <Typography color="white" fontSize="20px">
+                +
+              </Typography>
+            }
+          >
+            <Typography sx={{ fontWeight: 'bold', letterSpacing: '1px' }}>
+              USEFUL INFORMATION
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Typography variant="body2" sx={{ color: '#ccc' }}>
+              FAQ | Умови повернення | Страхування
+            </Typography>
+          </AccordionDetails>
+        </Accordion>
+
+        <Accordion sx={darkAccordionStyle} disableGutters>
+          <AccordionSummary
+            expandIcon={
+              <Typography color="white" fontSize="20px">
+                +
+              </Typography>
+            }
+          >
+            <Typography sx={{ fontWeight: 'bold', letterSpacing: '1px' }}>
+              WHO/WHAT
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Typography variant="body2" sx={{ color: '#ccc' }}>
+              Партнери | Блог | Галерея
+            </Typography>
+          </AccordionDetails>
+        </Accordion>
+      </Box>
+
+      <Box sx={{ mb: 5 }}>
+        <SubTitle sx={{ color: '#fff', mb: 2 }}>
+          SIGN UP TO OUR NEWSLETTER
+        </SubTitle>
+        <Stack direction="row" sx={{ maxWidth: '400px' }}>
+          <CommonInput
+            placeholder="youremail@example.com"
+            variant="outlined"
+            size="small"
+            sx={{
+              flex: 1,
+              bgcolor: '#fff',
+              '& .MuiOutlinedInput-root': { borderRadius: 0 },
+            }}
+          />
+          <PrimaryButton sx={{ minWidth: '50px', p: 0, fontSize: '1.2rem' }}>
+            {'>'}
+          </PrimaryButton>
+        </Stack>
+      </Box>
+
+      <Stack direction="row" spacing={3} sx={{ mb: 5 }}>
+        <Typography sx={{ cursor: 'pointer', '&:hover': { color: '#888' } }}>
+          [IG]
+        </Typography>
+        <Typography sx={{ cursor: 'pointer', '&:hover': { color: '#888' } }}>
+          [YT]
+        </Typography>
+        <Typography sx={{ cursor: 'pointer', '&:hover': { color: '#888' } }}>
+          [IN]
+        </Typography>
+        <Typography sx={{ cursor: 'pointer', '&:hover': { color: '#888' } }}>
+          [SP]
+        </Typography>
+      </Stack>
+
+      <Box sx={{ color: '#ccc' }}>
+        <Typography variant="caption" display="block" sx={{ mb: 1 }}>
+          Головний офіс, вулиця Хрещатик 22, Київ, 01001
+        </Typography>
+        <Typography
+          variant="body2"
+          sx={{ mb: 2, fontWeight: 'bold', color: '#fff' }}
+        >
+          +380 44 123 45 67
+        </Typography>
+        <Typography
+          variant="caption"
+          display="block"
+          sx={{ fontStyle: 'italic', lineHeight: 1.6 }}
+        >
+          Туристичні послуги надаються компанією Ukraine Trip як офіційним
+          оператором в Україні.
+          <br />
+          Будь ласка, ознайомтеся з нашими умовами бронювання для отримання
+          додаткової інформації.
+          <br />
+          &copy; 2026 Ukraine Trip.
+          <br />
+          Дзвінки можуть записуватися з метою навчання та контролю якості.
+        </Typography>
+      </Box>
+    </Box>
+  );
+};
+</file>
+
+<file path="src/components/Menu/styled.tsx">
+import { styled } from '@mui/material/styles';
+import { Paper, BottomNavigation, BottomNavigationAction } from '@mui/material';
+
+export const MenuPaper = styled(Paper)(({ theme }) => ({
+  display: 'block',
+  [theme.breakpoints.up('sm')]: { display: 'none' },
+  position: 'fixed',
+  bottom: 0,
+  left: 0,
+  right: 0,
+  backgroundColor: '#302d2c !important',
+  borderTopLeftRadius: '24px',
+  borderTopRightRadius: '24px',
+  overflow: 'hidden',
+  zIndex: 100,
+  paddingBottom: 'env(safe-area-inset-bottom)',
+}));
+
+export const StyledBottomNavigation = styled(BottomNavigation)({
+  paddingBottom: 'env(safe-area-inset-bottom)',
+  backgroundColor: 'transparent !important',
+  height: '70px',
+});
+
+export const NavigationAction = styled(BottomNavigationAction)({
+  color: 'rgba(255, 255, 255, 0.6) !important',
+  transition: 'color 0.25s ease',
+
+  '&.Mui-selected': {
+    color: '#ffffff !important',
+  },
+
+  '& .MuiSvgIcon-root': {
+    fontSize: '28px',
+    transition: 'transform 0.1s ease',
+  },
+
+  '&:active': {
+    color: '#ff2400 !important',
+  },
+  '&:active .MuiSvgIcon-root': {
+    transform: 'scale(1.1)',
+  },
+}) as typeof BottomNavigationAction;
+</file>
+
+<file path="src/pages/CreateRoutePage/index.tsx">
+import React, { useState } from 'react';
+import { Box, Stack } from '@mui/material';
+
+import { PageWrapper, SubTitle } from '../../style/common';
+
+import {
+  MenuContainer,
+  RegionsColumn,
+  RegionItem,
+  RegionText,
+  CitiesColumn,
+  CityItem,
+} from './style';
+
+const destinationsData = [
+  { region: 'ВІННИЦЬКА ОБЛАСТЬ', cities: ['Вінниця', 'Жмеринка', 'Тульчин'] },
+  { region: 'ВОЛИНСЬКА ОБЛАСТЬ', cities: ['Луцьк', 'Ковель', 'Володимир'] },
+  {
+    region: 'ДНІПРОПЕТРОВСЬКА ОБЛАСТЬ',
+    cities: ['Дніпро', 'Кривий Ріг', "Кам'янське"],
+  },
+  {
+    region: 'ДОНЕЦЬКА ОБЛАСТЬ',
+    cities: ['Донецьк', 'Маріуполь', 'Краматорськ'],
+  },
+  {
+    region: 'ЖИТОМИРСЬКА ОБЛАСТЬ',
+    cities: ['Житомир', 'Бердичів', 'Коростень'],
+  },
+  {
+    region: 'ЗАКАРПАТСЬКА ОБЛАСТЬ',
+    cities: ['Ужгород', 'Мукачево', 'Берегове'],
+  },
+  {
+    region: 'ЗАПОРІЗЬКА ОБЛАСТЬ',
+    cities: ['Запоріжжя', 'Мелітополь', 'Бердянськ'],
+  },
+  {
+    region: 'ІВАНО-ФРАНКІВСЬКА ОБЛАСТЬ',
+    cities: ['Івано-Франківськ', 'Коломия', 'Яремче'],
+  },
+  { region: 'КИЇВСЬКА ОБЛАСТЬ', cities: ['Київ', 'Біла Церква', 'Бровари'] },
+  {
+    region: 'КІРОВОГРАДСЬКА ОБЛАСТЬ',
+    cities: ['Кропивницький', 'Олександрія', "Знам'янка"],
+  },
+  {
+    region: 'ЛУГАНСЬКА ОБЛАСТЬ',
+    cities: ['Луганськ', 'Сєвєродонецьк', 'Лисичанськ'],
+  },
+  { region: 'ЛЬВІВСЬКА ОБЛАСТЬ', cities: ['Львів', 'Трускавець', 'Дрогобич'] },
+  {
+    region: 'МИКОЛАЇВСЬКА ОБЛАСТЬ',
+    cities: ['Миколаїв', 'Первомайськ', 'Вознесенськ'],
+  },
+  { region: 'ОДЕСЬКА ОБЛАСТЬ', cities: ['Одеса', 'Ізмаїл', 'Чорноморськ'] },
+  {
+    region: 'ПОЛТАВСЬКА ОБЛАСТЬ',
+    cities: ['Полтава', 'Кременчук', 'Миргород'],
+  },
+  { region: 'РІВНЕНСЬКА ОБЛАСТЬ', cities: ['Рівне', 'Дубно', 'Острог'] },
+  { region: 'СУМСЬКА ОБЛАСТЬ', cities: ['Суми', 'Конотоп', 'Шостка'] },
+  {
+    region: 'ТЕРНОПІЛЬСЬКА ОБЛАСТЬ',
+    cities: ['Тернопіль', 'Чортків', 'Кременець'],
+  },
+  { region: 'ХАРКІВСЬКА ОБЛАСТЬ', cities: ['Харків', 'Лозова', 'Ізюм'] },
+  {
+    region: 'ХЕРСОНСЬКА ОБЛАСТЬ',
+    cities: ['Херсон', 'Нова Каховка', 'Генічеськ'],
+  },
+  {
+    region: 'ХМЕЛЬНИЦЬКА ОБЛАСТЬ',
+    cities: ['Хмельницький', "Кам'янець-Подільський", 'Шепетівка'],
+  },
+  { region: 'ЧЕРКАСЬКА ОБЛАСТЬ', cities: ['Черкаси', 'Умань', 'Сміла'] },
+  {
+    region: 'ЧЕРНІВЕЦЬКА ОБЛАСТЬ',
+    cities: ['Чернівці', 'Хотин', 'Сторожинець'],
+  },
+  { region: 'ЧЕРНІГІВСЬКА ОБЛАСТЬ', cities: ['Чернігів', 'Ніжин', 'Прилуки'] },
+  { region: 'АР КРИМ', cities: ['Сімферополь', 'Севастополь', 'Ялта'] },
+];
+
+export const CreateRoutePage = () => {
+  const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(0);
+  const [activeCity, setActiveCity] = useState<string | null>(null);
+
+  const handleRegionClick = (index: number) => {
+    setActiveRegionIndex(index);
+    setActiveCity(null);
+  };
+
+  const handleCityClick = (city: string) => {
+    setActiveCity(city);
+  };
+
+  const activeRegionData =
+    activeRegionIndex !== null ? destinationsData[activeRegionIndex] : null;
+
+  return (
+    // Прибрали фіксовану висоту і overflow: hidden, тепер сторінка скролиться природно
+    <PageWrapper sx={{ pt: 14, pb: 8 }}>
+      {/* МАГІЯ: Цей стиль приховає футер глобально, але тільки поки відкрита ця сторінка */}
+      <style>{`footer { display: none !important; }`}</style>
+
+      {/* alignItems: 'flex-start' дуже важливий для того, щоб sticky працював правильно */}
+      <MenuContainer
+        sx={{ m: 0, ml: { xs: 2, md: 8 }, alignItems: 'flex-start' }}
+      >
+        {/* КОЛОНКА 1: ОБЛАСТІ */}
+        <RegionsColumn sx={{ flex: '0 0 350px', pr: 3 }}>
+          <Stack spacing={2}>
+            {destinationsData.map((data, index) => (
+              <RegionItem
+                key={data.region}
+                active={activeRegionIndex === index}
+                onClick={() => handleRegionClick(index)}
+              >
+                <RegionText>{data.region}</RegionText>
+                <RegionText>{'>'}</RegionText>
+              </RegionItem>
+            ))}
+          </Stack>
+        </RegionsColumn>
+
+        {/* КОЛОНКА 2: МІСТА (Зробили липкою) */}
+        <CitiesColumn
+          sx={{
+            flex: 1,
+            minWidth: '300px',
+            position: 'sticky', // Колонка прилипає до екрана
+            top: '120px', // Відступ зверху (щоб не залазила під хедер)
+          }}
+        >
+          {activeRegionData && (
+            <Stack spacing={2.5}>
+              {activeRegionData.cities.map((city) => (
+                <CityItem
+                  key={city}
+                  active={activeCity === city}
+                  onClick={() => handleCityClick(city)}
+                >
+                  {city}
+                </CityItem>
+              ))}
+            </Stack>
+          )}
+        </CitiesColumn>
+      </MenuContainer>
+    </PageWrapper>
+  );
+};
+</file>
+
+<file path="src/pages/HomePage/componentHomePage/CityCardSection/index.tsx">
+import React from 'react';
+import {
+  Box,
+  Container,
+  Button,
+  Card,
+  CardMedia,
+  CardActionArea,
+} from '@mui/material';
+import type { CityCardData } from '../ContentData/types';
+import { CardsSection, CityCard, CityNameOverlay } from '../../style.tsx';
+
+interface CityCardsSectionProps {
+  cities: CityCardData[];
+}
+
+export const CityCardsSection: React.FC<CityCardsSectionProps> = ({
+  cities,
+}) => {
+  return (
+    <CardsSection>
+      <Container maxWidth="lg">
+        <Box
+          sx={{
+            display: 'grid',
+            gap: 3,
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: '1fr 1fr',
+              md: '1fr 1fr 1fr',
+            },
+            mb: 3,
+          }}
+        >
+          {cities.map((city) => (
+            <CityCard as={Card} key={city.id}>
+              <CardActionArea href={city.linkUrl}>
+                <CardMedia
+                  component="img"
+                  height="214"
+                  image={city.imageUrl}
+                  alt={city.cityName}
+                />
+                <CityNameOverlay variant="h3" component="div">
+                  {city.cityName}
+                </CityNameOverlay>
+              </CardActionArea>
+            </CityCard>
+          ))}
+        </Box>
+
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+          <Button
+            variant="contained"
+            sx={{
+              backgroundColor: '#000',
+              color: '#fff',
+              px: 6,
+              py: 1.5,
+              '&:hover': { backgroundColor: '#333' },
+            }}
+          >
+            VIEW MORE
+          </Button>
+        </Box>
+      </Container>
+    </CardsSection>
+  );
+};
+</file>
+
+<file path="src/pages/HomePage/componentHomePage/HeroSection/index.tsx">
+import React from 'react';
+import { AppBar, Toolbar, Typography } from '@mui/material';
+import { HeroSection as StyledHeroSection } from '../../style.tsx';
+
+export const HeroSection: React.FC = () => {
+  return (
+    <>
+      <AppBar
+        position="absolute"
+        elevation={0}
+        sx={{ background: 'transparent' }}
+      >
+        <Toolbar />
+      </AppBar>
+
+      <StyledHeroSection>
+        <Typography
+          variant="h2"
+          component="h1"
+          sx={{
+            fontWeight: 'bold',
+            mb: 1,
+            fontSize: 'clamp(2.5rem, 5vw, 4.5rem)',
+          }}
+        >
+          Discover Ukraine with us
+        </Typography>
+        <Typography
+          variant="h5"
+          component="p"
+          sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.75rem' } }}
+        >
+          Country research site
+        </Typography>
+      </StyledHeroSection>
+    </>
+  );
+};
+</file>
+
+<file path="src/pages/HomePage/componentHomePage/TitleBlock/index.tsx">
+import React from 'react';
+import { Typography } from '@mui/material';
+import { TitleBlockSection } from '../../style.tsx';
+
+export const TitleBlock: React.FC = () => {
+  return (
+    <TitleBlockSection>
+      <Typography
+        variant="h4"
+        component="h2"
+        align="center"
+        sx={{
+          letterSpacing: '0.15rem',
+          textTransform: 'uppercase',
+          fontWeight: 800,
+          fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' },
+        }}
+      >
+        START YOUR JOURNEY
+      </Typography>
+    </TitleBlockSection>
+  );
+};
+</file>
+
+<file path="src/services/pixabayService.ts">
+import type { PixabayResponse } from '../types/pixabay.ts';
+
+const API_KEY = import.meta.env.VITE_PIXABAY_API_KEY;
+const BASE_URL = 'https://pixabay.com/api/';
+
+export const fetchPhotosByQuery = async (
+  query: string,
+  perPage: number = 12
+): Promise<PixabayResponse> => {
+  if (!API_KEY) {
+    throw new Error('API Key is missing! Check your .env file.');
+  }
+
+  const params = new URLSearchParams({
+    key: API_KEY,
+    q: query,
+    image_type: 'photo',
+    orientation: 'horizontal',
+    safesearch: 'true',
+    per_page: perPage.toString(),
+    lang: 'uk',
+  });
+
+  try {
+    const response = await fetch(`${BASE_URL}?${params.toString()}`);
+
+    if (!response.ok) {
+      throw new Error(
+        `Pixabay API error: ${response.status} ${response.statusText}`
+      );
+    }
+
+    const data: PixabayResponse = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching data from Pixabay:', error);
+    throw error;
+  }
+};
+</file>
+
+<file path="src/components/Header/styled.tsx">
+import { styled } from '@mui/material/styles';
+import {
+  AppBar as AppBarMUI,
+  Toolbar as ToolbarMUI,
+  Typography,
+  Button,
+} from '@mui/material';
+
+export const AppBar = styled(AppBarMUI)(({ theme }) => ({
+  background: 'rgba(255, 255, 255, 0.9)',
+  backdropFilter: 'blur(10px)',
+  borderBottom: '1px solid #e0e0e0',
+  color: '#000',
+  paddingTop: 'env(safe-area-inset-top)',
+  zIndex: theme.zIndex.drawer + 1,
+}));
+
+export const StyledToolbar = styled(ToolbarMUI)(({ theme }) => ({
+  justifyContent: 'space-between',
+  height: 64,
+  [theme.breakpoints.up('md')]: {
+    height: 80,
+  },
+}));
+
+export const LogoText = styled(Typography)({
+  fontWeight: 700,
+  letterSpacing: 2,
+  textTransform: 'uppercase',
+  textDecoration: 'none',
+  color: 'inherit',
+}) as typeof Typography;
+
+export const NavButton = styled(Button)({
+  color: '#000',
+  fontSize: '0.75rem',
+  letterSpacing: 1.5,
+  fontWeight: 500,
+  textTransform: 'none', // щоб текст не був тільки великими літерами
+}) as typeof Button;
+</file>
+
+<file path="src/components/Menu/index.tsx">
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import MapOutlinedIcon from '@mui/icons-material/MapOutlined';
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+
+import {
+  MenuPaper as Paper,
+  NavigationAction as BottomNavigationAction,
+  StyledBottomNavigation as BottomNavigation,
+} from './styled.tsx';
+
+export const Menu: React.FC = () => {
+  const [value, setValue] = useState(0);
+  const navigate = useNavigate();
+
+  const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setValue(newValue);
+
+    switch (newValue) {
+      case 0:
+        navigate('/');
+        break;
+      case 1:
+        navigate('/create');
+        break;
+      case 2:
+        navigate('/map-page');
+        break;
+      case 3:
+        navigate('/account');
+        break;
+      default:
+        break;
+    }
+  };
+
+  return (
+    <Paper elevation={3}>
+      <BottomNavigation
+        showLabels={false}
+        value={value}
+        onChange={handleChange}
+      >
+        <BottomNavigationAction
+          id="nav-home-btn"
+          icon={<HomeOutlinedIcon />}
+          disableRipple
+        />
+        <BottomNavigationAction
+          id="nav-add-btn"
+          icon={<AddCircleOutlineIcon />}
+          disableRipple
+        />
+        <BottomNavigationAction
+          id="nav-bookmarks-btn"
+          icon={<MapOutlinedIcon />}
+          disableRipple
+        />
+        <BottomNavigationAction
+          id="nav-profile-btn"
+          icon={<PersonOutlineIcon />}
+          disableRipple
+        />
+      </BottomNavigation>
+    </Paper>
+  );
+};
+</file>
+
+<file path="src/pages/HomePage/componentHomePage/CarouselSection/index.tsx">
+import React from 'react';
+import {
+  Typography,
+  Box,
+  Container,
+  Button,
+  Card,
+  CardMedia,
+} from '@mui/material';
+import type { CarouselItemData } from '../ContentData/types.ts';
+import { PageTitle } from '../../../../style/common.tsx';
+import {
+  CarouselSection as StyledCarouselSection,
+  CarouselContainer,
+  CarouselCard,
+} from '../../style.tsx';
+
+interface CarouselSectionProps {
+  carousel: CarouselItemData[];
+}
+
+export const CarouselSection: React.FC<CarouselSectionProps> = ({
+  carousel,
+}) => {
+  return (
+    <StyledCarouselSection>
+      <Container maxWidth="lg" sx={{ pl: { xs: 2, md: 4 }, pr: 0 }}>
+        <Box sx={{ mb: 4 }}>
+          <PageTitle>Explore our trips</PageTitle>
+
+          <Typography variant="h5" sx={{ color: '#e0e0e0', fontWeight: 300 }}>
+            Incredible, breathtaking sensations
+          </Typography>
+        </Box>
+
+        <CarouselContainer>
+          {carousel.map((item) => (
+            <CarouselCard as={Card} key={item.id}>
+              <CardMedia
+                component="img"
+                height="100%"
+                image={item.imageUrl}
+                alt={item.location}
+                sx={{ filter: 'brightness(0.85)' }}
+              />
+
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  position: 'absolute',
+                  top: 16,
+                  right: 16,
+                  color: '#fff',
+                  fontWeight: 'bold',
+                }}
+              >
+                {item.location}
+              </Typography>
+
+              <Box
+                sx={{ position: 'absolute', bottom: 24, left: 24, right: 24 }}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{
+                    color: '#fff',
+                    fontWeight: 'bold',
+                    mb: 2,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {item.description}
+                </Typography>
+                <Button
+                  variant="outlined"
+                  sx={{
+                    color: '#fff',
+                    borderColor: '#fff',
+                    borderRadius: 0,
+                    fontWeight: 'bold',
+                    '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
+                  }}
+                >
+                  EXPLORE TRIP
+                </Button>
+              </Box>
+            </CarouselCard>
+          ))}
+        </CarouselContainer>
+      </Container>
+    </StyledCarouselSection>
+  );
+};
+</file>
+
+<file path="src/pages/NotFoundPage/index.tsx">
+import { Link } from 'react-router-dom';
+import { Container, Stack, Box } from '@mui/material';
+
+import {
+  PageWrapper,
+  PageTitle,
+  SubTitle,
+  PrimaryButton,
+} from '../../style/common';
+
+export const NotFoundPage: React.FC = () => {
+  return (
+    <PageWrapper sx={{ display: 'flex', alignItems: 'center' }}>
+      <Container maxWidth="md">
+        <Stack spacing={1} alignItems="center" textAlign="center">
+          <SubTitle>Error 404</SubTitle>
+
+          <PageTitle variant="h1" component="h1" sx={{ mb: 2 }}>
+            Lost in Ukraine?
+          </PageTitle>
+
+          <Box
+            sx={{
+              maxWidth: '500px',
+              mb: 4,
+              color: '#666',
+              fontSize: '0.9rem',
+              lineHeight: 1.8,
+              letterSpacing: '0.5px',
+            }}
+          >
+            The page you are looking for does not exist or has been moved. Try
+            returning to the main page to continue your journey.
+          </Box>
+
+          <PrimaryButton
+            component={Link as any}
+            to="/"
+            elevation={0}
+            sx={{
+              borderRadius: '10px',
+            }}
+          >
+            Back to Home
+          </PrimaryButton>
+        </Stack>
+      </Container>
+    </PageWrapper>
+  );
+};
+</file>
+
+<file path="src/style/common.tsx">
+import { styled } from '@mui/material/styles';
+import { Button, Typography, Box, TextField } from '@mui/material';
+
+export const PrimaryButton = styled(Button)({
+  backgroundColor: '#000',
+  color: '#fff',
+  borderRadius: 0,
+  padding: '12px 28px',
+  fontSize: '0.8rem',
+  fontWeight: 600,
+  letterSpacing: '1.5px',
+  textTransform: 'uppercase',
+  '&:hover': { backgroundColor: '#333' },
+}) as typeof Button;
+
+export const SecondaryButton = styled(Button)({
+  backgroundColor: 'transparent',
+  color: '#000',
+  border: '1px solid #000',
+  borderRadius: 0,
+  padding: '11px 27px',
+  fontSize: '0.8rem',
+  fontWeight: 600,
+  letterSpacing: '1.5px',
+  textTransform: 'uppercase',
+  '&:hover': { backgroundColor: '#f5f5f5', border: '1px solid #000' },
+}) as typeof Button;
+
+export const PageTitle = styled(Typography)(({ theme }) => ({
+  fontWeight: 800,
+  fontSize: '2.5rem',
+  textTransform: 'uppercase',
+  letterSpacing: '2px',
+  marginBottom: theme.spacing(4),
+  [theme.breakpoints.down('sm')]: { fontSize: '1.8rem' },
+})) as typeof Typography;
+
+export const SubTitle = styled(Typography)({
+  fontSize: '0.75rem',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '4px',
+  color: '#999',
+  marginBottom: '8px',
+});
+
+export const CommonInput = styled(TextField)({
+  '& .MuiOutlinedInput-root': {
+    borderRadius: 0,
+    '& fieldset': { borderColor: '#e0e0e0' },
+    '&:hover fieldset': { borderColor: '#000' },
+    '&.Mui-focused fieldset': { borderColor: '#000' },
+  },
+});
+
+// Обгортка для всього контенту сторінки (враховує Хедер та Меню)
+export const PageWrapper = styled(Box)(({ theme }) => ({
+  paddingTop: 'calc(80px + env(safe-area-inset-top))',
+  paddingBottom: '100px',
+  minHeight: '100vh',
+  [theme.breakpoints.down('md')]: {
+    paddingTop: 'calc(64px + env(safe-area-inset-top))',
+  },
+}));
+</file>
+
+<file path="src/App.tsx">
+import { RouterProvider } from 'react-router-dom';
+import { router } from './routes';
+import { CssBaseline } from '@mui/material';
+
+function App() {
+  return (
+    <>
+      <CssBaseline />
+      <RouterProvider router={router} />
+    </>
+  );
+}
+
+export default App;
+</file>
+
+<file path="src/pages/HomePage/index.tsx">
+import React, { useState } from 'react';
+import { Box } from '@mui/material';
+
+import type {
+  CityCardData,
+  CarouselItemData,
+} from './componentHomePage/ContentData/types';
+import { HeroSection } from './componentHomePage/HeroSection';
+import { TitleBlock } from './componentHomePage/TitleBlock';
+import { CityCardsSection } from './componentHomePage/CityCardSection';
+import { CarouselSection } from './componentHomePage/CarouselSection';
+
+import cityCardsData from '../../librarian/images.json';
+import carouselData from '../../librarian/carousel.json';
+
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+export const HomePage: React.FC = () => {
+  const [cities] = useState<CityCardData[]>(() =>
+    shuffleArray(cityCardsData as CityCardData[])
+  );
+
+  const [carousel] = useState<CarouselItemData[]>(() =>
+    shuffleArray(carouselData as CarouselItemData[])
+  );
+
+  return (
+    <Box sx={{ flexGrow: 1 }}>
+      <HeroSection />
+      <TitleBlock />
+      <CityCardsSection cities={cities} />
+      <CarouselSection carousel={carousel} />
+    </Box>
+  );
+};
+</file>
+
+<file path="package.json">
+{
+  "name": "ukraine-trip-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint . --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.9",
+    "@mui/material": "^7.3.9",
+    "leaflet": "^1.9.4",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-leaflet": "^5.0.0",
+    "react-router-dom": "^7.13.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@types/leaflet": "^1.9.21",
+    "@types/node": "^24.12.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@typescript-eslint/eslint-plugin": "^8.58.0",
+    "@typescript-eslint/parser": "^8.58.0",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.4.0",
+    "prettier": "^3.8.1",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.58.0",
+    "vite": "^8.0.1"
+  }
+}
+</file>
+
+<file path="src/components/Header/index.tsx">
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  Box,
+  Container,
+  IconButton,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  Divider,
+} from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import CloseIcon from '@mui/icons-material/Close';
+
+import { AppBar, StyledToolbar, LogoText, NavButton } from './styled';
+import { PrimaryButton } from '../../style/common.tsx';
+
+export const Header: React.FC = () => {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const navItems = [
+    { label: 'Regions', path: '/create-route' },
+    { label: 'Itinerary', path: '/itinerary' },
+    { label: "Traveler's Diary", path: '/diary' },
+  ];
+
+  const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
+
+  return (
+    <>
+      <AppBar position="fixed" elevation={0}>
+        <Container maxWidth="xl">
+          <StyledToolbar disableGutters>
+            {/* Logo */}
+            <Box sx={{ flex: 1, display: 'flex' }}>
+              <LogoText variant="h6" component={Link} to="/">
+                UKRAINE TRIP
+              </LogoText>
+            </Box>
+
+            {/* ДЕСКТОПНЕ МЕНЮ */}
+            <Box
+              sx={{
+                flex: 2,
+                display: { xs: 'none', md: 'flex' },
+                justifyContent: 'center',
+                gap: 4,
+              }}
+            >
+              {navItems.map((item) => (
+                <NavButton key={item.label} component={Link} to={item.path}>
+                  {item.label}
+                </NavButton>
+              ))}
+            </Box>
+
+            {/* ПРАВА ЧАСТИНА */}
+            <Box
+              sx={{
+                flex: 1,
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+              }}
+            >
+              <IconButton
+                color="inherit"
+                onClick={handleDrawerToggle}
+                sx={{ display: { md: 'none' } }}
+              >
+                <MenuIcon />
+              </IconButton>
+
+              <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 2 }}>
+                <NavButton
+                  component={Link}
+                  to="/login"
+                  sx={{ fontSize: '0.7rem' }}
+                >
+                  Sign In
+                </NavButton>
+                <PrimaryButton
+                  variant="contained"
+                  component={Link}
+                  to="/register"
+                >
+                  Register
+                </PrimaryButton>
+              </Box>
+            </Box>
+          </StyledToolbar>
+        </Container>
+      </AppBar>
+
+      {/* МОБІЛЬНЕ МЕНЮ */}
+      <Drawer
+        anchor="right"
+        open={mobileOpen}
+        onClose={handleDrawerToggle}
+        PaperProps={{ sx: { width: '100%', maxWidth: '280px' } }}
+      >
+        <Box sx={{ p: 2, display: 'flex', justifyContent: 'flex-end' }}>
+          <IconButton onClick={handleDrawerToggle}>
+            <CloseIcon />
+          </IconButton>
+        </Box>
+        <Divider />
+        <List sx={{ pt: 2 }}>
+          {navItems.map((item) => (
+            <ListItem key={item.label} disablePadding>
+              <ListItemButton
+                component={Link}
+                to={item.path}
+                onClick={handleDrawerToggle}
+                sx={{ py: 1.5 }}
+              >
+                <ListItemText
+                  primary={item.label}
+                  primaryTypographyProps={{
+                    fontSize: '0.9rem',
+                    fontWeight: 500,
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+      </Drawer>
+    </>
+  );
+};
+</file>
+
+<file path="src/routes.tsx">
+import { createBrowserRouter } from 'react-router-dom';
+import { Layout } from './components/Layout';
+import { HomePage } from './pages/HomePage';
+import { CreateRoutePage } from './pages/CreateRoutePage';
+import { AccountPage } from './pages/AccountPage';
+import { NotFoundPage } from './pages/NotFoundPage';
+import { MapComponent } from './pages/MapPage/Map';
+
+export const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <Layout />,
+    children: [
+      {
+        index: true,
+        element: <HomePage />,
+      },
+      {
+        path: 'create-route',
+        element: <CreateRoutePage />,
+      },
+      {
+        path: 'account',
+        element: <AccountPage />,
+      },
+      {
+        path: '/map-page',
+        element: <MapComponent />,
+      },
+    ],
+  },
+  {
+    path: '*',
+    element: <NotFoundPage />,
+  },
+]);
+</file>
+
+</files>

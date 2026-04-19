@@ -3,7 +3,7 @@ import Paper from '@mui/material/Paper';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
 
-export const MenuPaper = styled(Paper)(({ theme }) => ({
+export const MenuPaper = styled(Paper)(() => ({
   position: 'fixed',
   bottom: '6px',
   left: '50%',
@@ -24,7 +24,7 @@ export const StyledBottomNavigation = styled(BottomNavigation)({
   height: '68px',
 });
 
-export const NavigationAction = styled(BottomNavigationAction)(({ theme }) => ({
+export const NavigationAction = styled(BottomNavigationAction)(() => ({
   color: '#757575',
   minWidth: 'auto',
   padding: '6px 0',
@@ -42,17 +42,17 @@ export const NavigationAction = styled(BottomNavigationAction)(({ theme }) => ({
     '&.Mui-selected': {
       fontSize: '0.65rem',
       fontWeight: 600,
-    }
+    },
   },
 
   '&.Mui-selected': {
     color: '#000000',
     '& .MuiSvgIcon-root': {
       color: '#000000',
-    }
+    },
   },
 
   '&:hover': {
     backgroundColor: 'transparent',
-  }
+  },
 }));

@@ -53,7 +53,9 @@ export const CarouselSection: React.FC<CarouselSectionProps> = ({
                 <DescriptionText variant="h5">
                   {item.description}
                 </DescriptionText>
-                <ExploreButton variant="contained">Explore Trip</ExploreButton>
+                <ExploreButton variant="outlined">
+                  EXPLORE TRIP
+                </ExploreButton>
               </Box>
             </CarouselCard>
           ))}

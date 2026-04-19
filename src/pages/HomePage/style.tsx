@@ -1,7 +1,16 @@
 import { styled, keyframes } from '@mui/material/styles';
 import { Card, Typography, Box, Button, Container } from '@mui/material';
 
-// --- АНІМАЦІЯ ТЕКСТУ ---
+export const ExploreButton = styled(Button)({
+  alignSelf: 'flex-start', // або position: 'absolute', залежно від твого макета
+  color: '#fff',
+  borderColor: '#fff',
+  borderRadius: 0,
+  fontWeight: 'bold',
+  '&:hover': {
+    backgroundColor: 'rgba(255,255,255,0.1)'
+  },
+});
 
 const showup = keyframes`
   0% { opacity: 0; }
@@ -31,7 +40,7 @@ export const AnimatedRevealText = styled('div')(({ theme }) => ({
   fontWeight: 300,
   letterSpacing: '0.05rem',
   textTransform: 'uppercase',
-  width: '16em', // Фіксована ширина для центрування
+  width: '16em',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'flex-start',
@@ -62,8 +71,8 @@ export const AnimatedRevealText = styled('div')(({ theme }) => ({
 export const CarouselSection = styled('section')({
   background: 'linear-gradient(180deg, #1b3224 0%, #122218 100%)',
   color: '#ffffff',
-  paddingTop: '60px',
-  paddingBottom: '80px',
+  paddingTop: '40px',
+  paddingBottom: '40px',
   overflow: 'hidden',
 });
 
@@ -76,7 +85,7 @@ export const CarouselWrapper = styled(Container)(({ theme }) => ({
 }));
 
 export const CarouselHeader = styled(Box)({
-  marginBottom: '40px',
+  marginBottom: '25px',
 });
 
 export const CarouselSubtitle = styled(Typography)({
@@ -179,17 +188,6 @@ export const DescriptionText = styled(Typography)({
   marginBottom: '24px',
   lineHeight: 1.3,
   textShadow: '0px 2px 4px rgba(0,0,0,0.5)',
-});
-
-export const ExploreButton = styled(Button)({
-  alignSelf: 'flex-start',
-  backgroundColor: '#fff',
-  color: '#1b3224',
-  borderRadius: '24px',
-  fontWeight: 800,
-  padding: '8px 24px',
-  textTransform: 'none',
-  '&:hover': { backgroundColor: '#e2e8f0' },
 });
 
 export const HeroSection = styled('section')(() => ({

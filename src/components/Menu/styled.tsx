@@ -3,7 +3,8 @@ import Paper from '@mui/material/Paper';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
 
-export const MenuPaper = styled(Paper)(() => ({
+// Додаємо { theme } для доступу до брейкпоінтів MUI
+export const MenuPaper = styled(Paper)(({ theme }) => ({
   position: 'fixed',
   bottom: '6px',
   left: '50%',
@@ -17,6 +18,9 @@ export const MenuPaper = styled(Paper)(() => ({
   backgroundColor: 'rgba(255, 255, 255, 0.75)',
   backdropFilter: 'blur(12px)',
   WebkitBackdropFilter: 'blur(12px)',
+  [theme.breakpoints.up('md')]: {
+    display: 'none',
+  },
 }));
 
 export const StyledBottomNavigation = styled(BottomNavigation)({

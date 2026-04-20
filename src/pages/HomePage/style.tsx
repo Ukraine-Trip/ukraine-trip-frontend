@@ -2,7 +2,7 @@ import { styled, keyframes } from '@mui/material/styles';
 import { Card, Typography, Box, Button, Container } from '@mui/material';
 
 export const ExploreButton = styled(Button)({
-  alignSelf: 'flex-start', // або position: 'absolute', залежно від твого макета
+  alignSelf: 'flex-start',
   color: '#fff',
   borderColor: '#fff',
   borderRadius: '2px',
@@ -20,11 +20,11 @@ const showup = keyframes`
 `;
 
 const reveal = keyframes`
-  0% { opacity: 0; width: 0; }
-  20% { opacity: 1; width: 0; }
-  30% { width: 11em; } 
+  0% { opacity: 0; max-width: 0; }
+  20% { opacity: 1; max-width: 0; }
+  30% { max-width: 600px; }
   80% { opacity: 1; }
-  100% { opacity: 0; width: 11em; }
+  100% { opacity: 0; max-width: 600px; }
 `;
 
 export const TitleBlockSection = styled('section')({
@@ -59,13 +59,12 @@ export const AnimatedRevealText = styled('div')(({ theme }) => ({
   },
 
   '& .reveal-wrapper': {
-    width: 0,
+    width: 'max-content',
+    maxWidth: 0,
     animation: `${reveal} 7s infinite`,
     fontWeight: 800,
   },
 }));
-
-// --- РЕДИЗАЙН КАРУСЕЛІ ---
 
 export const CarouselSection = styled('section')({
   background: 'linear-gradient(180deg, #1b3224 0%, #122218 100%)',
@@ -146,7 +145,7 @@ export const CarouselCard = styled(Card)({
     width: '100%',
     height: '75%',
     background:
-      'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%)',
+        'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%)',
     pointerEvents: 'none',
   },
 
@@ -192,7 +191,7 @@ export const DescriptionText = styled(Typography)({
 export const HeroSection = styled('section')(() => ({
   height: '70vh',
   backgroundImage:
-    "url('https://i.pinimg.com/736x/83/f7/42/83f742c6a773422e37e003b09d163e26.jpg')",
+      "url('https://i.pinimg.com/736x/83/f7/42/83f742c6a773422e37e003b09d163e26.jpg')",
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   position: 'relative',

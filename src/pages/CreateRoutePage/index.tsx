@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Stack } from '@mui/material';
+import React, { useState } from 'react';
+import { Stack, useTheme, useMediaQuery, Button, Box } from '@mui/material';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 import { PageWrapper } from '../../style/common';
 
@@ -10,143 +11,164 @@ import {
   RegionText,
   CitiesColumn,
   CityItem,
+  AnimatedCitiesWrapper,
 } from './style';
 
 const destinationsData = [
-  { region: 'ВІННИЦЬКА ОБЛАСТЬ', cities: ['Вінниця', 'Жмеринка', 'Тульчин'] },
-  { region: 'ВОЛИНСЬКА ОБЛАСТЬ', cities: ['Луцьк', 'Ковель', 'Володимир'] },
+  { region: 'VINNYTSIA OBLAST', cities: ['Vinnytsia', 'Zhmerynka', 'Tulchyn'] },
+  { region: 'VOLYN OBLAST', cities: ['Lutsk', 'Kovel', 'Volodymyr'] },
   {
-    region: 'ДНІПРОПЕТРОВСЬКА ОБЛАСТЬ',
-    cities: ['Дніпро', 'Кривий Ріг', "Кам'янське"],
+    region: 'DNIPROPETROVSK OBLAST',
+    cities: ['Dnipro', 'Kryvyi Rih', 'Kamianske'],
+  },
+  { region: 'DONETSK OBLAST', cities: ['Donetsk', 'Mariupol', 'Kramatorsk'] },
+  { region: 'ZHYTOMYR OBLAST', cities: ['Zhytomyr', 'Berdychiv', 'Korosten'] },
+  {
+    region: 'ZAKARPATTIA OBLAST',
+    cities: ['Uzhhorod', 'Mukachevo', 'Berehove'],
   },
   {
-    region: 'ДОНЕЦЬКА ОБЛАСТЬ',
-    cities: ['Донецьк', 'Маріуполь', 'Краматорськ'],
+    region: 'ZAPORIZHZHIA OBLAST',
+    cities: ['Zaporizhzhia', 'Melitopol', 'Berdiansk'],
   },
   {
-    region: 'ЖИТОМИРСЬКА ОБЛАСТЬ',
-    cities: ['Житомир', 'Бердичів', 'Коростень'],
+    region: 'IVANO-FRANKIVSK OBLAST',
+    cities: ['Ivano-Frankivsk', 'Kolomyia', 'Yaremche'],
+  },
+  { region: 'KYIV OBLAST', cities: ['Kyiv', 'Bila Tserkva', 'Brovary'] },
+  {
+    region: 'KIROVOHRAD OBLAST',
+    cities: ['Kropyvnytskyi', 'Oleksandriia', 'Znamianka'],
   },
   {
-    region: 'ЗАКАРПАТСЬКА ОБЛАСТЬ',
-    cities: ['Ужгород', 'Мукачево', 'Берегове'],
+    region: 'LUHANSK OBLAST',
+    cities: ['Luhansk', 'Sievierodonetsk', 'Lysychansk'],
+  },
+  { region: 'LVIV OBLAST', cities: ['Lviv', 'Truskavets', 'Drohobych'] },
+  {
+    region: 'MYKOLAIV OBLAST',
+    cities: ['Mykolaiv', 'Pervomaisk', 'Voznesensk'],
+  },
+  { region: 'ODESA OBLAST', cities: ['Odesa', 'Izmail', 'Chornomorsk'] },
+  { region: 'POLTAVA OBLAST', cities: ['Poltava', 'Kremenchuk', 'Myrhorod'] },
+  { region: 'RIVNE OBLAST', cities: ['Rivne', 'Dubno', 'Ostroh'] },
+  { region: 'SUMY OBLAST', cities: ['Sumy', 'Konotop', 'Shostka'] },
+  { region: 'TERNOPIL OBLAST', cities: ['Ternopil', 'Chortkiv', 'Kremenets'] },
+  { region: 'KHARKIV OBLAST', cities: ['Kharkiv', 'Lozova', 'Izium'] },
+  {
+    region: 'KHERSON OBLAST',
+    cities: ['Kherson', 'Nova Kakhovka', 'Henichesk'],
   },
   {
-    region: 'ЗАПОРІЗЬКА ОБЛАСТЬ',
-    cities: ['Запоріжжя', 'Мелітополь', 'Бердянськ'],
+    region: 'KHMELNYTSKYI OBLAST',
+    cities: ['Khmelnytskyi', 'Kamianets-Podilskyi', 'Shepetivka'],
   },
+  { region: 'CHERKASY OBLAST', cities: ['Cherkasy', 'Uman', 'Smila'] },
   {
-    region: 'ІВАНО-ФРАНКІВСЬКА ОБЛАСТЬ',
-    cities: ['Івано-Франківськ', 'Коломия', 'Яремче'],
+    region: 'CHERNIVTSI OBLAST',
+    cities: ['Chernivtsi', 'Khotyn', 'Storozhynets'],
   },
-  { region: 'КИЇВСЬКА ОБЛАСТЬ', cities: ['Київ', 'Біла Церква', 'Бровари'] },
-  {
-    region: 'КІРОВОГРАДСЬКА ОБЛАСТЬ',
-    cities: ['Кропивницький', 'Олександрія', "Знам'янка"],
-  },
-  {
-    region: 'ЛУГАНСЬКА ОБЛАСТЬ',
-    cities: ['Луганськ', 'Сєвєродонецьк', 'Лисичанськ'],
-  },
-  { region: 'ЛЬВІВСЬКА ОБЛАСТЬ', cities: ['Львів', 'Трускавець', 'Дрогобич'] },
-  {
-    region: 'МИКОЛАЇВСЬКА ОБЛАСТЬ',
-    cities: ['Миколаїв', 'Первомайськ', 'Вознесенськ'],
-  },
-  { region: 'ОДЕСЬКА ОБЛАСТЬ', cities: ['Одеса', 'Ізмаїл', 'Чорноморськ'] },
-  {
-    region: 'ПОЛТАВСЬКА ОБЛАСТЬ',
-    cities: ['Полтава', 'Кременчук', 'Миргород'],
-  },
-  { region: 'РІВНЕНСЬКА ОБЛАСТЬ', cities: ['Рівне', 'Дубно', 'Острог'] },
-  { region: 'СУМСЬКА ОБЛАСТЬ', cities: ['Суми', 'Конотоп', 'Шостка'] },
-  {
-    region: 'ТЕРНОПІЛЬСЬКА ОБЛАСТЬ',
-    cities: ['Тернопіль', 'Чортків', 'Кременець'],
-  },
-  { region: 'ХАРКІВСЬКА ОБЛАСТЬ', cities: ['Харків', 'Лозова', 'Ізюм'] },
-  {
-    region: 'ХЕРСОНСЬКА ОБЛАСТЬ',
-    cities: ['Херсон', 'Нова Каховка', 'Генічеськ'],
-  },
-  {
-    region: 'ХМЕЛЬНИЦЬКА ОБЛАСТЬ',
-    cities: ['Хмельницький', "Кам'янець-Подільський", 'Шепетівка'],
-  },
-  { region: 'ЧЕРКАСЬКА ОБЛАСТЬ', cities: ['Черкаси', 'Умань', 'Сміла'] },
-  {
-    region: 'ЧЕРНІВЕЦЬКА ОБЛАСТЬ',
-    cities: ['Чернівці', 'Хотин', 'Сторожинець'],
-  },
-  { region: 'ЧЕРНІГІВСЬКА ОБЛАСТЬ', cities: ['Чернігів', 'Ніжин', 'Прилуки'] },
-  { region: 'АР КРИМ', cities: ['Сімферополь', 'Севастополь', 'Ялта'] },
+  { region: 'CHERNIHIV OBLAST', cities: ['Chernihiv', 'Nizhyn', 'Pryluky'] },
+  { region: 'AR CRIMEA', cities: ['Simferopol', 'Sevastopol', 'Yalta'] },
 ];
 
 export const CreateRoutePage = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
   const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(0);
   const [activeCity, setActiveCity] = useState<string | null>(null);
+  const [showCitiesMobile, setShowCitiesMobile] = useState(false);
 
   const handleRegionClick = (index: number) => {
     setActiveRegionIndex(index);
     setActiveCity(null);
+    if (isMobile) {
+      setShowCitiesMobile(true);
+    }
   };
 
   const handleCityClick = (city: string) => {
     setActiveCity(city);
   };
 
+  const handleBackToRegions = () => {
+    setShowCitiesMobile(false);
+  };
+
   const activeRegionData =
     activeRegionIndex !== null ? destinationsData[activeRegionIndex] : null;
 
   return (
-    // Прибрали фіксовану висоту і overflow: hidden, тепер сторінка скролиться природно
-    <PageWrapper sx={{ pt: 14, pb: 8 }}>
-      {/* МАГІЯ: Цей стиль приховає футер глобально, але тільки поки відкрита ця сторінка */}
+    <PageWrapper sx={{ pt: 14, pb: 12 }}>
       <style>{`footer { display: none !important; }`}</style>
 
-      {/* alignItems: 'flex-start' дуже важливий для того, щоб sticky працював правильно */}
       <MenuContainer
-        sx={{ m: 0, ml: { xs: 2, md: 8 }, alignItems: 'flex-start' }}
+        sx={{ m: 0, mx: { xs: 2, md: 8 }, alignItems: 'flex-start' }}
       >
         {/* КОЛОНКА 1: ОБЛАСТІ */}
-        <RegionsColumn sx={{ flex: '0 0 350px', pr: 3 }}>
-          <Stack spacing={2}>
-            {destinationsData.map((data, index) => (
-              <RegionItem
-                key={data.region}
-                active={activeRegionIndex === index}
-                onClick={() => handleRegionClick(index)}
-              >
-                <RegionText>{data.region}</RegionText>
-                <RegionText>{'>'}</RegionText>
-              </RegionItem>
-            ))}
-          </Stack>
-        </RegionsColumn>
-
-        {/* КОЛОНКА 2: МІСТА (Зробили липкою) */}
-        <CitiesColumn
-          sx={{
-            flex: 1,
-            minWidth: '300px',
-            position: 'sticky', // Колонка прилипає до екрана
-            top: '120px', // Відступ зверху (щоб не залазила під хедер)
-          }}
-        >
-          {activeRegionData && (
-            <Stack spacing={2.5}>
-              {activeRegionData.cities.map((city) => (
-                <CityItem
-                  key={city}
-                  active={activeCity === city}
-                  onClick={() => handleCityClick(city)}
+        {(!isMobile || !showCitiesMobile) && (
+          <RegionsColumn
+            sx={{
+              flex: { xs: 1, md: '0 0 350px' },
+              pr: { xs: 0, md: 3 },
+              width: '100%',
+            }}
+          >
+            <Stack spacing={2}>
+              {destinationsData.map((data, index) => (
+                <RegionItem
+                  key={data.region}
+                  active={activeRegionIndex === index}
+                  onClick={() => handleRegionClick(index)}
                 >
-                  {city}
-                </CityItem>
+                  <RegionText>{data.region}</RegionText>
+                  <ChevronRightIcon fontSize="small" />
+                </RegionItem>
               ))}
             </Stack>
-          )}
-        </CitiesColumn>
+          </RegionsColumn>
+        )}
+
+        {/* КОЛОНКА 2: МІСТА */}
+        {(!isMobile || showCitiesMobile) && (
+          <CitiesColumn
+            sx={{
+              flex: 1,
+              width: '100%',
+              minWidth: { xs: '100%', md: '300px' },
+              position: { xs: 'static', md: 'sticky' },
+              top: '120px',
+            }}
+          >
+            {isMobile && (
+              <Box sx={{ mb: 3 }}>
+                <Button
+                  onClick={handleBackToRegions}
+                  sx={{ color: 'text.secondary', fontWeight: 'bold', pl: 0 }}
+                >
+                  ← Back to Regions
+                </Button>
+              </Box>
+            )}
+
+            {activeRegionData && (
+              <AnimatedCitiesWrapper key={activeRegionData.region}>
+                <Stack spacing={2.5}>
+                  {activeRegionData.cities.map((city) => (
+                    <CityItem
+                      key={city}
+                      active={activeCity === city}
+                      onClick={() => handleCityClick(city)}
+                    >
+                      {city}
+                    </CityItem>
+                  ))}
+                </Stack>
+              </AnimatedCitiesWrapper>
+            )}
+          </CitiesColumn>
+        )}
       </MenuContainer>
     </PageWrapper>
   );

@@ -5,6 +5,8 @@ import { CreateRoutePage } from './pages/CreateRoutePage';
 import { AccountPage } from './pages/AccountPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { MapComponent } from './pages/MapPage/Map';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
 
 export const router = createBrowserRouter([
   {
@@ -24,8 +26,16 @@ export const router = createBrowserRouter([
         element: <AccountPage />,
       },
       {
-        path: '/map-page',
+        path: 'map-page',
         element: <MapComponent />,
+      },
+      {
+        path: 'login',
+        element: <LoginPage />,
+      },
+      {
+        path: 'register',
+        element: <RegisterPage />,
       },
     ],
   },

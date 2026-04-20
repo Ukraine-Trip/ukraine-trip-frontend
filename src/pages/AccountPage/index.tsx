@@ -6,7 +6,7 @@ import {
   SubTitle,
   CommonInput,
   PrimaryButton,
-  SecondaryButton
+  SecondaryButton,
 } from '../../style/common.tsx';
 
 interface UserData {
@@ -18,13 +18,13 @@ interface UserData {
 
 export const AccountPage: React.FC = () => {
   const tempUser: UserData = {
-    firstName: "Guest",
-    lastName: "Traveler",
-    email: "guest@example.com",
+    firstName: 'Guest',
+    lastName: 'Traveler',
+    email: 'guest@example.com',
   };
 
   const handleSave = () => {
-    console.log("Saving data to the database...");
+    console.log('Saving data to the database...');
   };
 
   return (
@@ -38,15 +38,14 @@ export const AccountPage: React.FC = () => {
             display: 'flex',
             flexDirection: { xs: 'column', md: 'row' },
             gap: { xs: 4, md: 8 },
-            alignItems: 'flex-start'
+            alignItems: 'flex-start',
           }}
         >
-
           <Box
             sx={{
               width: { xs: '100%', md: '250px' },
               textAlign: 'center',
-              flexShrink: 0
+              flexShrink: 0,
             }}
           >
             <Avatar
@@ -59,7 +58,7 @@ export const AccountPage: React.FC = () => {
                 bgcolor: '#f0f0f0',
                 color: '#000',
                 border: '1px solid #e0e0e0',
-                fontSize: '3rem'
+                fontSize: '3rem',
               }}
             >
               {tempUser.firstName[0]}
@@ -71,12 +70,16 @@ export const AccountPage: React.FC = () => {
                 color: 'text.secondary',
                 textTransform: 'uppercase',
                 fontSize: '0.7rem',
-                fontWeight: 700
+                fontWeight: 700,
               }}
             >
               Status: Active Explorer
             </Typography>
-            <SecondaryButton variant="outlined" size="small" sx={{ fontSize: '0.6rem', width: '100%' }}>
+            <SecondaryButton
+              variant="outlined"
+              size="small"
+              sx={{ fontSize: '0.6rem', width: '100%' }}
+            >
               Change Photo
             </SecondaryButton>
           </Box>
@@ -85,37 +88,30 @@ export const AccountPage: React.FC = () => {
             <Stack spacing={4}>
               <Box>
                 <SubTitle>First Name</SubTitle>
-                <CommonInput
-                  fullWidth
-                  defaultValue={tempUser.firstName}
-                />
+                <CommonInput fullWidth defaultValue={tempUser.firstName} />
               </Box>
 
               <Box>
                 <SubTitle>Last Name</SubTitle>
-                <CommonInput
-                  fullWidth
-                  defaultValue={tempUser.lastName}
-                />
+                <CommonInput fullWidth defaultValue={tempUser.lastName} />
               </Box>
 
               <Box>
                 <SubTitle>Email Address</SubTitle>
-                <CommonInput
-                  fullWidth
-                  defaultValue={tempUser.email}
-                  disabled
-                />
+                <CommonInput fullWidth defaultValue={tempUser.email} disabled />
               </Box>
 
-              <Box sx={{ pt: 2, display: 'flex', justifyContent: { xs: 'center', md: 'flex-start' } }}>
-                <PrimaryButton onClick={handleSave}>
-                  Save Changes
-                </PrimaryButton>
+              <Box
+                sx={{
+                  pt: 2,
+                  display: 'flex',
+                  justifyContent: { xs: 'center', md: 'flex-start' },
+                }}
+              >
+                <PrimaryButton onClick={handleSave}>Save Changes</PrimaryButton>
               </Box>
             </Stack>
           </Box>
-
         </Box>
       </Box>
     </PageWrapper>

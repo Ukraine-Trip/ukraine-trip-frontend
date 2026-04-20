@@ -24,13 +24,13 @@ export const Menu: React.FC = () => {
         navigate('/');
         break;
       case 1:
-        navigate('/create');
+        navigate('/create-route'); // <-- Оновили шлях тут!
         break;
       case 2:
         navigate('/map-page');
         break;
       case 3:
-        navigate('/account');
+        navigate('/login');
         break;
       default:
         break;

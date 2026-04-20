@@ -1,77 +1,137 @@
-import React from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import React, { useState, useMemo } from 'react';
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 
-// 1. Стилі для роутингу (лінії по дорогах)
-import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
-
 import { MapWrapper } from './style.tsx';
-import { MapController } from './MapController';
-import { cityIcon, landmarkIcon } from './icons.ts';
+import { createCustomIcon } from './icons.tsx';
+import { ZoomHandler } from './ZoomHandler';
+import { MarkerPopup } from './MarkerPopup';
+import { useVisibleMarkers } from './useVisibleMarkers';
 import Routing from './Routing';
+import type { ItineraryPoint } from './types';
 
-// Імпорт твого довідника
-import regionsData from '../../../librarian/cities.json';
-
-export interface ItineraryPoint {
-  id: string;
-  name: string;
-  category: string;
-  description: string;
-  imageUrl: string;
-  lat: number;
-  lng: number;
-}
-
-interface MapComponentProps {
-  itinerary?: ItineraryPoint[];
-}
-
-export const MapComponent: React.FC<MapComponentProps> = ({
+export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   itinerary = [],
 }) => {
-  // 2. ТЕСТОВІ ДАНІ: Якщо itinerary порожній, малюємо шлях Львів -> Київ
-  // Коли підключимо бек, просто видали цю змінну і використовуй itinerary
+  const [zoom, setZoom] = useState(6);
+
+  // Тестові дані для демо (якщо основний список порожній)
   const testData: ItineraryPoint[] = [
     {
-      id: 'test-1',
-      name: 'Львів',
-      category: 'city',
-      description: 'Культурна столиця',
-      imageUrl:
-        'https://i.pinimg.com/1200x/ad/67/ba/ad67ba9cf0586f3e526aeb88c52b9b9d.jpg',
-      lat: 49.83,
-      lng: 24.02,
-    },
-    {
-      id: 'test-2',
+      id: '1',
       name: 'Київ',
       category: 'city',
-      description: 'Столиця України',
-      imageUrl:
-        'https://i.pinimg.com/736x/83/f7/42/83f742c6a773422e37e003b09d163e26.jpg',
+      priority: 1,
       lat: 50.45,
       lng: 30.52,
+      description: 'Столиця України',
+      imageUrl:
+        'https://visitukraine.today/media/blog/previews/reS9V1YfF5N2uTf3P0K6X6kL7P8S0C1v.jpg',
+    },
+    {
+      id: '2',
+      name: 'Львів',
+      category: 'city',
+      priority: 1,
+      lat: 49.83,
+      lng: 24.02,
+      description: 'Культурна столиця',
+      imageUrl: 'https://tvoemisto.tv/media/gallery/full/l/v/lviv_night.jpg',
+    },
+    // ПРІОРИТЕТ 2: Важливі пам'ятки (з'являються на Zoom 8-9)
+    {
+      id: '3',
+      name: 'Підгорецький замок',
+      category: 'landmark',
+      priority: 2,
+      lat: 49.94,
+      lng: 24.98,
+      description:
+        'Один із найкращих у Європі зразків поєднання ренесансного палацу з бастіонними укріпленнями.',
+      imageUrl: 'https://ipress.ua/media/gallery/full/p/i/pidgirci.jpg',
+    },
+    {
+      id: '4',
+      name: 'Житомир',
+      category: 'city',
+      priority: 2,
+      lat: 50.25,
+      lng: 28.65,
+      description: 'Місто космічної слави та скелястих парків.',
+    },
+
+    // ПРІОРИТЕТ 3: Культура та цікаві місця (Zoom 10-11)
+    {
+      id: '5',
+      name: 'Олеський замок',
+      category: 'culture',
+      priority: 3,
+      lat: 49.96,
+      lng: 24.9,
+      description: 'Найстаріший замок Галичини, що зберігся.',
+      imageUrl: 'https://MD-Ukraine.com/images/m/2000x1200/556_1.jpg',
+    },
+    {
+      id: '6',
+      name: 'Рівне (Бурштиновий музей)',
+      category: 'culture',
+      priority: 3,
+      lat: 50.61,
+      lng: 26.25,
+      description: 'Унікальні експонати з поліського бурштину.',
+    },
+
+    // ПРІОРИТЕТ 4: Розваги та відпочинок (Zoom 12-13)
+    {
+      id: '7',
+      name: 'Стрийський парк',
+      category: 'park',
+      priority: 4,
+      lat: 49.82,
+      lng: 24.03,
+      description: 'Один із найстаріших і найгарніших парків Львова.',
+    },
+    {
+      id: '8',
+      name: 'Кафе "Львівська копальня кави"',
+      category: 'cafe',
+      priority: 4,
+      lat: 49.841,
+      lng: 24.032,
+      description: 'Місце, де каву добувають прямо з-під землі.',
+    },
+
+    // ПРІОРИТЕТ 5: Дрібниці та зупинки (Zoom 14+)
+    {
+      id: '9',
+      name: 'АЗС OKKO',
+      category: 'stop',
+      priority: 5,
+      lat: 50.15,
+      lng: 25.75,
+      description: 'Зупинка на перепочинок та каву.',
+    },
+    {
+      id: '10',
+      name: 'Автостанція Дубно',
+      category: 'stop',
+      priority: 5,
+      lat: 50.41,
+      lng: 25.74,
+      description: 'Транспортний вузол поруч із замком.',
     },
   ];
 
-  // Вибираємо, що відображати: реальні дані або тест
   const activeData = itinerary.length > 0 ? itinerary : testData;
 
-  // Координати для компонента Routing
-  const polylinePositions = activeData.map(
-    (p) => [p.lat, p.lng] as [number, number]
-  );
+  // Тільки для лінії маршруту
+  const polylinePositions = useMemo(() => {
+    return activeData.map((p) => [p.lat, p.lng] as [number, number]);
+  }, [activeData]);
 
-
-  const getRegionForCity = (cityName: string) => {
-    const foundRegion = regionsData.find(
-      (region) =>
-        region.center === cityName ||
-        region.cities.some((city) => city.name === cityName)
-    );
-    return foundRegion ? foundRegion.name : null;
-  };
+  // Маркери, що фільтруються за зумом
+  const visibleMarkers = useVisibleMarkers(activeData, zoom);
 
   return (
     <MapWrapper>
@@ -79,7 +139,6 @@ export const MapComponent: React.FC<MapComponentProps> = ({
         center={[48.3794, 31.1656]}
         zoom={6}
         scrollWheelZoom={true}
-        zoomControl={false}
         className="leaflet-map-container"
       >
         <TileLayer
@@ -87,67 +146,25 @@ export const MapComponent: React.FC<MapComponentProps> = ({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {/* 3. КОМПОНЕНТ РОУТИНГУ: малює шлях ПО ДОРОГАХ */}
+        <ZoomHandler setZoom={setZoom} />
+
+        {/* Малює тільки лінію дороги */}
         {polylinePositions.length >= 2 && (
           <Routing points={polylinePositions} />
         )}
 
-        {/* Відображення маркерів */}
-        {activeData.map((point) => {
-          const regionName = getRegionForCity(point.name);
-
-          return (
+        {/* Малює тільки твої іконки */}
+        <MarkerClusterGroup chunkedLoading maxClusterRadius={50}>
+          {visibleMarkers.map((point) => (
             <Marker
               key={point.id}
               position={[point.lat, point.lng]}
-              icon={point.category === 'landmark' ? landmarkIcon : cityIcon}
+              icon={createCustomIcon(point.category)}
             >
-              <Popup minWidth={200}>
-                <div style={{ textAlign: 'center' }}>
-                  {regionName && (
-                    <span
-                      style={{
-                        fontSize: '0.75rem',
-                        color: '#888',
-                        textTransform: 'uppercase',
-                      }}
-                    >
-                      {regionName}
-                    </span>
-                  )}
-
-                  <strong
-                    style={{
-                      fontSize: '1.1rem',
-                      display: 'block',
-                      marginBottom: '8px',
-                    }}
-                  >
-                    {point.name}
-                  </strong>
-
-                  {point.imageUrl && (
-                    <img
-                      src={point.imageUrl}
-                      alt={point.name}
-                      style={{
-                        width: '100%',
-                        borderRadius: '4px',
-                        marginBottom: '8px',
-                      }}
-                    />
-                  )}
-
-                  <p style={{ margin: 0, fontSize: '0.9rem', color: '#555' }}>
-                    {point.description}
-                  </p>
-                </div>
-              </Popup>
+              <MarkerPopup point={point} />
             </Marker>
-          );
-        })}
-
-        <MapController points={polylinePositions} />
+          ))}
+        </MarkerClusterGroup>
       </MapContainer>
     </MapWrapper>
   );

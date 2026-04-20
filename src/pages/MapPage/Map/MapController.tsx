@@ -2,27 +2,18 @@ import { useEffect } from 'react';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 
-interface MapControllerProps {
-  points: [number, number][];
-}
-
-export const MapController: React.FC<MapControllerProps> = ({ points }) => {
+export const MapController = ({ points }: { points: [number, number][] }) => {
   const map = useMap();
 
   useEffect(() => {
-    if (points.length > 0) {
+    // Фокусуємося на маршруті ТІЛЬКИ якщо кількість точок змінилася
+    // і ми не робимо це при кожному зумі
+    if (map && points.length >= 2) {
       const bounds = L.latLngBounds(points);
-
-      map.fitBounds(bounds, {
-        // На телефоні робимо великий відступ знизу (120px),
-        // щоб маршрут був вище за наше Bottom Menu
-        paddingTopLeft: [20, 20],
-        paddingBottomRight: [20, 120],
-        animate: true,
-        duration: 1.2,
-      });
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
     }
-  }, [points, map]);
+    // Залежність тільки від КІЛЬКОСТІ точок, а не від кожного чиху
+  }, [map, points.length]);
 
   return null;
 };

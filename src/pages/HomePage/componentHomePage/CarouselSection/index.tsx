@@ -1,18 +1,18 @@
 import React from 'react';
-import {
-  Typography,
-  Box,
-  Container,
-  Button,
-  Card,
-  CardMedia,
-} from '@mui/material';
+import { Box } from '@mui/material';
 import type { CarouselItemData } from '../ContentData/types.ts';
 import { PageTitle } from '../../../../style/common.tsx';
 import {
   CarouselSection as StyledCarouselSection,
+  CarouselWrapper,
+  CarouselHeader,
+  CarouselSubtitle,
   CarouselContainer,
   CarouselCard,
+  LocationBadge,
+  BadgeText,
+  DescriptionText,
+  ExploreButton,
 } from '../../style.tsx';
 
 interface CarouselSectionProps {
@@ -24,70 +24,41 @@ export const CarouselSection: React.FC<CarouselSectionProps> = ({
 }) => {
   return (
     <StyledCarouselSection>
-      <Container maxWidth="lg" sx={{ pl: { xs: 2, md: 4 }, pr: 0 }}>
-        <Box sx={{ mb: 4 }}>
+      <CarouselWrapper maxWidth="lg">
+        <CarouselHeader>
           <PageTitle>Explore our trips</PageTitle>
-
-          <Typography variant="h5" sx={{ color: '#e0e0e0', fontWeight: 300 }}>
+          <CarouselSubtitle variant="h6">
             Incredible, breathtaking sensations
-          </Typography>
-        </Box>
+          </CarouselSubtitle>
+        </CarouselHeader>
 
         <CarouselContainer>
           {carousel.map((item) => (
-            <CarouselCard as={Card} key={item.id}>
-              <CardMedia
-                component="img"
-                height="100%"
-                image={item.imageUrl}
-                alt={item.location}
-                sx={{ filter: 'brightness(0.85)' }}
-              />
+            <CarouselCard key={item.id} elevation={0}>
+              <Box className="image-wrapper">
+                <Box
+                  component="img"
+                  src={item.imageUrl}
+                  alt={item.location}
+                  className="card-image"
+                />
+                <Box className="gradient-overlay" />
+              </Box>
 
-              <Typography
-                variant="subtitle1"
-                sx={{
-                  position: 'absolute',
-                  top: 16,
-                  right: 16,
-                  color: '#fff',
-                  fontWeight: 'bold',
-                }}
-              >
-                {item.location}
-              </Typography>
+              <LocationBadge>
+                <BadgeText variant="caption">{item.location}</BadgeText>
+              </LocationBadge>
 
-              <Box
-                sx={{ position: 'absolute', bottom: 24, left: 24, right: 24 }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{
-                    color: '#fff',
-                    fontWeight: 'bold',
-                    mb: 2,
-                    lineHeight: 1.2,
-                  }}
-                >
+              <Box className="card-content">
+                <DescriptionText variant="h5">
                   {item.description}
-                </Typography>
-                <Button
-                  variant="outlined"
-                  sx={{
-                    color: '#fff',
-                    borderColor: '#fff',
-                    borderRadius: 0,
-                    fontWeight: 'bold',
-                    '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
-                  }}
-                >
-                  EXPLORE TRIP
-                </Button>
+                </DescriptionText>
+                <ExploreButton variant="outlined">EXPLORE TRIP</ExploreButton>
               </Box>
             </CarouselCard>
           ))}
         </CarouselContainer>
-      </Container>
+      </CarouselWrapper>
     </StyledCarouselSection>
   );
 };

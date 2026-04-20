@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Box, Stack } from '@mui/material';
+import { useState } from 'react';
+import { Stack } from '@mui/material';
 
-import { PageWrapper, SubTitle } from '../../style/common';
+import { PageWrapper } from '../../style/common';
 
 import {
   MenuContainer,

@@ -1,19 +1,19 @@
 import React from 'react';
-import {
-  MapContainer,
-  TileLayer,
-  Polyline,
-  Marker,
-  Popup,
-} from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+
+// 1. Стилі для роутингу (лінії по дорогах)
+import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
+
 import { MapWrapper } from './style.tsx';
 import { MapController } from './MapController';
-// Імпортуємо іконки, які ми винесли в окремий файл
 import { cityIcon, landmarkIcon } from './icons.ts';
+import Routing from './Routing';
 
-// Описуємо тип для точок, щоб TypeScript не сварився
-interface ItineraryPoint {
+// Імпорт твого довідника
+import regionsData from '../../../librarian/cities.json';
+
+export interface ItineraryPoint {
   id: string;
   name: string;
   category: string;
@@ -23,50 +23,55 @@ interface ItineraryPoint {
   lng: number;
 }
 
-export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
+interface MapComponentProps {
+  itinerary?: ItineraryPoint[];
+}
+
+export const MapComponent: React.FC<MapComponentProps> = ({
   itinerary = [],
 }) => {
-  // 1. Твій новий детальний масив для перевірки
-  const testItinerary: ItineraryPoint[] = [
+  // 2. ТЕСТОВІ ДАНІ: Якщо itinerary порожній, малюємо шлях Львів -> Київ
+  // Коли підключимо бек, просто видали цю змінну і використовуй itinerary
+  const testData: ItineraryPoint[] = [
     {
-      id: '1',
+      id: 'test-1',
       name: 'Львів',
       category: 'city',
-      description: 'Культурна столиця України з неймовірною архітектурою.',
+      description: 'Культурна столиця',
       imageUrl:
         'https://i.pinimg.com/1200x/ad/67/ba/ad67ba9cf0586f3e526aeb88c52b9b9d.jpg',
       lat: 49.83,
       lng: 24.02,
     },
     {
-      id: '2',
+      id: 'test-2',
       name: 'Київ',
       category: 'city',
-      description: 'Серце України, де історія зустрічається з сучасністю.',
+      description: 'Столиця України',
       imageUrl:
         'https://i.pinimg.com/736x/83/f7/42/83f742c6a773422e37e003b09d163e26.jpg',
       lat: 50.45,
       lng: 30.52,
     },
-    {
-      id: '3',
-      name: 'Одеський Оперний',
-      category: 'landmark',
-      description: 'Один з найкрасивіших театрів світу.',
-      imageUrl:
-        'https://i.pinimg.com/1200x/ad/67/ba/ad67ba9cf0586f3e526aeb88c52b9b9d.jpg',
-      lat: 46.48,
-      lng: 30.72,
-    },
   ];
 
-  // Використовуємо тест, якщо ззовні нічого не прийшло
-  const activeData = itinerary.length > 0 ? itinerary : testItinerary;
+  // Вибираємо, що відображати: реальні дані або тест
+  const activeData = itinerary.length > 0 ? itinerary : testData;
 
-  // Розраховуємо лінію на основі activeData
+  // Координати для компонента Routing
   const polylinePositions = activeData.map(
     (p) => [p.lat, p.lng] as [number, number]
   );
+
+
+  const getRegionForCity = (cityName: string) => {
+    const foundRegion = regionsData.find(
+      (region) =>
+        region.center === cityName ||
+        region.cities.some((city) => city.name === cityName)
+    );
+    return foundRegion ? foundRegion.name : null;
+  };
 
   return (
     <MapWrapper>
@@ -75,62 +80,72 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
         zoom={6}
         scrollWheelZoom={true}
         zoomControl={false}
-        dragging={true}
-        touchZoom={true}
         className="leaflet-map-container"
       >
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
 
-        {/* Малюємо лінію маршруту */}
-        {polylinePositions.length > 1 && (
-          <Polyline
-            positions={polylinePositions}
-            pathOptions={{
-              color: '#302d2c',
-              weight: 5,
-              opacity: 0.8,
-              dashArray: '10, 10',
-            }}
-          />
+        {/* 3. КОМПОНЕНТ РОУТИНГУ: малює шлях ПО ДОРОГАХ */}
+        {polylinePositions.length >= 2 && (
+          <Routing points={polylinePositions} />
         )}
 
-        {/* Рендеримо маркери з попапами */}
-        {activeData.map((point) => (
-          <Marker
-            key={point.id}
-            position={[point.lat, point.lng]}
-            // Вибір іконки залежно від категорії
-            icon={point.category === 'landmark' ? landmarkIcon : cityIcon}
-          >
-            <Popup minWidth={200}>
-              <div style={{ textAlign: 'center' }}>
-                <strong
-                  style={{
-                    fontSize: '1.1rem',
-                    display: 'block',
-                    marginBottom: '8px',
-                  }}
-                >
-                  {point.name}
-                </strong>
-                {point.imageUrl && (
-                  <img
-                    src={point.imageUrl}
-                    alt={point.name}
+        {/* Відображення маркерів */}
+        {activeData.map((point) => {
+          const regionName = getRegionForCity(point.name);
+
+          return (
+            <Marker
+              key={point.id}
+              position={[point.lat, point.lng]}
+              icon={point.category === 'landmark' ? landmarkIcon : cityIcon}
+            >
+              <Popup minWidth={200}>
+                <div style={{ textAlign: 'center' }}>
+                  {regionName && (
+                    <span
+                      style={{
+                        fontSize: '0.75rem',
+                        color: '#888',
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {regionName}
+                    </span>
+                  )}
+
+                  <strong
                     style={{
-                      width: '100%',
-                      borderRadius: '4px',
+                      fontSize: '1.1rem',
+                      display: 'block',
                       marginBottom: '8px',
                     }}
-                  />
-                )}
-                <p style={{ margin: 0, fontSize: '0.9rem', color: '#555' }}>
-                  {point.description}
-                </p>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+                  >
+                    {point.name}
+                  </strong>
+
+                  {point.imageUrl && (
+                    <img
+                      src={point.imageUrl}
+                      alt={point.name}
+                      style={{
+                        width: '100%',
+                        borderRadius: '4px',
+                        marginBottom: '8px',
+                      }}
+                    />
+                  )}
+
+                  <p style={{ margin: 0, fontSize: '0.9rem', color: '#555' }}>
+                    {point.description}
+                  </p>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
 
         <MapController points={polylinePositions} />
       </MapContainer>

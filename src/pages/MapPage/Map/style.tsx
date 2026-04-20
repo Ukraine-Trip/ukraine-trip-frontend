@@ -1,29 +1,31 @@
-import { styled } from '@mui/material/styles';
+import styled from 'styled-components';
 
-// Додаємо інтерфейс для пропсів, якщо раптом захочемо міняти висоту вручну
-interface MapWrapperProps {
-  customHeight?: string;
-}
+export const MapWrapper = styled.div`
+  width: 100%;
+  height: 600px; /* Або твоя висота */
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
 
-export const MapWrapper = styled('div')<MapWrapperProps>(
-  ({ customHeight }) => ({
-    width: '100%',
+  .leaflet-map-container {
+    height: 100%;
+    width: 100%;
+    z-index: 1;
+  }
 
-    // Пріоритет:
-    // 1. Власна висота (якщо передана)
-    // 2. 100svh (висота мобільного екрана без врахування панелей браузера) мінус висота Хедера
-    height: customHeight || 'calc(100svh - 80px)',
+  /* ПОВНЕ ВИДАЛЕННЯ ТЕКСТОВОГО МАРШРУТУ З ЕКРАНУ */
+  .leaflet-routing-container,
+  .leaflet-routing-alt,
+  .leaflet-routing-geocoders {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
 
-    // Встановлюємо відносне позиціонування та z-index,
-    // щоб карта правильно взаємодіяла з іншими елементами
-    position: 'relative',
-    zIndex: 1,
-
-    // Стилі для внутрішнього контейнера Leaflet,
-    // які використовує твій колега в MapComponent
-    '& .leaflet-map-container': {
-      width: '100%',
-      height: '100%',
-    },
-  })
-);
+  /* Стилі для твоїх кастомних іконок */
+  .custom-mui-icon {
+    background: none;
+    border: none;
+  }
+`;

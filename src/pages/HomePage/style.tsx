@@ -5,10 +5,10 @@ export const ExploreButton = styled(Button)({
   alignSelf: 'flex-start', // або position: 'absolute', залежно від твого макета
   color: '#fff',
   borderColor: '#fff',
-  borderRadius: 0,
+  borderRadius: '2px',
   fontWeight: 'bold',
   '&:hover': {
-    backgroundColor: 'rgba(255,255,255,0.1)'
+    backgroundColor: 'rgba(255,255,255,0.1)',
   },
 });
 
@@ -40,10 +40,9 @@ export const AnimatedRevealText = styled('div')(({ theme }) => ({
   fontWeight: 300,
   letterSpacing: '0.05rem',
   textTransform: 'uppercase',
-  width: '16em',
   display: 'flex',
   alignItems: 'center',
-  justifyContent: 'flex-start',
+  justifyContent: 'center',
   fontSize: '1.5rem',
   [theme.breakpoints.up('sm')]: { fontSize: '2rem' },
   [theme.breakpoints.up('md')]: { fontSize: '2.125rem' },
@@ -192,7 +191,8 @@ export const DescriptionText = styled(Typography)({
 
 export const HeroSection = styled('section')(() => ({
   height: '70vh',
-  backgroundImage: "url('https://i.pinimg.com/736x/83/f7/42/83f742c6a773422e37e003b09d163e26.jpg')",
+  backgroundImage:
+    "url('https://i.pinimg.com/736x/83/f7/42/83f742c6a773422e37e003b09d163e26.jpg')",
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   position: 'relative',

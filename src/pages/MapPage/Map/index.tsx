@@ -16,7 +16,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
 }) => {
   const [zoom, setZoom] = useState(6);
 
-  // Тестові дані для демо (якщо основний список порожній)
   const testData: ItineraryPoint[] = [
     {
       id: '1',
@@ -39,7 +38,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       description: 'Культурна столиця',
       imageUrl: 'https://tvoemisto.tv/media/gallery/full/l/v/lviv_night.jpg',
     },
-    // ПРІОРИТЕТ 2: Важливі пам'ятки (з'являються на Zoom 8-9)
+
     {
       id: '3',
       name: 'Підгорецький замок',
@@ -61,7 +60,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       description: 'Місто космічної слави та скелястих парків.',
     },
 
-    // ПРІОРИТЕТ 3: Культура та цікаві місця (Zoom 10-11)
     {
       id: '5',
       name: 'Олеський замок',
@@ -82,7 +80,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       description: 'Унікальні експонати з поліського бурштину.',
     },
 
-    // ПРІОРИТЕТ 4: Розваги та відпочинок (Zoom 12-13)
     {
       id: '7',
       name: 'Стрийський парк',
@@ -102,7 +99,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       description: 'Місце, де каву добувають прямо з-під землі.',
     },
 
-    // ПРІОРИТЕТ 5: Дрібниці та зупинки (Zoom 14+)
     {
       id: '9',
       name: 'АЗС OKKO',
@@ -125,12 +121,10 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
 
   const activeData = itinerary.length > 0 ? itinerary : testData;
 
-  // Тільки для лінії маршруту
   const polylinePositions = useMemo(() => {
     return activeData.map((p) => [p.lat, p.lng] as [number, number]);
   }, [activeData]);
 
-  // Маркери, що фільтруються за зумом
   const visibleMarkers = useVisibleMarkers(activeData, zoom);
 
   return (
@@ -148,12 +142,10 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
 
         <ZoomHandler setZoom={setZoom} />
 
-        {/* Малює тільки лінію дороги */}
         {polylinePositions.length >= 2 && (
           <Routing points={polylinePositions} />
         )}
 
-        {/* Малює тільки твої іконки */}
         <MarkerClusterGroup chunkedLoading maxClusterRadius={50}>
           {visibleMarkers.map((point) => (
             <Marker

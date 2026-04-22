@@ -40,16 +40,15 @@ export const NavButton = styled(Button)({
   textTransform: 'none',
 }) as typeof Button;
 
-// ТЕПЕР ВІН ВИДНИЙ ТІЛЬКИ НА ПЛАНШЕТАХ (sm)
 export const BurgerIconButton = styled(IconButton)(({ theme }) => ({
   color: 'inherit',
-  display: 'none', // Сховано на xs (мобілка)
+  display: 'none',
 
   [theme.breakpoints.only('sm')]: {
-    display: 'flex', // Тільки на планшеті
+    display: 'flex',
   },
 
   [theme.breakpoints.up('md')]: {
-    display: 'none', // Знову ховаємо на десктопі
+    display: 'none',
   },
 }));

@@ -46,7 +46,6 @@ export const Header: React.FC = () => {
               </LogoText>
             </Box>
 
-            {/* Десктопні посилання - тільки на MD (900px+) */}
             <Box
               sx={{
                 flex: 2,
@@ -62,7 +61,7 @@ export const Header: React.FC = () => {
               ))}
             </Box>
 
-            {/* Права частина: Бургер та Кнопки */}
+
             <Box
               sx={{
                 flex: 1,
@@ -71,12 +70,12 @@ export const Header: React.FC = () => {
                 alignItems: 'center',
               }}
             >
-              {/* Бургер - Тільки на Планшеті та Десктопі */}
+
               <BurgerIconButton onClick={handleDrawerToggle}>
                 <MenuIcon />
               </BurgerIconButton>
 
-              {/* Кнопки входу - Тільки на Десктопі */}
+
               <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 2, ml: 2 }}>
                 <NavButton
                   component={Link}
@@ -98,7 +97,7 @@ export const Header: React.FC = () => {
         </Container>
       </AppBar>
 
-      {/* Сайдбар (Drawer) */}
+
       <Drawer
         anchor="right"
         open={mobileOpen}

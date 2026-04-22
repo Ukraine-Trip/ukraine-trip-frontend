@@ -18,7 +18,7 @@ export const MenuPaper = styled(Paper)(({ theme }) => ({
   backdropFilter: 'blur(12px)',
   WebkitBackdropFilter: 'blur(12px)',
 
-  // ТЕПЕР МЕНЮ ВИДНО НА xs ТА sm, І ВОНО ЗНИКАЄ ТІЛЬКИ НА md (десктоп)
+
   [theme.breakpoints.up('md')]: {
     display: 'none',
   },

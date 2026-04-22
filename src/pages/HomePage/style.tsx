@@ -145,7 +145,7 @@ export const CarouselCard = styled(Card)({
     width: '100%',
     height: '75%',
     background:
-        'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%)',
+      'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%)',
     pointerEvents: 'none',
   },
 
@@ -191,7 +191,7 @@ export const DescriptionText = styled(Typography)({
 export const HeroSection = styled('section')(() => ({
   height: '70vh',
   backgroundImage:
-      "url('https://i.pinimg.com/736x/83/f7/42/83f742c6a773422e37e003b09d163e26.jpg')",
+    "url('https://i.pinimg.com/736x/83/f7/42/83f742c6a773422e37e003b09d163e26.jpg')",
   backgroundSize: 'cover',
   backgroundPosition: 'center',
   position: 'relative',

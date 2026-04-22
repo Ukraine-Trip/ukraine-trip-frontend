@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import MapOutlinedIcon from '@mui/icons-material/MapOutlined';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+import SearchIcon from '@mui/icons-material/Search';
 
 import {
   MenuPaper as Paper,
@@ -51,7 +51,7 @@ export const Menu: React.FC = () => {
         />
         <BottomNavigationAction
           id="nav-add-btn"
-          icon={<AddCircleOutlineIcon />}
+          icon={<SearchIcon />}
           disableRipple
         />
         <BottomNavigationAction

@@ -8,6 +8,7 @@ export const PrimaryButton = styled(Button)({
   padding: '12px 28px',
   fontSize: '0.8rem',
   fontWeight: 600,
+  borderRadius: '4px',
   letterSpacing: '1.5px',
   textTransform: 'uppercase',
   '&:hover': { backgroundColor: '#333' },
@@ -53,7 +54,6 @@ export const CommonInput = styled(TextField)({
   },
 });
 
-// Обгортка для всього контенту сторінки (враховує Хедер та Меню)
 export const PageWrapper = styled(Box)(({ theme }) => ({
   paddingTop: 'calc(80px + env(safe-area-inset-top))',
   paddingBottom: '100px',

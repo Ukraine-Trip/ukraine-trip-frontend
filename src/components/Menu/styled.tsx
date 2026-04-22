@@ -18,8 +18,7 @@ export const MenuPaper = styled(Paper)(({ theme }) => ({
   backdropFilter: 'blur(12px)',
   WebkitBackdropFilter: 'blur(12px)',
 
-
-  [theme.breakpoints.up('md')]: {
+  [theme.breakpoints.up('sm')]: {
     display: 'none',
   },
 }));

@@ -3,7 +3,6 @@ import Paper from '@mui/material/Paper';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
 
-// Додаємо { theme } для доступу до брейкпоінтів MUI
 export const MenuPaper = styled(Paper)(({ theme }) => ({
   position: 'fixed',
   bottom: '6px',
@@ -18,6 +17,8 @@ export const MenuPaper = styled(Paper)(({ theme }) => ({
   backgroundColor: 'rgba(255, 255, 255, 0.75)',
   backdropFilter: 'blur(12px)',
   WebkitBackdropFilter: 'blur(12px)',
+
+  // ТЕПЕР МЕНЮ ВИДНО НА xs ТА sm, І ВОНО ЗНИКАЄ ТІЛЬКИ НА md (десктоп)
   [theme.breakpoints.up('md')]: {
     display: 'none',
   },

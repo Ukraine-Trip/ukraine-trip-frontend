@@ -4,6 +4,7 @@ import {
   Toolbar as ToolbarMUI,
   Typography,
   Button,
+  IconButton,
 } from '@mui/material';
 
 export const AppBar = styled(AppBarMUI)(({ theme }) => ({
@@ -36,5 +37,19 @@ export const NavButton = styled(Button)({
   fontSize: '0.75rem',
   letterSpacing: 1.5,
   fontWeight: 500,
-  textTransform: 'none', // щоб текст не був тільки великими літерами
+  textTransform: 'none',
 }) as typeof Button;
+
+// ТЕПЕР ВІН ВИДНИЙ ТІЛЬКИ НА ПЛАНШЕТАХ (sm)
+export const BurgerIconButton = styled(IconButton)(({ theme }) => ({
+  color: 'inherit',
+  display: 'none', // Сховано на xs (мобілка)
+
+  [theme.breakpoints.only('sm')]: {
+    display: 'flex', // Тільки на планшеті
+  },
+
+  [theme.breakpoints.up('md')]: {
+    display: 'none', // Знову ховаємо на десктопі
+  },
+}));

@@ -3,18 +3,24 @@ import { Link } from 'react-router-dom';
 import {
   Box,
   Container,
-  IconButton,
   Drawer,
   List,
   ListItem,
   ListItemButton,
   ListItemText,
   Divider,
+  IconButton,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
 
-import { AppBar, StyledToolbar, LogoText, NavButton } from './styled';
+import {
+  AppBar,
+  StyledToolbar,
+  LogoText,
+  NavButton,
+  BurgerIconButton,
+} from './styled';
 import { PrimaryButton } from '../../style/common.tsx';
 
 export const Header: React.FC = () => {
@@ -33,14 +39,14 @@ export const Header: React.FC = () => {
       <AppBar position="fixed" elevation={0}>
         <Container maxWidth="xl">
           <StyledToolbar disableGutters>
-            {/* Logo */}
+            {/* Logo - Видно завжди */}
             <Box sx={{ flex: 1, display: 'flex' }}>
               <LogoText variant="h6" component={Link} to="/">
                 UKRAINE TRIP
               </LogoText>
             </Box>
 
-            {/* ДЕСКТОПНЕ МЕНЮ */}
+            {/* Десктопні посилання - тільки на MD (900px+) */}
             <Box
               sx={{
                 flex: 2,
@@ -56,7 +62,7 @@ export const Header: React.FC = () => {
               ))}
             </Box>
 
-            {/* ПРАВА ЧАСТИНА */}
+            {/* Права частина: Бургер та Кнопки */}
             <Box
               sx={{
                 flex: 1,
@@ -65,15 +71,13 @@ export const Header: React.FC = () => {
                 alignItems: 'center',
               }}
             >
-              <IconButton
-                color="inherit"
-                onClick={handleDrawerToggle}
-                sx={{ display: { md: 'none' } }}
-              >
+              {/* Бургер - Тільки на Планшеті та Десктопі */}
+              <BurgerIconButton onClick={handleDrawerToggle}>
                 <MenuIcon />
-              </IconButton>
+              </BurgerIconButton>
 
-              <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 2 }}>
+              {/* Кнопки входу - Тільки на Десктопі */}
+              <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 2, ml: 2 }}>
                 <NavButton
                   component={Link}
                   to="/login"
@@ -94,7 +98,7 @@ export const Header: React.FC = () => {
         </Container>
       </AppBar>
 
-      {/* МОБІЛЬНЕ МЕНЮ */}
+      {/* Сайдбар (Drawer) */}
       <Drawer
         anchor="right"
         open={mobileOpen}
@@ -114,15 +118,8 @@ export const Header: React.FC = () => {
                 component={Link}
                 to={item.path}
                 onClick={handleDrawerToggle}
-                sx={{ py: 1.5 }}
               >
-                <ListItemText
-                  primary={item.label}
-                  primaryTypographyProps={{
-                    fontSize: '0.9rem',
-                    fontWeight: 500,
-                  }}
-                />
+                <ListItemText primary={item.label} />
               </ListItemButton>
             </ListItem>
           ))}

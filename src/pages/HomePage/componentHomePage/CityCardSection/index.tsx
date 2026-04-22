@@ -2,9 +2,14 @@ import React, { useState, useMemo } from 'react';
 import { Box, Container, Card, CardMedia, CardActionArea } from '@mui/material';
 import type { CityCardData } from '../ContentData/types';
 import { CardsSection, CityCard, CityNameOverlay } from '../../style.tsx';
+<<<<<<< Updated upstream
 import { PrimaryButton } from '../../../../style/common.tsx';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+=======
+import {PrimaryButton} from "../../../../style/common.tsx";
+import {Link} from "react-router-dom";
+>>>>>>> Stashed changes
 
 interface CityCardsSectionProps {
   cities: CityCardData[];
@@ -68,6 +73,7 @@ export const CityCardsSection: React.FC<CityCardsSectionProps> = ({
           ))}
         </Box>
 
+<<<<<<< Updated upstream
         {!isExpanded && uniqueCities.length > 3 && (
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
             <PrimaryButton onClick={handleShowMore}>View more</PrimaryButton>
@@ -82,6 +88,16 @@ export const CityCardsSection: React.FC<CityCardsSectionProps> = ({
             </PrimaryButton>
           </Box>
         )}
+=======
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>          <PrimaryButton
+            component={Link}
+            to="/*"
+            sx={{ mt: 4 }}
+        >
+            View more
+        </PrimaryButton>
+        </Box>
+>>>>>>> Stashed changes
       </Container>
     </CardsSection>
   );

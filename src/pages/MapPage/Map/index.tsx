@@ -9,7 +9,7 @@ import { ZoomHandler } from './ZoomHandler';
 import { MarkerPopup } from './MarkerPopup';
 import { useVisibleMarkers } from './useVisibleMarkers';
 import Routing from './Routing';
-import type { ItineraryPoint } from './types';
+import type { ItineraryPoint } from '../../../types/types.ts';
 
 export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   itinerary = [],

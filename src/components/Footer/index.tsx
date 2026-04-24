@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -10,6 +11,13 @@ import {
 import { SubTitle, CommonInput, PrimaryButton } from '../../style/common';
 
 export const Footer: React.FC = () => {
+  const location = useLocation();
+
+  // Якщо ми не на головній сторінці ('/'), футер не показується
+  if (location.pathname !== '/') {
+    return null;
+  }
+
   const darkAccordionStyle = {
     bgcolor: 'transparent',
     color: '#fff',
@@ -22,7 +30,12 @@ export const Footer: React.FC = () => {
   return (
     <Box
       component="footer"
-      sx={{ bgcolor: '#111', color: '#fff', p: { xs: 4, md: 6 } }}
+      sx={{
+        bgcolor: '#111',
+        color: '#fff',
+        p: { xs: 4, md: 6 },
+        pb: { xs: 12, md: 6 },
+      }}
     >
       <Box sx={{ mb: 5 }}>
         <Accordion sx={darkAccordionStyle} disableGutters>

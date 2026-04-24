@@ -1,6 +1,6 @@
 import React from 'react';
 import { Popup } from 'react-leaflet';
-import type { ItineraryPoint } from './types';
+import type { ItineraryPoint } from '../../../types/types.ts';
 // 1. Повертаємо імпорт довідника сюди
 import regionsData from '../../../librarian/cities.json';
 

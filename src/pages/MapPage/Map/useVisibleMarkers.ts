@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { ItineraryPoint } from './types';
+import type { ItineraryPoint } from '../../../types/types.ts';
 
 export const useVisibleMarkers = (
   itinerary: ItineraryPoint[],

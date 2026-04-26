@@ -61,7 +61,6 @@ export const Header: React.FC = () => {
               ))}
             </Box>
 
-
             <Box
               sx={{
                 flex: 1,
@@ -70,11 +69,9 @@ export const Header: React.FC = () => {
                 alignItems: 'center',
               }}
             >
-
               <BurgerIconButton onClick={handleDrawerToggle}>
                 <MenuIcon />
               </BurgerIconButton>
-
 
               <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 2, ml: 2 }}>
                 <NavButton
@@ -96,7 +93,6 @@ export const Header: React.FC = () => {
           </StyledToolbar>
         </Container>
       </AppBar>
-
 
       <Drawer
         anchor="right"

@@ -20,56 +20,56 @@ interface CollapseButtonProps {
 }
 
 export const CollapseButton: React.FC<CollapseButtonProps> = ({
-                                                                isOpen,
-                                                                onClick,
-                                                              }) => {
+  isOpen,
+  onClick,
+}) => {
   return (
-      <button
-          onClick={onClick}
-          aria-label={isOpen ? 'Згорнути' : 'Розгорнути'}
-          style={{
-            background: '#1a1a1a',
-            border: 'none',
-            borderRadius: '50%',
-            width: '52px',
-            height: '52px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition:
-                'background 0.2s, transform 0.2s ease, box-shadow 0.2s ease',
-          }}
-          onMouseEnter={(e) => {
-            const btn = e.currentTarget as HTMLButtonElement;
-            btn.style.background = '#333';
-            btn.style.transform = 'scale(1.1)';
-            btn.style.boxShadow = '0 6px 20px rgba(0,0,0,0.35)';
-          }}
-          onMouseLeave={(e) => {
-            const btn = e.currentTarget as HTMLButtonElement;
-            btn.style.background = '#1a1a1a';
-            btn.style.transform = 'scale(1)';
-            btn.style.boxShadow = 'none';
-          }}
+    <button
+      onClick={onClick}
+      aria-label={isOpen ? 'Згорнути' : 'Розгорнути'}
+      style={{
+        background: '#1a1a1a',
+        border: 'none',
+        borderRadius: '50%',
+        width: '52px',
+        height: '52px',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition:
+          'background 0.2s, transform 0.2s ease, box-shadow 0.2s ease',
+      }}
+      onMouseEnter={(e) => {
+        const btn = e.currentTarget as HTMLButtonElement;
+        btn.style.background = '#333';
+        btn.style.transform = 'scale(1.1)';
+        btn.style.boxShadow = '0 6px 20px rgba(0,0,0,0.35)';
+      }}
+      onMouseLeave={(e) => {
+        const btn = e.currentTarget as HTMLButtonElement;
+        btn.style.background = '#1a1a1a';
+        btn.style.transform = 'scale(1)';
+        btn.style.boxShadow = 'none';
+      }}
+    >
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="white"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        style={{
+          transform: isOpen ? 'rotate(0deg)' : 'rotate(180deg)',
+          transition: 'transform 0.3s ease',
+        }}
       >
-        <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="white"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{
-              transform: isOpen ? 'rotate(0deg)' : 'rotate(180deg)',
-              transition: 'transform 0.3s ease',
-            }}
-        >
-          <polyline points="18 15 12 9 6 15" />
-        </svg>
-      </button>
+        <polyline points="18 15 12 9 6 15" />
+      </svg>
+    </button>
   );
 };
 

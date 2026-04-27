@@ -2,18 +2,30 @@ import { useEffect } from 'react';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 
-export const MapController = ({ points }: { points: [number, number][] }) => {
+interface MapControllerProps {
+  points?: [number, number][];
+  center?: [number, number] | null;
+  zoom?: number;
+}
+
+export const MapController = ({ points, center, zoom = 12 }: MapControllerProps) => {
   const map = useMap();
 
   useEffect(() => {
-    // Фокусуємося на маршруті ТІЛЬКИ якщо кількість точок змінилася
-    // і ми не робимо це при кожному зумі
-    if (map && points.length >= 2) {
+    if (!map) return;
+
+    if (center && center.length === 2) {
+      // Замість setView використовуємо flyTo для плавного польоту.
+      // Він спрацює лише коли зміняться координати в URL.
+      map.flyTo(center, zoom, { duration: 1.5 });
+    }
+    else if (points && points.length >= 2) {
       const bounds = L.latLngBounds(points);
       map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
     }
-    // Залежність тільки від КІЛЬКОСТІ точок, а не від кожного чиху
-  }, [map, points.length]);
+
+    // Залежності розбито на примітиви, щоб уникнути постійного рендеру
+  }, [map, points?.length, center?.[0], center?.[1], zoom]);
 
   return null;
 };

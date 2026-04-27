@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
@@ -8,6 +9,7 @@ import { createCustomIcon } from './icons.tsx';
 import { ZoomHandler } from './ZoomHandler';
 import { MarkerPopup } from './MarkerPopup';
 import { useVisibleMarkers } from './useVisibleMarkers';
+import { MapController } from './MapController'; // Додали імпорт контролера
 import Routing from './Routing';
 import type { ItineraryPoint } from '../../../types/types.ts';
 
@@ -15,6 +17,16 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   itinerary = [],
 }) => {
   const [zoom, setZoom] = useState(6);
+  const [searchParams] = useSearchParams();
+
+  // Витягуємо координати з URL
+  const latParam = searchParams.get('lat');
+  const lngParam = searchParams.get('lng');
+  const zoomParam = searchParams.get('zoom');
+
+  const urlCenter: [number, number] | null =
+    latParam && lngParam ? [parseFloat(latParam), parseFloat(lngParam)] : null;
+  const urlZoom = zoomParam ? parseInt(zoomParam, 10) : undefined;
 
   const testData: ItineraryPoint[] = [
     {
@@ -38,7 +50,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       description: 'Культурна столиця',
       imageUrl: 'https://tvoemisto.tv/media/gallery/full/l/v/lviv_night.jpg',
     },
-
     {
       id: '3',
       name: 'Підгорецький замок',
@@ -59,7 +70,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       lng: 28.65,
       description: 'Місто космічної слави та скелястих парків.',
     },
-
     {
       id: '5',
       name: 'Олеський замок',
@@ -79,7 +89,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       lng: 26.25,
       description: 'Унікальні експонати з поліського бурштину.',
     },
-
     {
       id: '7',
       name: 'Стрийський парк',
@@ -98,7 +107,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       lng: 24.032,
       description: 'Місце, де каву добувають прямо з-під землі.',
     },
-
     {
       id: '9',
       name: 'АЗС OKKO',
@@ -127,11 +135,15 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
 
   const visibleMarkers = useVisibleMarkers(activeData, zoom);
 
+  // Визначаємо початковий центр. Якщо є URL, беремо його, якщо ні - центр України
+  const initialCenter: [number, number] = urlCenter || [48.3794, 31.1656];
+  const initialZoom = urlZoom || 6;
+
   return (
     <MapWrapper>
       <MapContainer
-        center={[48.3794, 31.1656]}
-        zoom={6}
+        center={initialCenter}
+        zoom={initialZoom}
         scrollWheelZoom={true}
         className="leaflet-map-container"
       >
@@ -142,6 +154,14 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
 
         <ZoomHandler setZoom={setZoom} />
 
+        {/* Контролер для фокусування. Якщо є urlCenter, ігноруємо масив точок для маршруту, щоб не перебивати фокус */}
+        <MapController
+          center={urlCenter}
+          points={urlCenter ? undefined : polylinePositions}
+          zoom={urlZoom || 12}
+        />
+
+        {/* Малюємо маршрут тільки якщо є 2 і більше точок */}
         {polylinePositions.length >= 2 && (
           <Routing points={polylinePositions} />
         )}

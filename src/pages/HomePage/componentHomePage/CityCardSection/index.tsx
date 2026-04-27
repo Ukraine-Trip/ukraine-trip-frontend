@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -58,7 +59,10 @@ export const CityCardsSection: React.FC<CityCardsSectionProps> = ({
         <Box sx={gridStyles}>
           {initialCities.map((city) => (
             <CityCard as={Card} key={city.id}>
-              <CardActionArea href={city.linkUrl}>
+              <CardActionArea
+                component={RouterLink}
+                to={`/map-page?lat=${city.lat}&lng=${city.lng}&zoom=13`}
+              >
                 <CardMedia
                   component="img"
                   height="214"
@@ -73,13 +77,15 @@ export const CityCardsSection: React.FC<CityCardsSectionProps> = ({
           ))}
         </Box>
 
-        {/* Анімований блок для решти карток */}
         {remainingCities.length > 0 && (
           <Collapse in={isExpanded} timeout="auto" unmountOnExit>
             <Box sx={{ ...gridStyles, mt: 3 }}>
               {remainingCities.map((city) => (
                 <CityCard as={Card} key={city.id}>
-                  <CardActionArea href={city.linkUrl}>
+                  <CardActionArea
+                    component={RouterLink}
+                    to={`/map-page?lat=${city.lat}&lng=${city.lng}&zoom=13`}
+                  >
                     <CardMedia
                       component="img"
                       height="214"

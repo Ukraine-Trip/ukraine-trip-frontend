@@ -1,5 +1,5 @@
-import React from 'react';
-import { Box, Avatar, Stack, Typography } from '@mui/material';
+import { useEffect, useState, useContext } from 'react';
+import { Box, Avatar, Stack, Typography, CircularProgress } from '@mui/material';
 import {
   PageWrapper,
   PageTitle,
@@ -8,24 +8,48 @@ import {
   PrimaryButton,
   SecondaryButton,
 } from '../../style/common.tsx';
+import { api } from '../../api/auth.ts';
+import { AuthContext } from '../../context/AuthContext';
 
 interface UserData {
-  firstName: string;
-  lastName: string;
+  first_name: string;
+  last_name: string;
   email: string;
   avatarUrl?: string;
 }
 
 export const AccountPage: React.FC = () => {
-  const tempUser: UserData = {
-    firstName: 'Guest',
-    lastName: 'Traveler',
-    email: 'guest@example.com',
+  const { token } = useContext(AuthContext);
+  const [user, setUser] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await api.get('/users/me');
+        setUser(response.data);
+      } catch (error) {
+        console.error('Помилка завантаження профілю:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (token) {
+      fetchUserData();
+    }
+  }, [token]);
+
+  const handleSave = async () => {
+    try {
+      await api.put('/users/me', user);
+      alert('Дані успішно збережено в БД!');
+    } catch (error) {
+      console.error('Помилка при збереженні:', error);
+    }
   };
 
-  const handleSave = () => {
-    console.log('Saving data to the database...');
-  };
+  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', pt: 20 }}><CircularProgress /></Box>;
+  if (!user) return <Typography sx={{ pt: 20, textAlign: 'center' }}>Будь ласка, увійдіть в систему</Typography>;
 
   return (
     <PageWrapper>
@@ -49,7 +73,7 @@ export const AccountPage: React.FC = () => {
             }}
           >
             <Avatar
-              src={tempUser.avatarUrl}
+              src={user.avatarUrl}
               sx={{
                 width: 160,
                 height: 160,
@@ -61,7 +85,7 @@ export const AccountPage: React.FC = () => {
                 fontSize: '3rem',
               }}
             >
-              {tempUser.firstName[0]}
+              {user.first_name ? user.first_name[0] : 'U'}
             </Avatar>
             <Typography
               variant="body2"
@@ -88,17 +112,23 @@ export const AccountPage: React.FC = () => {
             <Stack spacing={4}>
               <Box>
                 <SubTitle>First Name</SubTitle>
-                <CommonInput fullWidth defaultValue={tempUser.firstName} />
+                <CommonInput fullWidth
+                             value={user.first_name}
+                             onChange={(e) => setUser({...user, first_name: e.target.value})}
+                />
               </Box>
 
               <Box>
                 <SubTitle>Last Name</SubTitle>
-                <CommonInput fullWidth defaultValue={tempUser.lastName} />
+                <CommonInput fullWidth
+                             value={user.last_name}
+                             onChange={(e) => setUser({...user, last_name: e.target.value})}
+                />
               </Box>
 
               <Box>
                 <SubTitle>Email Address</SubTitle>
-                <CommonInput fullWidth defaultValue={tempUser.email} disabled />
+                <CommonInput fullWidth value={user.email} disabled />
               </Box>
 
               <Box

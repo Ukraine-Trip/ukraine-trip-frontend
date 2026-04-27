@@ -1,13 +1,14 @@
 import { RouterProvider } from 'react-router-dom';
 import { router } from './routes';
 import { CssBaseline } from '@mui/material';
+import { AuthProvider } from './context/AuthContext';
 
 function App() {
   return (
-    <>
-      <CssBaseline />
-      <RouterProvider router={router} />
-    </>
+      <AuthProvider>
+        <CssBaseline />
+        <RouterProvider router={router} />
+      </AuthProvider>
   );
 }
 

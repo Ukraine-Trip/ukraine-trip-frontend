@@ -12,8 +12,7 @@ import { api } from '../../api/auth.ts';
 import { AuthContext } from '../../context/AuthContext';
 
 interface UserData {
-  first_name: string;
-  last_name: string;
+  full_name: string;
   email: string;
   avatarUrl?: string;
 }
@@ -26,7 +25,11 @@ export const AccountPage: React.FC = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await api.get('/users/me');
+        const response = await api.get('/users/me', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         setUser(response.data);
       } catch (error) {
         console.error('Помилка завантаження профілю:', error);
@@ -41,8 +44,11 @@ export const AccountPage: React.FC = () => {
 
   const handleSave = async () => {
     try {
-      await api.put('/users/me', user);
-      alert('Дані успішно збережено в БД!');
+      await api.put('/users/me',
+        {full_name: user?.full_name},
+        {
+        headers: {Authorization: `Bearer ${token}`},
+      });
     } catch (error) {
       console.error('Помилка при збереженні:', error);
     }
@@ -85,7 +91,7 @@ export const AccountPage: React.FC = () => {
                 fontSize: '3rem',
               }}
             >
-              {user.first_name ? user.first_name[0] : 'U'}
+              {user.full_name ? user.full_name[0].toUpperCase() : 'U'}
             </Avatar>
             <Typography
               variant="body2"
@@ -111,18 +117,10 @@ export const AccountPage: React.FC = () => {
           <Box sx={{ flexGrow: 1, width: '100%' }}>
             <Stack spacing={4}>
               <Box>
-                <SubTitle>First Name</SubTitle>
+                <SubTitle>Full Name</SubTitle>
                 <CommonInput fullWidth
-                             value={user.first_name}
-                             onChange={(e) => setUser({...user, first_name: e.target.value})}
-                />
-              </Box>
-
-              <Box>
-                <SubTitle>Last Name</SubTitle>
-                <CommonInput fullWidth
-                             value={user.last_name}
-                             onChange={(e) => setUser({...user, last_name: e.target.value})}
+                             value={user.full_name}
+                             onChange={(e) => setUser({...user, full_name: e.target.value})}
                 />
               </Box>
 

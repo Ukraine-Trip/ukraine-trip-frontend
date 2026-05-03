@@ -23,9 +23,8 @@ const Routing: React.FC<RoutingProps> = ({ points }) => {
       show: false,
       addWaypoints: false,
       fitSelectedRoutes: false,
-      // Додаємо "as any", щоб TypeScript не сварився на null
-      createMarker: () => null as any,
-    }).addTo(map);
+      createMarker: () => null, // Тут залишаємо як є
+    } as any).addTo(map); // <--- ОСЬ ТУТ ДОДАЄМО "as any"
 
     return () => {
       if (map && routingControl) {

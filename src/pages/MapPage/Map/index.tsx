@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
+import L from 'leaflet'; // Імпортуємо Leaflet для створення іконок
 import 'leaflet/dist/leaflet.css';
 
 import { MapWrapper } from './style.tsx';
@@ -14,11 +15,19 @@ import Routing from './Routing';
 import type { ItineraryPoint } from '../../../types/types.ts';
 import { optimizeRoute } from '../../../utils/routeOptimizer';
 
+// Функція для створення красивого кластера (кола з цифрою)
+const createClusterCustomIcon = (cluster: any) => {
+  return L.divIcon({
+    html: `<span>${cluster.getChildCount()}</span>`,
+    className: 'custom-cluster-icon', // Клас, який ми описали в style.tsx
+    iconSize: L.point(33, 33, true),
+  });
+};
+
 export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   itinerary = [],
 }) => {
   const [zoom, setZoom] = useState(6);
-  // СОСТОЯНИЕ ТУМБЛЕРА ТЕПЕРЬ ЖИВЕТ ПРЯМО ЗДЕСЬ
   const [isOptimized, setIsOptimized] = useState(false);
   const [searchParams] = useSearchParams();
 
@@ -35,7 +44,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       priority: 1,
       lat: 50.45,
       lng: 30.52,
-      description: 'Старт маршруту',
+      description: 'Старт',
     },
     {
       id: '2',
@@ -44,7 +53,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       priority: 1,
       lat: 49.83,
       lng: 24.02,
-      description: 'Стрибок на Захід',
+      description: 'Захід',
     },
     {
       id: '3',
@@ -53,7 +62,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       priority: 2,
       lat: 51.49,
       lng: 31.28,
-      description: 'Повернення на Північ',
+      description: 'Північ',
     },
     {
       id: '4',
@@ -62,7 +71,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       priority: 2,
       lat: 48.92,
       lng: 24.71,
-      description: 'Знову на Захід',
+      description: 'Гори',
     },
     {
       id: '5',
@@ -71,7 +80,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       priority: 3,
       lat: 46.48,
       lng: 30.72,
-      description: 'Стрибок на Південь',
+      description: 'Море',
     },
     {
       id: '6',
@@ -107,14 +116,14 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
         left: 0,
       }}
     >
-      {/* КНОПКА ЛОГИКИ ЖЕСТКО ПРИВЯЗАНА ПОВЕРХ КАРТЫ */}
+      {/* ПЕРЕМИКАЧ МАРШРУТУ */}
       <div
         onClick={() => setIsOptimized(!isOptimized)}
         style={{
           position: 'absolute',
           top: '20px',
           right: '20px',
-          zIndex: 9999, // Гарантированно поверх всего
+          zIndex: 9999,
           backgroundColor: 'white',
           padding: '10px 16px',
           borderRadius: '30px',
@@ -132,14 +141,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
           readOnly
           style={{ cursor: 'pointer', transform: 'scale(1.2)', margin: 0 }}
         />
-        <span
-          style={{
-            fontWeight: 800,
-            fontSize: '12px',
-            letterSpacing: '0.5px',
-            color: '#111',
-          }}
-        >
+        <span style={{ fontWeight: 800, fontSize: '12px', color: '#111' }}>
           {isOptimized ? '🚀 SMART ROUTE' : '📍 MY ORDER'}
         </span>
       </div>
@@ -165,8 +167,12 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
           />
         )}
 
-        {/* Використовуємо activeData замість visibleMarkers, щоб точки маршруту показувалися ЗАВЖДИ */}
-        <MarkerClusterGroup chunkedLoading maxClusterRadius={50}>
+        {/* НАЛАШТОВАНИЙ КЛАСТЕР */}
+        <MarkerClusterGroup
+          chunkedLoading
+          maxClusterRadius={25} // Радіус злипання (менше число = менше злипання)
+          iconCreateFunction={createClusterCustomIcon} // ПІДКЛЮЧАЄМО НАШУ ФУНКЦІЮ СЮДИ
+        >
           {activeData.map((point) => (
             <Marker
               key={point.id}

@@ -23,9 +23,30 @@ export const MapWrapper = styled.div`
     pointer-events: none !important;
   }
 
-  /* Стилі для твоїх кастомних іконок */
+  /* Стилі для твоїх кастомних іконок маркерів */
   .custom-mui-icon {
     background: none;
     border: none;
+  }
+
+  /* СТИЛІЗАЦІЯ КЛАСТЕРА (кола з цифрами) */
+  .custom-cluster-icon {
+    background: #ffffff;
+    border: 2px solid #222222;
+    border-radius: 50%;
+    color: #222222;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 14px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease-in-out;
+  }
+
+  .custom-cluster-icon:hover {
+    transform: scale(1.1);
+    background: #f8f8f8;
+    border-color: #000;
   }
 `;

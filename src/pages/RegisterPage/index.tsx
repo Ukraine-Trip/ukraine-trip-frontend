@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import {
   TextField,
   Typography,
   Container,
   Link as MuiLink,
+  Alert,
 } from '@mui/material';
 import { Link, useNavigate } from 'react-router-dom';
+import { api } from '../../api/auth.ts';
 
 import { PageWrapper } from '../../style/common';
 import { FormContainer, StyledForm, SubmitButton, LinksWrapper } from './style';
@@ -12,9 +15,35 @@ import { FormContainer, StyledForm, SubmitButton, LinksWrapper } from './style';
 export const RegisterPage = () => {
   const navigate = useNavigate();
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+  });
+  const [error, setError] = useState<string | null>(null);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // Імітуємо успішну реєстрацію і перекидаємо у профіль
+    setError(null);
+
+    try {
+      await api.post('/auth/register', {
+        full_name: formData.fullName,
+        email: formData.email,
+        password: formData.password,
+      });
+      navigate('/login');
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Registration failed. Please try again.');
+    }
+
     navigate('/account');
   };
 
@@ -28,16 +57,18 @@ export const RegisterPage = () => {
           </Typography>
 
           <StyledForm onSubmit={handleSubmit} noValidate>
-            {/* Нове поле для імені */}
+            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
             <TextField
               margin="normal"
               required
               fullWidth
-              id="name"
+              id="fullName"
               label="Full Name"
-              name="name"
+              name="fullName"
               autoComplete="name"
               autoFocus
+              value={formData.fullName}
+              onChange={handleChange}
             />
             <TextField
               margin="normal"
@@ -47,6 +78,8 @@ export const RegisterPage = () => {
               label="Email Address"
               name="email"
               autoComplete="email"
+              value={formData.email}
+              onChange={handleChange}
             />
             <TextField
               margin="normal"
@@ -57,6 +90,8 @@ export const RegisterPage = () => {
               type="password"
               id="password"
               autoComplete="new-password"
+              value={formData.password}
+              onChange={handleChange}
             />
 
             <SubmitButton type="submit" fullWidth variant="contained">

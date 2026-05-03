@@ -16,40 +16,51 @@ export const MapPage: React.FC = () => {
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        height: '100vh', // Весь екран
-        width: '100vw',
+        height: '100vh',
+        width: '100%',
+        position: 'relative',
         overflow: 'hidden',
       }}
     >
-      {/* Карта заповнює все вільне місце */}
-      <Box sx={{ flex: 1, position: 'relative' }}>
-        <Paper
-          elevation={3}
-          sx={{
-            position: 'absolute',
-            top: 10,
-            right: 10,
-            zIndex: 1100,
-            p: '4px 12px',
-            borderRadius: '20px',
-            backgroundColor: 'rgba(255,255,255,0.9)',
-          }}
-        >
-          <FormControlLabel
-            control={
-              <Switch
-                checked={isOptimized}
-                onChange={(e) => setIsOptimized(e.target.checked)}
-                size="small"
-              />
-            }
-            label={
-              <Typography variant="caption" sx={{ fontWeight: 700 }}>
-                🚀 SMART
-              </Typography>
-            }
-          />
-        </Paper>
+      {/* КНОПКА ЛОГИКИ: zIndex 9999 гарантирует, что она будет поверх карты */}
+      <Paper
+        elevation={6}
+        sx={{
+          position: 'absolute',
+          top: 80, // Опускаем ниже хедера
+          right: 20,
+          zIndex: 9999,
+          p: '6px 16px',
+          borderRadius: '20px',
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          border: '1px solid #ccc',
+        }}
+      >
+        <FormControlLabel
+          control={
+            <Switch
+              checked={isOptimized}
+              onChange={(e) => setIsOptimized(e.target.checked)}
+              color="primary"
+            />
+          }
+          label={
+            <Typography variant="button" sx={{ fontWeight: 800 }}>
+              {isOptimized ? 'SMART ROUTE' : 'MY ORDER'}
+            </Typography>
+          }
+        />
+      </Paper>
+
+      {/* Карта */}
+      <Box
+        sx={{
+          flexGrow: 1,
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+        }}
+      >
         <MapComponent isOptimized={isOptimized} />
       </Box>
     </Box>

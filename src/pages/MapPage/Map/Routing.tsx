@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import L from 'leaflet';
 import 'leaflet-routing-machine';
 import { useMap } from 'react-leaflet';
@@ -9,37 +9,29 @@ interface RoutingProps {
 
 const Routing: React.FC<RoutingProps> = ({ points }) => {
   const map = useMap();
-  const routingControlRef = useRef<L.Routing.Control | null>(null);
 
   useEffect(() => {
-    if (!map || points.length < 2) return;
+    if (!map) return;
 
-    // Створюємо новий контроль
     const routingControl = L.Routing.control({
       waypoints: points.map((p) => L.latLng(p[0], p[1])),
       lineOptions: {
-        styles: [{ color: '#444', weight: 5, opacity: 0.7 }],
+        styles: [{ color: '#444', weight: 4, opacity: 0.8 }],
         extendToWaypoints: true,
         missingRouteTolerance: 0,
       },
       show: false,
       addWaypoints: false,
-      fitSelectedRoutes: true,
+      fitSelectedRoutes: false,
+      // Додаємо "as any", щоб TypeScript не сварився на null
+      createMarker: () => null as any,
     }).addTo(map);
 
-    routingControlRef.current = routingControl;
-
-    // Очисний ефект (cleanup) з перевіркою
     return () => {
-      if (routingControlRef.current && map) {
+      if (map && routingControl) {
         try {
-          // Використовуємо вбудований метод Leaflet для видалення контролю
-          map.removeControl(routingControlRef.current);
-          routingControlRef.current = null;
-        } catch (error) {
-          // Якщо мапа вже розмонтована, ми просто ігноруємо помилку, щоб не крашити додаток
-          console.warn('Routing cleanup bypassed to prevent crash.');
-        }
+          map.removeControl(routingControl);
+        } catch (e) {}
       }
     };
   }, [map, points]);

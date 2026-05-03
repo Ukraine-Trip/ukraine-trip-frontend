@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
+import L from 'leaflet'; // Імпортуємо Leaflet для створення іконок
 import 'leaflet/dist/leaflet.css';
 
 import { MapWrapper } from './style.tsx';
@@ -9,24 +10,31 @@ import { createCustomIcon } from './icons.tsx';
 import { ZoomHandler } from './ZoomHandler';
 import { MarkerPopup } from './MarkerPopup';
 import { useVisibleMarkers } from './useVisibleMarkers';
-import { MapController } from './MapController'; // Додали імпорт контролера
+import { MapController } from './MapController';
 import Routing from './Routing';
 import type { ItineraryPoint } from '../../../types/types.ts';
+import { optimizeRoute } from '../../../utils/routeOptimizer';
+
+// Функція для створення красивого кластера (кола з цифрою)
+const createClusterCustomIcon = (cluster: any) => {
+  return L.divIcon({
+    html: `<span>${cluster.getChildCount()}</span>`,
+    className: 'custom-cluster-icon', // Клас, який ми описали в style.tsx
+    iconSize: L.point(33, 33, true),
+  });
+};
 
 export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   itinerary = [],
 }) => {
   const [zoom, setZoom] = useState(6);
+  const [isOptimized, setIsOptimized] = useState(false);
   const [searchParams] = useSearchParams();
 
-  // Витягуємо координати з URL
   const latParam = searchParams.get('lat');
   const lngParam = searchParams.get('lng');
-  const zoomParam = searchParams.get('zoom');
-
   const urlCenter: [number, number] | null =
     latParam && lngParam ? [parseFloat(latParam), parseFloat(lngParam)] : null;
-  const urlZoom = zoomParam ? parseInt(zoomParam, 10) : undefined;
 
   const testData: ItineraryPoint[] = [
     {
@@ -36,9 +44,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       priority: 1,
       lat: 50.45,
       lng: 30.52,
-      description: 'Столиця України',
-      imageUrl:
-        'https://visitukraine.today/media/blog/previews/reS9V1YfF5N2uTf3P0K6X6kL7P8S0C1v.jpg',
+      description: 'Старт',
     },
     {
       id: '2',
@@ -47,127 +53,127 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       priority: 1,
       lat: 49.83,
       lng: 24.02,
-      description: 'Культурна столиця',
-      imageUrl: 'https://tvoemisto.tv/media/gallery/full/l/v/lviv_night.jpg',
+      description: 'Захід',
     },
     {
       id: '3',
-      name: 'Підгорецький замок',
-      category: 'landmark',
+      name: 'Чернігів',
+      category: 'city',
       priority: 2,
-      lat: 49.94,
-      lng: 24.98,
-      description:
-        'Один із найкращих у Європі зразків поєднання ренесансного палацу з бастіонними укріпленнями.',
-      imageUrl: 'https://ipress.ua/media/gallery/full/p/i/pidgirci.jpg',
+      lat: 51.49,
+      lng: 31.28,
+      description: 'Північ',
     },
     {
       id: '4',
-      name: 'Житомир',
+      name: 'Івано-Франківськ',
       category: 'city',
       priority: 2,
-      lat: 50.25,
-      lng: 28.65,
-      description: 'Місто космічної слави та скелястих парків.',
+      lat: 48.92,
+      lng: 24.71,
+      description: 'Гори',
     },
     {
       id: '5',
-      name: 'Олеський замок',
-      category: 'culture',
+      name: 'Одеса',
+      category: 'city',
       priority: 3,
-      lat: 49.96,
-      lng: 24.9,
-      description: 'Найстаріший замок Галичини, що зберігся.',
-      imageUrl: 'https://MD-Ukraine.com/images/m/2000x1200/556_1.jpg',
+      lat: 46.48,
+      lng: 30.72,
+      description: 'Море',
     },
     {
       id: '6',
-      name: 'Рівне (Бурштиновий музей)',
-      category: 'culture',
+      name: 'Умань',
+      category: 'landmark',
       priority: 3,
-      lat: 50.61,
-      lng: 26.25,
-      description: 'Унікальні експонати з поліського бурштину.',
-    },
-    {
-      id: '7',
-      name: 'Стрийський парк',
-      category: 'park',
-      priority: 4,
-      lat: 49.82,
-      lng: 24.03,
-      description: 'Один із найстаріших і найгарніших парків Львова.',
-    },
-    {
-      id: '8',
-      name: 'Кафе "Львівська копальня кави"',
-      category: 'cafe',
-      priority: 4,
-      lat: 49.841,
-      lng: 24.032,
-      description: 'Місце, де каву добувають прямо з-під землі.',
-    },
-    {
-      id: '9',
-      name: 'АЗС OKKO',
-      category: 'stop',
-      priority: 5,
-      lat: 50.15,
-      lng: 25.75,
-      description: 'Зупинка на перепочинок та каву.',
-    },
-    {
-      id: '10',
-      name: 'Автостанція Дубно',
-      category: 'stop',
-      priority: 5,
-      lat: 50.41,
-      lng: 25.74,
-      description: 'Транспортний вузол поруч із замком.',
+      lat: 48.74,
+      lng: 30.22,
+      description: 'Центр',
     },
   ];
 
   const activeData = itinerary.length > 0 ? itinerary : testData;
 
+  const sortedData = useMemo(() => {
+    if (isOptimized && activeData.length > 2) return optimizeRoute(activeData);
+    return activeData;
+  }, [activeData, isOptimized]);
+
   const polylinePositions = useMemo(() => {
-    return activeData.map((p) => [p.lat, p.lng] as [number, number]);
-  }, [activeData]);
+    return sortedData.map((p) => [p.lat, p.lng] as [number, number]);
+  }, [sortedData]);
 
   const visibleMarkers = useVisibleMarkers(activeData, zoom);
 
-  // Визначаємо початковий центр. Якщо є URL, беремо його, якщо ні - центр України
-  const initialCenter: [number, number] = urlCenter || [48.3794, 31.1656];
-  const initialZoom = urlZoom || 6;
-
   return (
-    <MapWrapper>
+    <MapWrapper
+      style={{
+        height: '100%',
+        width: '100%',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+      }}
+    >
+      {/* ПЕРЕМИКАЧ МАРШРУТУ */}
+      <div
+        onClick={() => setIsOptimized(!isOptimized)}
+        style={{
+          position: 'absolute',
+          top: '20px',
+          right: '20px',
+          zIndex: 9999,
+          backgroundColor: 'white',
+          padding: '10px 16px',
+          borderRadius: '30px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          cursor: 'pointer',
+          border: '1px solid #eee',
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={isOptimized}
+          readOnly
+          style={{ cursor: 'pointer', transform: 'scale(1.2)', margin: 0 }}
+        />
+        <span style={{ fontWeight: 800, fontSize: '12px', color: '#111' }}>
+          {isOptimized ? '🚀 SMART ROUTE' : '📍 MY ORDER'}
+        </span>
+      </div>
+
       <MapContainer
-        center={initialCenter}
-        zoom={initialZoom}
+        center={[48.3794, 31.1656]}
+        zoom={6}
+        zoomControl={false}
         scrollWheelZoom={true}
-        className="leaflet-map-container"
+        style={{ height: '100%', width: '100%' }}
       >
         <TileLayer
           url="https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"
-          attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="http://openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          attribution="&copy; Stadia Maps"
         />
-
         <ZoomHandler setZoom={setZoom} />
+        <MapController center={urlCenter} />
 
-        {/* Контролер для фокусування. Якщо є urlCenter, ігноруємо масив точок для маршруту, щоб не перебивати фокус */}
-        <MapController
-          center={urlCenter}
-          points={urlCenter ? undefined : polylinePositions}
-          zoom={urlZoom || 12}
-        />
-
-        {/* Малюємо маршрут тільки якщо є 2 і більше точок */}
         {polylinePositions.length >= 2 && (
-          <Routing points={polylinePositions} />
+          <Routing
+            key={isOptimized ? 'smart' : 'manual'}
+            points={polylinePositions}
+          />
         )}
 
-        <MarkerClusterGroup chunkedLoading maxClusterRadius={50}>
-          {visibleMarkers.map((point) => (
+        {/* НАЛАШТОВАНИЙ КЛАСТЕР */}
+        <MarkerClusterGroup
+          chunkedLoading
+          maxClusterRadius={25} // Радіус злипання (менше число = менше злипання)
+          iconCreateFunction={createClusterCustomIcon} // ПІДКЛЮЧАЄМО НАШУ ФУНКЦІЮ СЮДИ
+        >
+          {activeData.map((point) => (
             <Marker
               key={point.id}
               position={[point.lat, point.lng]}

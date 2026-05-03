@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
@@ -9,25 +8,18 @@ import { createCustomIcon } from './icons.tsx';
 import { ZoomHandler } from './ZoomHandler';
 import { MarkerPopup } from './MarkerPopup';
 import { useVisibleMarkers } from './useVisibleMarkers';
-import { MapController } from './MapController'; // Додали імпорт контролера
+import { MapController } from './MapController';
 import Routing from './Routing';
 import type { ItineraryPoint } from '../../../types/types.ts';
+import { optimizeRoute } from '../../../utils/routeOptimizer';
 
-export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
-  itinerary = [],
-}) => {
+export const MapComponent: React.FC<{
+  itinerary?: ItineraryPoint[];
+  isOptimized?: boolean;
+}> = ({ itinerary = [], isOptimized = false }) => {
   const [zoom, setZoom] = useState(6);
-  const [searchParams] = useSearchParams();
 
-  // Витягуємо координати з URL
-  const latParam = searchParams.get('lat');
-  const lngParam = searchParams.get('lng');
-  const zoomParam = searchParams.get('zoom');
-
-  const urlCenter: [number, number] | null =
-    latParam && lngParam ? [parseFloat(latParam), parseFloat(lngParam)] : null;
-  const urlZoom = zoomParam ? parseInt(zoomParam, 10) : undefined;
-
+  // Використовуємо тестові дані, поки немає БД
   const testData: ItineraryPoint[] = [
     {
       id: '1',
@@ -36,9 +28,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       priority: 1,
       lat: 50.45,
       lng: 30.52,
-      description: 'Столиця України',
-      imageUrl:
-        'https://visitukraine.today/media/blog/previews/reS9V1YfF5N2uTf3P0K6X6kL7P8S0C1v.jpg',
     },
     {
       id: '2',
@@ -47,123 +36,51 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       priority: 1,
       lat: 49.83,
       lng: 24.02,
-      description: 'Культурна столиця',
-      imageUrl: 'https://tvoemisto.tv/media/gallery/full/l/v/lviv_night.jpg',
     },
     {
       id: '3',
-      name: 'Підгорецький замок',
-      category: 'landmark',
-      priority: 2,
-      lat: 49.94,
-      lng: 24.98,
-      description:
-        'Один із найкращих у Європі зразків поєднання ренесансного палацу з бастіонними укріпленнями.',
-      imageUrl: 'https://ipress.ua/media/gallery/full/p/i/pidgirci.jpg',
-    },
-    {
-      id: '4',
       name: 'Житомир',
       category: 'city',
       priority: 2,
       lat: 50.25,
       lng: 28.65,
-      description: 'Місто космічної слави та скелястих парків.',
-    },
-    {
-      id: '5',
-      name: 'Олеський замок',
-      category: 'culture',
-      priority: 3,
-      lat: 49.96,
-      lng: 24.9,
-      description: 'Найстаріший замок Галичини, що зберігся.',
-      imageUrl: 'https://MD-Ukraine.com/images/m/2000x1200/556_1.jpg',
-    },
-    {
-      id: '6',
-      name: 'Рівне (Бурштиновий музей)',
-      category: 'culture',
-      priority: 3,
-      lat: 50.61,
-      lng: 26.25,
-      description: 'Унікальні експонати з поліського бурштину.',
-    },
-    {
-      id: '7',
-      name: 'Стрийський парк',
-      category: 'park',
-      priority: 4,
-      lat: 49.82,
-      lng: 24.03,
-      description: 'Один із найстаріших і найгарніших парків Львова.',
-    },
-    {
-      id: '8',
-      name: 'Кафе "Львівська копальня кави"',
-      category: 'cafe',
-      priority: 4,
-      lat: 49.841,
-      lng: 24.032,
-      description: 'Місце, де каву добувають прямо з-під землі.',
-    },
-    {
-      id: '9',
-      name: 'АЗС OKKO',
-      category: 'stop',
-      priority: 5,
-      lat: 50.15,
-      lng: 25.75,
-      description: 'Зупинка на перепочинок та каву.',
-    },
-    {
-      id: '10',
-      name: 'Автостанція Дубно',
-      category: 'stop',
-      priority: 5,
-      lat: 50.41,
-      lng: 25.74,
-      description: 'Транспортний вузол поруч із замком.',
     },
   ];
 
   const activeData = itinerary.length > 0 ? itinerary : testData;
 
+  const sortedData = useMemo(() => {
+    if (isOptimized && activeData.length > 2) return optimizeRoute(activeData);
+    return activeData;
+  }, [activeData, isOptimized]);
+
   const polylinePositions = useMemo(() => {
-    return activeData.map((p) => [p.lat, p.lng] as [number, number]);
-  }, [activeData]);
+    return sortedData.map((p) => [p.lat, p.lng] as [number, number]);
+  }, [sortedData]);
 
   const visibleMarkers = useVisibleMarkers(activeData, zoom);
 
-  // Визначаємо початковий центр. Якщо є URL, беремо його, якщо ні - центр України
-  const initialCenter: [number, number] = urlCenter || [48.3794, 31.1656];
-  const initialZoom = urlZoom || 6;
-
   return (
-    <MapWrapper>
+    <MapWrapper style={{ height: '100%', width: '100%' }}>
       <MapContainer
-        center={initialCenter}
-        zoom={initialZoom}
+        center={[48.3794, 31.1656]}
+        zoom={6}
         scrollWheelZoom={true}
-        className="leaflet-map-container"
+        // ВАЖЛИВО: Явна висота поверне мапу на екран
+        style={{ height: '100%', width: '100%', minHeight: '500px' }}
       >
         <TileLayer
           url="https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"
-          attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="http://openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          attribution="&copy; Stadia Maps"
         />
-
         <ZoomHandler setZoom={setZoom} />
+        <MapController points={polylinePositions} />
 
-        {/* Контролер для фокусування. Якщо є urlCenter, ігноруємо масив точок для маршруту, щоб не перебивати фокус */}
-        <MapController
-          center={urlCenter}
-          points={urlCenter ? undefined : polylinePositions}
-          zoom={urlZoom || 12}
-        />
-
-        {/* Малюємо маршрут тільки якщо є 2 і більше точок */}
         {polylinePositions.length >= 2 && (
-          <Routing points={polylinePositions} />
+          <Routing
+            key={JSON.stringify(polylinePositions)}
+            points={polylinePositions}
+          />
         )}
 
         <MarkerClusterGroup chunkedLoading maxClusterRadius={50}>

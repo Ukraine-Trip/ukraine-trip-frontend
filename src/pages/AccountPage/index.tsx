@@ -1,5 +1,7 @@
 import { useEffect, useState, useContext } from 'react';
-import { Box, Avatar, Stack, Typography, CircularProgress } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { Box, Avatar, Stack, Typography, CircularProgress, Divider } from '@mui/material';
+import AddLocationAltIcon from '@mui/icons-material/AddLocationAlt';
 import {
   PageWrapper,
   PageTitle,
@@ -19,6 +21,7 @@ interface UserData {
 
 export const AccountPage: React.FC = () => {
   const { token } = useContext(AuthContext);
+  const navigate = useNavigate();
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -140,6 +143,28 @@ export const AccountPage: React.FC = () => {
               </Box>
             </Stack>
           </Box>
+        </Box>
+
+        <Divider sx={{ my: 5 }} />
+
+        <Box>
+          <SubTitle>Contribute</SubTitle>
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', mb: 1 }}
+          >
+            Add a Point of Interest
+          </Typography>
+          <Typography sx={{ fontSize: '0.85rem', color: '#666', mb: 3, maxWidth: 480 }}>
+            Know an interesting place in Ukraine? Pin it on the map and share it with other travelers.
+          </Typography>
+          <SecondaryButton
+            variant="outlined"
+            onClick={() => navigate('/create-location')}
+            startIcon={<AddLocationAltIcon />}
+          >
+            Create New Place
+          </SecondaryButton>
         </Box>
       </Box>
     </PageWrapper>

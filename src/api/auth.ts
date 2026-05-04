@@ -1,11 +1,19 @@
 import axios from 'axios';
 
 export const api = axios.create({
-  baseURL: 'http://localhost:8000/api/v1',
+  baseURL: '/api/v1',
 });
 
 export const registerUser = (userData: any) => api.post('/auth/register', userData);
 
-export const loginUser = (formData: FormData) => api.post('/auth/login', formData, {
-  headers: { 'Content-Type': 'multipart/form-data' }
-});
+const buildFormPayload = (credentials: { username: string; password: string }) => {
+  const params = new URLSearchParams();
+  params.append('username', credentials.username);
+  params.append('password', credentials.password);
+  return params;
+};
+
+export const loginUser = (credentials: { username: string; password: string }) =>
+  api.post('/auth/login', buildFormPayload(credentials), {
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  });

@@ -4,19 +4,19 @@ import {
   Typography,
   Container,
   Link as MuiLink,
-  Alert
+  Alert,
 } from '@mui/material';
 import { Link, useNavigate } from 'react-router-dom';
-import { api } from '../../api/auth.ts';
-
+import { loginUser } from '../../api/auth.ts';
+import { getApiErrorMessage } from '../../utils/apiError';
 
 import { PageWrapper } from '../../style/common';
 import { FormContainer, StyledForm, SubmitButton, LinksWrapper } from './style';
-import { AuthContext } from "../../context/AuthContext.tsx";
+import { AuthContext } from '../../context/AuthContext.tsx';
 
 export const LoginPage = () => {
   const navigate = useNavigate();
-  const { setToken } = useContext(AuthContext);
+  const { setToken, setUser } = useContext(AuthContext);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,19 +26,21 @@ export const LoginPage = () => {
     event.preventDefault();
     setError(null);
     try {
-      const formData = new FormData();
-      formData.append('username', email);
-      formData.append('password', password);
+      const response = await loginUser({ username: email, password });
+      const { access_token, token: tokenFromResponse, user: responseUser, email: responseEmail, full_name } = response.data;
+      const authToken = access_token || tokenFromResponse;
 
-      const response = await api.post('/auth/login', formData);
-
-      const { access_token } = response.data;
-
-      setToken(access_token);
+      setToken(authToken);
+      setUser(
+        responseUser || {
+          email: responseEmail || email,
+          fullName: full_name || '',
+        }
+      );
 
       navigate('/account');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Login failed. Please check your credentials.');
+      setError(getApiErrorMessage(err, 'Login failed. Please check your credentials.'));
     }
   };
 

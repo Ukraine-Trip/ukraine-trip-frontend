@@ -7,6 +7,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import { MapComponent } from './pages/MapPage/Map';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { CreateLocationPage } from './pages/CreateLocationPage';
 
 export const router = createBrowserRouter([
   {
@@ -36,6 +37,10 @@ export const router = createBrowserRouter([
       {
         path: 'register',
         element: <RegisterPage />,
+      },
+      {
+        path: 'create-location',
+        element: <CreateLocationPage />,
       },
     ],
   },

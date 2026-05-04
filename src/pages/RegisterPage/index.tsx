@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import {
   TextField,
   Typography,
@@ -7,13 +7,16 @@ import {
   Alert,
 } from '@mui/material';
 import { Link, useNavigate } from 'react-router-dom';
-import { api } from '../../api/auth.ts';
+import { api, loginUser } from '../../api/auth.ts';
+import { getApiErrorMessage } from '../../utils/apiError';
 
 import { PageWrapper } from '../../style/common';
 import { FormContainer, StyledForm, SubmitButton, LinksWrapper } from './style';
+import { AuthContext } from '../../context/AuthContext.tsx';
 
 export const RegisterPage = () => {
   const navigate = useNavigate();
+  const { setToken, setUser } = useContext(AuthContext);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -39,12 +42,30 @@ export const RegisterPage = () => {
         email: formData.email,
         password: formData.password,
       });
-      navigate('/login');
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Registration failed. Please try again.');
-    }
 
-    navigate('/account');
+      const loginResponse = await loginUser({
+        username: formData.email,
+        password: formData.password,
+      });
+      const { access_token, token: tokenFromResponse, user: responseUser, email: responseEmail, full_name } = loginResponse.data || {};
+      const authToken = access_token || tokenFromResponse;
+
+      if (!authToken) {
+        throw new Error('Unable to log in after registration.');
+      }
+
+      setToken(authToken);
+      setUser(
+        responseUser || {
+          email: responseEmail || formData.email,
+          fullName: full_name || formData.fullName,
+        }
+      );
+
+      navigate('/account');
+    } catch (err: any) {
+      setError(getApiErrorMessage(err, 'Registration failed. Please try again.'));
+    }
   };
 
   return (
@@ -114,7 +135,7 @@ export const RegisterPage = () => {
             </LinksWrapper>
           </StyledForm>
         </FormContainer>
-      </Container>
+        </Container>
     </PageWrapper>
   );
 };

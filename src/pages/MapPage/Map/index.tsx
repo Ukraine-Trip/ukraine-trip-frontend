@@ -33,8 +33,11 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
 
   const latParam = searchParams.get('lat');
   const lngParam = searchParams.get('lng');
+  const zoomParam = searchParams.get('zoom');
+
   const urlCenter: [number, number] | null =
     latParam && lngParam ? [parseFloat(latParam), parseFloat(lngParam)] : null;
+  const urlZoom = zoomParam ? parseInt(zoomParam) : undefined;
 
   const testData: ItineraryPoint[] = [
     {
@@ -158,7 +161,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
           attribution="&copy; Stadia Maps"
         />
         <ZoomHandler setZoom={setZoom} />
-        <MapController center={urlCenter} />
+        <MapController center={urlCenter} zoom={urlZoom} />
 
         {polylinePositions.length >= 2 && (
           <Routing

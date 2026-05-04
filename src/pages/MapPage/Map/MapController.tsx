@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';  // ← додати useRef
 import { useMap } from 'react-leaflet';
 
 interface MapControllerProps {
@@ -7,16 +7,16 @@ interface MapControllerProps {
 }
 
 export const MapController: React.FC<MapControllerProps> = ({
-  center,
-  zoom,
-}) => {
+                                                              center,
+                                                              zoom,
+                                                            }) => {
   const map = useMap();
+  const hasSetView = useRef(false); // ← додати це
 
   useEffect(() => {
-    // Фокус срабатывает ТОЛЬКО если есть прямые координаты (например из поиска).
-    // Никакой больше самостоятельной центровки на маршруте!
-    if (center) {
+    if (center && !hasSetView.current) { // ← змінити умову
       map.setView(center, zoom || 12);
+      hasSetView.current = true; // ← додати це
     }
   }, [map, center, zoom]);
 

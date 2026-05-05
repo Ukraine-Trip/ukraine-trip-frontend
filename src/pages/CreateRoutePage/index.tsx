@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Stack, useTheme, useMediaQuery, Button, Box } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
@@ -75,6 +76,7 @@ const destinationsData = [
 export const CreateRoutePage = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const navigate = useNavigate();
 
   const [activeRegionIndex, setActiveRegionIndex] = useState<number | null>(0);
   const [activeCity, setActiveCity] = useState<string | null>(null);
@@ -90,6 +92,8 @@ export const CreateRoutePage = () => {
 
   const handleCityClick = (city: string) => {
     setActiveCity(city);
+    const region = activeRegionIndex !== null ? destinationsData[activeRegionIndex].region : '';
+    navigate(`/city/${encodeURIComponent(city)}?region=${encodeURIComponent(region)}`);
   };
 
   const handleBackToRegions = () => {

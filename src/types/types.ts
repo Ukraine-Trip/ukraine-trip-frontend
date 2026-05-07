@@ -1,3 +1,21 @@
+export interface TripNode {
+  id: string;
+  location_id: string;
+  order_index: number;
+}
+
+export interface Trip {
+  id: string;
+  title: string;
+  description: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  user_id: number;
+  latitude: number | null;
+  longitude: number | null;
+  trip_nodes: TripNode[];
+}
+
 export interface ItineraryPoint {
   id: string;
   name: string;

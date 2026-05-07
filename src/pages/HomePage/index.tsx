@@ -1,17 +1,13 @@
 import React, { useState } from 'react';
 import { Box } from '@mui/material';
 
-import type {
-  CityCardData,
-  CarouselItemData,
-} from './componentHomePage/ContentData/types';
+import type { CityCardData } from './componentHomePage/ContentData/types';
 import { HeroSection } from './componentHomePage/HeroSection';
 import { TitleBlock } from './componentHomePage/TitleBlock';
 import { CityCardsSection } from './componentHomePage/CityCardSection';
 import { CarouselSection } from './componentHomePage/CarouselSection';
 
 import cityCardsData from '../../librarian/images.json';
-import carouselData from '../../librarian/carousel.json';
 
 function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];
@@ -27,16 +23,12 @@ export const HomePage: React.FC = () => {
     shuffleArray(cityCardsData as CityCardData[])
   );
 
-  const [carousel] = useState<CarouselItemData[]>(() =>
-    shuffleArray(carouselData as CarouselItemData[])
-  );
-
   return (
     <Box sx={{ flexGrow: 1 }}>
       <HeroSection />
       <TitleBlock />
       <CityCardsSection cities={cities} />
-      <CarouselSection carousel={carousel} />
+      <CarouselSection />
     </Box>
   );
 };

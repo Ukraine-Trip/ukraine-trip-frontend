@@ -109,12 +109,12 @@ export const UserLocation: React.FC<UserLocationProps> = ({ ctrlTop }) => {
         </>
       )}
 
-      {/* Кнопка геолокації — розміщена під кнопкою шарів зліва */}
+      {/* Кнопка геолокації — розміщена на правому боці */}
       <div
         style={{
           position: 'absolute',
-          top: ctrlTop + 56, // +56px = висота кнопки шарів (44px) + відступ (12px)
-          left: '16px',
+          top: ctrlTop,
+          right: '16px',
           zIndex: 9999,
         }}
       >
@@ -156,11 +156,11 @@ export const UserLocation: React.FC<UserLocationProps> = ({ ctrlTop }) => {
           )}
         </div>
 
-        {/* Повідомлення про помилку — з'являється праворуч від кнопки */}
+        {/* Повідомлення про помилку — з'являється ліворуч від кнопки */}
         {error && (
           <div style={{
             position: 'absolute',
-            left: '52px',
+            right: '52px',
             top: '50%',
             transform: 'translateY(-50%)',
             backgroundColor: '#fff3f3',

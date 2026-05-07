@@ -1,7 +1,15 @@
+export interface TripLocation {
+  id: string;
+  lat: number;
+  lon: number;
+  name?: string;
+}
+
 export interface TripNode {
   id: string;
   location_id: string;
   order_index: number;
+  location: TripLocation;
 }
 
 export interface Trip {

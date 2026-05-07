@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { PageTitle } from '../../../../style/common.tsx';
 import {
@@ -55,6 +56,7 @@ const truncate = (text: string | null, max: number): string => {
 };
 
 export const CarouselSection: React.FC = () => {
+  const navigate = useNavigate();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -136,7 +138,12 @@ export const CarouselSection: React.FC = () => {
                     >
                       {trip.description}
                     </Typography>
-                    <ExploreButton variant="outlined">EXPLORE TRIP</ExploreButton>
+                    <ExploreButton
+                      variant="outlined"
+                      onClick={() => navigate('/map-page', { state: { trip } })}
+                    >
+                      EXPLORE TRIP
+                    </ExploreButton>
                   </Box>
                 </CarouselCard>
               );

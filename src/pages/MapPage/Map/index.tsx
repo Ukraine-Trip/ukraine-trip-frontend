@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
@@ -14,7 +14,7 @@ import { MarkerPopup } from './MarkerPopup';
 import { useVisibleMarkers } from './useVisibleMarkers';
 import { MapController } from './MapController';
 import Routing from './Routing';
-import type { ItineraryPoint } from '../../../types/types.ts';
+import type { ItineraryPoint, Trip } from '../../../types/types.ts';
 import { optimizeRoute } from '../../../utils/routeOptimizer';
 
 const HEADER_H = 80; // px — висота фіксованого хедера
@@ -49,14 +49,20 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   const [activeLayer, setActiveLayer] = useState<LayerType>('grey');
   const [layerPanelOpen, setLayerPanelOpen] = useState(false);
   const [searchParams] = useSearchParams();
+  const { state } = useLocation();
+  const tripFromState: Trip | null = (state as { trip?: Trip })?.trip ?? null;
 
   const latParam = searchParams.get('lat');
   const lngParam = searchParams.get('lng');
   const zoomParam = searchParams.get('zoom');
 
   const urlCenter: [number, number] | null =
-    latParam && lngParam ? [parseFloat(latParam), parseFloat(lngParam)] : null;
-  const urlZoom = zoomParam ? parseInt(zoomParam) : undefined;
+    latParam && lngParam
+      ? [parseFloat(latParam), parseFloat(lngParam)]
+      : tripFromState?.latitude && tripFromState?.longitude
+        ? [tripFromState.latitude, tripFromState.longitude]
+        : null;
+  const urlZoom = zoomParam ? parseInt(zoomParam) : tripFromState ? 12 : undefined;
 
   const testData: ItineraryPoint[] = [
     { id: '1', name: 'Київ',            category: 'city',     priority: 1, lat: 50.45, lng: 30.52, description: 'Старт' },
@@ -67,7 +73,23 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     { id: '6', name: 'Умань',           category: 'landmark', priority: 3, lat: 48.74, lng: 30.22, description: 'Центр' },
   ];
 
-  const activeData = itinerary.length > 0 ? itinerary : testData;
+  const tripItinerary: ItineraryPoint[] =
+    tripFromState?.latitude && tripFromState?.longitude
+      ? [
+          {
+            id: tripFromState.id,
+            name: tripFromState.title,
+            category: 'landmark',
+            priority: 1,
+            description: tripFromState.description ?? undefined,
+            lat: tripFromState.latitude,
+            lng: tripFromState.longitude,
+          },
+        ]
+      : [];
+
+  const activeData =
+    itinerary.length > 0 ? itinerary : tripItinerary.length > 0 ? tripItinerary : testData;
 
   const sortedData = useMemo(() => {
     if (isOptimized && activeData.length > 2) return optimizeRoute(activeData);

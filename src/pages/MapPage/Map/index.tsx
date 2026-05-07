@@ -1,9 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useContext } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { api } from '../../../api/auth.ts';
+import { AuthContext } from '../../../context/AuthContext.tsx';
 
 type LayerType = 'grey' | 'satellite' | 'none';
 
@@ -45,11 +47,37 @@ const layerConfig: Record<'grey' | 'satellite', { url: string; attribution: stri
 export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   itinerary = [],
 }) => {
+  const { token } = useContext(AuthContext);
   const [zoom, setZoom] = useState(6);
   const [isOptimized, setIsOptimized] = useState(false);
   const [activeLayer, setActiveLayer] = useState<LayerType>('grey');
   const [layerPanelOpen, setLayerPanelOpen] = useState(false);
   const [searchParams] = useSearchParams();
+
+  const [apiLocations, setApiLocations] = useState<ItineraryPoint[]>([]);
+
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const response = await api.get('/locations/', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        const mapped: ItineraryPoint[] = response.data.map((loc: any) => ({
+          id: String(loc.id),
+          name: loc.name,
+          category: loc.type ?? 'landmark',
+          priority: loc.priority ?? 3,
+          description: loc.description ?? '',
+          lat: loc.lat,
+          lng: loc.lon,
+        }));
+        setApiLocations(mapped);
+      } catch (err) {
+        console.error('Не вдалось завантажити локації:', err);
+      }
+    };
+    fetchLocations();
+  }, [token]);
 
   const latParam = searchParams.get('lat');
   const lngParam = searchParams.get('lng');
@@ -68,7 +96,11 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     { id: '6', name: 'Умань',           category: 'landmark', priority: 3, lat: 48.74, lng: 30.22, description: 'Центр' },
   ];
 
-  const activeData = itinerary.length > 0 ? itinerary : testData;
+  const activeData = itinerary.length > 0
+    ? itinerary
+    : apiLocations.length > 0
+      ? apiLocations
+      : testData;
 
   const sortedData = useMemo(() => {
     if (isOptimized && activeData.length > 2) return optimizeRoute(activeData);

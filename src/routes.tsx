@@ -8,6 +8,7 @@ import { MapComponent } from './pages/MapPage/Map';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { CreateLocationPage } from './pages/CreateLocationPage';
+import { CityPage } from './pages/CityPage';
 
 export const router = createBrowserRouter([
   {
@@ -41,6 +42,10 @@ export const router = createBrowserRouter([
       {
         path: 'create-location',
         element: <CreateLocationPage />,
+      },
+      {
+        path: 'city/:cityName',
+        element: <CityPage />,
       },
     ],
   },

@@ -36,6 +36,7 @@ export const Header: React.FC = () => {
 
   const navItems = [
     { label: 'Regions', path: '/create-route' },
+    { label: 'Map', path: '/map-page', desktopOnly: true },
     { label: 'Itinerary', path: '/itinerary' },
     { label: "Traveler's Diary", path: '/diary' },
   ];

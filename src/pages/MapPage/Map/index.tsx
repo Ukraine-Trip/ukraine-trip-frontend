@@ -9,11 +9,12 @@ type LayerType = 'grey' | 'satellite' | 'none';
 
 import { MapWrapper } from './style.tsx';
 import { createCustomIcon } from './icons.tsx';
-import { ZoomHandler } from './ZoomHandler';
-import { MarkerPopup } from './MarkerPopup';
-import { useVisibleMarkers } from './useVisibleMarkers';
-import { MapController } from './MapController';
-import Routing from './Routing';
+import { ZoomHandler } from './component/ZoomHandler.tsx';
+import { MarkerPopup } from './component/MarkerPopup.tsx';
+import { useVisibleMarkers } from './useVisibleMarkers.ts';
+import { MapController } from './component/MapController.tsx';
+import Routing from './component/Routing.tsx';
+import { UserLocation } from './component/UserLocation.tsx';
 import type { ItineraryPoint } from '../../../types/types.ts';
 import { optimizeRoute } from '../../../utils/routeOptimizer';
 
@@ -281,6 +282,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
 
 <ZoomHandler setZoom={setZoom} />
         <MapController center={urlCenter} zoom={urlZoom} />
+        <UserLocation ctrlTop={CTRL_TOP} />
 
         {polylinePositions.length >= 2 && (
           <Routing

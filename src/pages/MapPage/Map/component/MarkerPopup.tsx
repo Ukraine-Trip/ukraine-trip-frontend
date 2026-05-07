@@ -1,8 +1,8 @@
 import React from 'react';
 import { Popup } from 'react-leaflet';
-import type { ItineraryPoint } from '../../../types/types.ts';
+import type { ItineraryPoint } from '../../../../types/types.ts';
 // 1. Повертаємо імпорт довідника сюди
-import regionsData from '../../../librarian/cities.json';
+import regionsData from '../../../../librarian/cities.json';
 
 export const MarkerPopup: React.FC<{ point: ItineraryPoint }> = ({ point }) => {
   // 2. Логіка пошуку області тепер живе тут

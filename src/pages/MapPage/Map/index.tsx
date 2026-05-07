@@ -59,10 +59,16 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   useEffect(() => {
     const fetchLocations = async () => {
       try {
-        const response = await api.get('/locations/', {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        const mapped: ItineraryPoint[] = response.data.map((loc: any) => ({
+
+        const publicReq = api.get('/locations/');
+
+        const myReq = token
+          ? api.get('/locations/my', { headers: { Authorization: `Bearer ${token}` } })
+          : Promise.resolve(null);
+
+        const [publicRes, myRes] = await Promise.all([publicReq, myReq]);
+
+        const publicLocations: ItineraryPoint[] = publicRes.data.map((loc: any) => ({
           id: String(loc.id),
           name: loc.name,
           category: loc.type ?? 'landmark',
@@ -71,7 +77,34 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
           lat: loc.lat,
           lng: loc.lon,
         }));
-        setApiLocations(mapped);
+
+        const myLocations: ItineraryPoint[] = myRes
+          ? myRes.data
+            .filter((loc: any) => !loc.is_approved)
+            .map((loc: any) => ({
+              id: String(loc.id),
+              name: loc.name,
+              category: loc.type ?? 'landmark',
+              priority: loc.priority ?? 3,
+              description: loc.description ?? '',
+              lat: loc.lat,
+              lng: loc.lon,
+            }))
+          : [];
+
+        // const response = await api.get('/locations/', {
+        //   headers: token ? { Authorization: `Bearer ${token}` } : {},
+        // });
+        // const mapped: ItineraryPoint[] = response.data.map((loc: any) => ({
+        //   id: String(loc.id),
+        //   name: loc.name,
+        //   category: loc.type ?? 'landmark',
+        //   priority: loc.priority ?? 3,
+        //   description: loc.description ?? '',
+        //   lat: loc.lat,
+        //   lng: loc.lon,
+        // }));
+        setApiLocations([...publicLocations, ...myLocations]);
       } catch (err) {
         console.error('Не вдалось завантажити локації:', err);
       }

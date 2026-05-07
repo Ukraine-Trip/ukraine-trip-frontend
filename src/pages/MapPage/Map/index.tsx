@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useSearchParams, useLocation } from 'react-router-dom';
+import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -18,8 +18,23 @@ import { UserLocation } from './component/UserLocation.tsx';
 import type { ItineraryPoint } from '../../../types/types.ts';
 import { optimizeRoute } from '../../../utils/routeOptimizer';
 
-const HEADER_H = 80; // px — висота фіксованого хедера
-const CTRL_TOP = HEADER_H + 12; // відступ контролів від верху
+const HEADER_H = 80;
+const CTRL_TOP = HEADER_H + 12;
+
+const RouteBoundsController: React.FC<{ points: [number, number][] }> = ({ points }) => {
+  const map = useMap();
+  const prevPointsRef = useRef<string>('');
+
+  useEffect(() => {
+    if (points.length < 2) return;
+    const key = JSON.stringify(points);
+    if (key === prevPointsRef.current) return;
+    prevPointsRef.current = key;
+    map.fitBounds(L.latLngBounds(points.map(([lat, lng]) => L.latLng(lat, lng))), { padding: [60, 60] });
+  }, [map, points]);
+
+  return null;
+};
 
 const createClusterCustomIcon = (cluster: any) => {
   return L.divIcon({
@@ -50,6 +65,8 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   const [activeLayer, setActiveLayer] = useState<LayerType>('grey');
   const [layerPanelOpen, setLayerPanelOpen] = useState(false);
   const [searchParams] = useSearchParams();
+  const navLocation = useLocation();
+  const stateRoutePoints: [number, number][] | undefined = (navLocation.state as any)?.routePoints;
 
   const latParam = searchParams.get('lat');
   const lngParam = searchParams.get('lng');
@@ -75,10 +92,10 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     return activeData;
   }, [activeData, isOptimized]);
 
-  const polylinePositions = useMemo(
-    () => sortedData.map((p) => [p.lat, p.lng] as [number, number]),
-    [sortedData],
-  );
+  const polylinePositions = useMemo<[number, number][]>(() => {
+    if (stateRoutePoints && stateRoutePoints.length >= 2) return stateRoutePoints;
+    return sortedData.map((p) => [p.lat, p.lng] as [number, number]);
+  }, [stateRoutePoints, sortedData]);
 
   useVisibleMarkers(activeData, zoom);
 
@@ -283,6 +300,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
 <ZoomHandler setZoom={setZoom} />
         <MapController center={urlCenter} zoom={urlZoom} />
         <UserLocation ctrlTop={CTRL_TOP} />
+        <RouteBoundsController points={polylinePositions} />
 
         {polylinePositions.length >= 2 && (
           <Routing

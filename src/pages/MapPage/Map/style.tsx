@@ -1,5 +1,54 @@
 import styled from 'styled-components';
 
+export const MapPageLayout = styled.div`
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100%;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+`;
+
+export const RouteSidebar = styled.aside<{ $collapsed?: boolean }>`
+  width: ${({ $collapsed }) => ($collapsed ? '0' : '30%')};
+  height: 100%;
+  background: #ffffff;
+  border-right: ${({ $collapsed }) => ($collapsed ? 'none' : '1px solid #ebebeb')};
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  padding-top: ${({ $collapsed }) => ($collapsed ? '0' : '80px')};
+  transition: width 0.3s ease, padding 0.3s ease;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    height: ${({ $collapsed }) => ($collapsed ? '0' : 'auto')};
+    max-height: ${({ $collapsed }) => ($collapsed ? '0' : '42vh')};
+    border-right: none;
+    border-bottom: ${({ $collapsed }) => ($collapsed ? 'none' : '1px solid #ebebeb')};
+    padding-top: ${({ $collapsed }) => ($collapsed ? '0' : '64px')};
+    transition: max-height 0.3s ease, padding 0.3s ease;
+    overflow-y: auto;
+  }
+`;
+
+export const MapArea = styled.div`
+  flex: 1;
+  position: relative;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+
+  @media (max-width: 768px) {
+    flex: 1;
+    min-height: 55vh;
+  }
+`;
+
 export const MapWrapper = styled.div`
   width: 100%;
   height: calc(100vh - 64px);

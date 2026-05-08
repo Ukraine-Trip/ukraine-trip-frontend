@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { PageTitle } from '../../../../style/common.tsx';
 import {
@@ -58,6 +59,7 @@ export const CarouselSection: React.FC = () => {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     getAllTrips()
@@ -65,6 +67,33 @@ export const CarouselSection: React.FC = () => {
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, []);
+
+  const handleCardClick = (trip: Trip) => {
+    const sortedNodes = [...trip.trip_nodes].sort((a, b) => a.order_index - b.order_index);
+    const validNodes = sortedNodes.filter(
+      (node) => node.location?.lat != null && node.location?.lon != null,
+    );
+    const routePoints: [number, number][] = validNodes.map((node) => [
+      node.location.lat,
+      node.location.lon,
+    ]);
+
+    navigate('/map-page', {
+      state: {
+        routePoints,
+        tripMeta: {
+          title: trip.title,
+          description: trip.description,
+          start_date: trip.start_date,
+          end_date: trip.end_date,
+          waypoints: validNodes.map((node) => ({
+            name: node.location.name ?? `Point ${node.order_index + 1}`,
+            order_index: node.order_index,
+          })),
+        },
+      },
+    });
+  };
 
   return (
     <StyledCarouselSection>
@@ -95,7 +124,12 @@ export const CarouselSection: React.FC = () => {
               const dateLabel = formatDateRange(trip.start_date, trip.end_date);
 
               return (
-                <CarouselCard key={trip.id} elevation={0}>
+                <CarouselCard
+                  key={trip.id}
+                  elevation={0}
+                  onClick={() => handleCardClick(trip)}
+                  sx={{ cursor: 'pointer' }}
+                >
                   <Box className="image-wrapper">
                     <Box
                       sx={{

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -9,11 +9,14 @@ import {
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
+import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { api } from '../../api/auth';
 import { createCustomIcon } from '../MapPage/Map/icons';
 
 interface LocationData {
+  id: string;
   name: string;
   description: string;
   region: string;
@@ -25,15 +28,24 @@ interface LocationData {
 
 const UKRAINE_CENTER: [number, number] = [48.3794, 31.1656];
 
-const FlyToLocation: React.FC<{ center: [number, number] | null }> = ({ center }) => {
+const createClusterCustomIcon = (cluster: any) => {
+  return L.divIcon({
+    html: `<span>${cluster.getChildCount()}</span>`,
+    className: 'custom-cluster-icon',
+    iconSize: L.point(33, 33, true),
+  });
+};
+
+const FlyToSelected: React.FC<{ center: [number, number] | null }> = ({ center }) => {
   const map = useMap();
-  const didFly = useRef(false);
+  const prevKey = useRef('');
 
   useEffect(() => {
-    if (center && !didFly.current) {
-      map.flyTo(center, 13, { animate: true, duration: 1.2 });
-      didFly.current = true;
-    }
+    if (!center) return;
+    const key = center.join(',');
+    if (key === prevKey.current) return;
+    prevKey.current = key;
+    map.flyTo(center, 13, { animate: true, duration: 1.0 });
   }, [map, center]);
 
   return null;
@@ -44,38 +56,44 @@ export const CityPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const region = searchParams.get('region');
   const navigate = useNavigate();
-  const [location, setLocation] = useState<LocationData | null>(null);
+  const navState = useLocation().state as { lat?: number; lng?: number } | null;
+
+  const [locations, setLocations] = useState<LocationData[]>([]);
+  const [selectedLocation, setSelectedLocation] = useState<LocationData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchLocation = async () => {
+    const fetchLocations = async () => {
       setLoading(true);
       try {
-        const params: Record<string, string> = {};
-        if (region) params.region = region;
-        const { data } = await api.get('/locations/', { params });
-        const match = (data as LocationData[]).find(
+        const { data } = await api.get<LocationData[]>('/locations/');
+        setLocations(data);
+        const match = data.find(
           (loc) => loc.name.toLowerCase() === cityName?.toLowerCase(),
         );
-        setLocation(match ?? null);
+        setSelectedLocation(match ?? null);
       } catch {
-        setLocation(null);
+        setLocations([]);
+        setSelectedLocation(null);
       } finally {
         setLoading(false);
       }
     };
-    fetchLocation();
+    fetchLocations();
   }, [cityName, region]);
 
-  const mapCenter: [number, number] | null = location
-    ? [location.lat, location.lon]
-    : null;
+  const mapCenter: [number, number] | null =
+    selectedLocation
+      ? [selectedLocation.lat, selectedLocation.lon]
+      : navState?.lat && navState?.lng
+        ? [navState.lat, navState.lng]
+        : null;
 
   const descriptionPanel = (
     <Box
       sx={{
         width: { xs: '100%', md: '30%' },
-        minWidth: { md: '280px' },
+        minWidth: { md: '320px' },
         overflowY: 'auto',
         p: { xs: 3, md: 4 },
         borderRight: { xs: 'none', md: '1px solid #e0e0e0' },
@@ -89,7 +107,11 @@ export const CityPage: React.FC = () => {
         <IconButton size="small" onClick={() => navigate(-1)} sx={{ ml: -1 }}>
           <ArrowBackIcon fontSize="small" />
         </IconButton>
-        <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 1 }}>
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{ textTransform: 'uppercase', letterSpacing: 1 }}
+        >
           Back
         </Typography>
       </Box>
@@ -98,21 +120,26 @@ export const CityPage: React.FC = () => {
         <Box sx={{ display: 'flex', justifyContent: 'center', pt: 4 }}>
           <CircularProgress size={32} />
         </Box>
-      ) : location ? (
+      ) : selectedLocation ? (
         <>
           <Typography
             variant="h4"
             fontWeight={700}
             sx={{ textTransform: 'uppercase', letterSpacing: '1px', lineHeight: 1.2 }}
           >
-            {location.name}
+            {selectedLocation.name}
           </Typography>
 
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            <Chip label={location.region} size="small" sx={{ fontSize: '11px' }} />
-            <Chip label={location.type} size="small" color="primary" sx={{ fontSize: '11px' }} />
+            <Chip label={selectedLocation.region} size="small" sx={{ fontSize: '11px' }} />
             <Chip
-              label={`Priority ${location.priority}`}
+              label={selectedLocation.type}
+              size="small"
+              color="primary"
+              sx={{ fontSize: '11px' }}
+            />
+            <Chip
+              label={`Priority ${selectedLocation.priority}`}
               size="small"
               variant="outlined"
               sx={{ fontSize: '11px' }}
@@ -120,11 +147,11 @@ export const CityPage: React.FC = () => {
           </Box>
 
           <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8 }}>
-            {location.description}
+            {selectedLocation.description || 'Опис відсутній.'}
           </Typography>
 
           <Typography variant="caption" color="text.disabled" sx={{ mt: 'auto' }}>
-            {location.lat.toFixed(4)}°N,&nbsp;{location.lon.toFixed(4)}°E
+            {selectedLocation.lat.toFixed(4)}°N,&nbsp;{selectedLocation.lon.toFixed(4)}°E
           </Typography>
         </>
       ) : (
@@ -137,7 +164,7 @@ export const CityPage: React.FC = () => {
             {cityName}
           </Typography>
           <Typography color="text.secondary">
-            No description found for this city yet.
+            Натисніть на іконку на карті, щоб побачити опис локації.
           </Typography>
         </>
       )}
@@ -165,13 +192,26 @@ export const CityPage: React.FC = () => {
           url="https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"
           attribution="&copy; Stadia Maps"
         />
-        <FlyToLocation center={mapCenter} />
-        {location && (
-          <Marker
-            position={[location.lat, location.lon]}
-            icon={createCustomIcon(location.type)}
-          />
-        )}
+        <FlyToSelected center={mapCenter} />
+
+        <MarkerClusterGroup
+          chunkedLoading
+          maxClusterRadius={40}
+          iconCreateFunction={createClusterCustomIcon}
+        >
+          {locations
+            .filter((loc) => loc.lat != null && loc.lon != null)
+            .map((loc) => (
+              <Marker
+                key={String(loc.id)}
+                position={[loc.lat, loc.lon]}
+                icon={createCustomIcon(loc.type)}
+                eventHandlers={{
+                  click: () => setSelectedLocation(loc),
+                }}
+              />
+            ))}
+        </MarkerClusterGroup>
       </MapContainer>
     </Box>
   );
@@ -186,7 +226,30 @@ export const CityPage: React.FC = () => {
         overflow: { xs: 'visible', md: 'hidden' },
       }}
     >
-      <style>{`footer { display: none !important; }`}</style>
+      <style>{`
+        footer { display: none !important; }
+        .custom-cluster-icon {
+          background: #ffffff;
+          border: 2px solid #222222;
+          border-radius: 50%;
+          color: #222222;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 800;
+          font-size: 14px;
+          box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+          transition: all 0.2s ease-in-out;
+        }
+        .custom-cluster-icon:hover {
+          transform: scale(1.1);
+          background: #f8f8f8;
+          border-color: #000;
+        }
+        .custom-cluster-icon span {
+          line-height: 1;
+        }
+      `}</style>
       {descriptionPanel}
       {mapPanel}
     </Box>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -31,8 +31,8 @@ const FlyToLocation: React.FC<{ center: [number, number] | null }> = ({ center }
 
   useEffect(() => {
     if (center && !didFly.current) {
-      map.flyTo(center, 13, { animate: true, duration: 1.2 });
       didFly.current = true;
+      map.flyTo(center, 13, { animate: true, duration: 1.6 });
     }
   }, [map, center]);
 
@@ -44,6 +44,7 @@ export const CityPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const region = searchParams.get('region');
   const navigate = useNavigate();
+  const navState = useLocation().state as { lat?: number; lng?: number } | null;
   const [location, setLocation] = useState<LocationData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -67,9 +68,12 @@ export const CityPage: React.FC = () => {
     fetchLocation();
   }, [cityName, region]);
 
-  const mapCenter: [number, number] | null = location
-    ? [location.lat, location.lon]
-    : null;
+  const mapCenter: [number, number] | null =
+    location
+      ? [location.lat, location.lon]
+      : navState?.lat && navState?.lng
+        ? [navState.lat, navState.lng]
+        : null;
 
   const descriptionPanel = (
     <Box

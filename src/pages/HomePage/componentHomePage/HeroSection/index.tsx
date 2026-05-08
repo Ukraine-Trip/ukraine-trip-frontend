@@ -40,7 +40,7 @@ export const HeroSection: React.FC = () => {
         {/* 2. Перетворюємо кнопку на посилання */}
         <PrimaryButton
           component={Link}
-          to="/map-page"
+          to="/create-route"
           sx={{ mt: 4 }}
         >
           Explore trip

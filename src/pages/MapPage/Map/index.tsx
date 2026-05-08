@@ -133,19 +133,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
               lng: loc.lon,
             }))
           : [];
-
-        // const response = await api.get('/locations/', {
-        //   headers: token ? { Authorization: `Bearer ${token}` } : {},
-        // });
-        // const mapped: ItineraryPoint[] = response.data.map((loc: any) => ({
-        //   id: String(loc.id),
-        //   name: loc.name,
-        //   category: loc.type ?? 'landmark',
-        //   priority: loc.priority ?? 3,
-        //   description: loc.description ?? '',
-        //   lat: loc.lat,
-        //   lng: loc.lon,
-        // }));
         setApiLocations([...publicLocations, ...myLocations]);
       } catch (err) {
         console.error('Не вдалось завантажити локації:', err);

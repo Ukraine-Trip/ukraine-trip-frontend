@@ -1,9 +1,12 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useContext, useRef } from 'react';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { api } from '../../../api/auth.ts';
+import { AuthContext } from '../../../context/AuthContext.tsx';
 
 type LayerType = 'grey' | 'satellite' | 'none';
 
@@ -80,6 +83,7 @@ const formatDate = (start: string | null, end: string | null): string => {
 export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   itinerary = [],
 }) => {
+  const { token } = useContext(AuthContext);
   const [zoom, setZoom] = useState(6);
   const [isOptimized, setIsOptimized] = useState(false);
   const [activeLayer, setActiveLayer] = useState<LayerType>('grey');
@@ -91,6 +95,51 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
 
   const stateRoutePoints: [number, number][] | undefined = (navLocation.state as any)?.routePoints;
   const tripMeta: TripMeta | undefined = (navLocation.state as any)?.tripMeta;
+
+  const [apiLocations, setApiLocations] = useState<ItineraryPoint[]>([]);
+
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+
+        const publicReq = api.get('/locations/');
+
+        const myReq = token
+          ? api.get('/locations/my', { headers: { Authorization: `Bearer ${token}` } })
+          : Promise.resolve(null);
+
+        const [publicRes, myRes] = await Promise.all([publicReq, myReq]);
+
+        const publicLocations: ItineraryPoint[] = publicRes.data.map((loc: any) => ({
+          id: String(loc.id),
+          name: loc.name,
+          category: loc.type ?? 'landmark',
+          priority: loc.priority ?? 3,
+          description: loc.description ?? '',
+          lat: loc.lat,
+          lng: loc.lon,
+        }));
+
+        const myLocations: ItineraryPoint[] = myRes
+          ? myRes.data
+            .filter((loc: any) => !loc.is_approved)
+            .map((loc: any) => ({
+              id: String(loc.id),
+              name: loc.name,
+              category: loc.type ?? 'landmark',
+              priority: loc.priority ?? 3,
+              description: loc.description ?? '',
+              lat: loc.lat,
+              lng: loc.lon,
+            }))
+          : [];
+        setApiLocations([...publicLocations, ...myLocations]);
+      } catch (err) {
+        console.error('Не вдалось завантажити локації:', err);
+      }
+    };
+    fetchLocations();
+  }, [token]);
 
   const latParam = searchParams.get('lat');
   const lngParam = searchParams.get('lng');
@@ -109,7 +158,11 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     { id: '6', name: 'Умань',            category: 'landmark', priority: 3, lat: 48.74, lng: 30.22, description: 'Центр' },
   ];
 
-  const activeData = itinerary.length > 0 ? itinerary : testData;
+  const activeData = itinerary.length > 0
+    ? itinerary
+    : apiLocations.length > 0
+      ? apiLocations
+      : testData;
 
   const sortedData = useMemo(() => {
     if (isOptimized && activeData.length > 2) return optimizeRoute(activeData);

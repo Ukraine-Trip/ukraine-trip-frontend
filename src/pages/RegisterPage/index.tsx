@@ -58,7 +58,7 @@ export const RegisterPage = () => {
       setUser(
         responseUser || {
           email: responseEmail || formData.email,
-          fullName: full_name || formData.fullName,
+          full_name: full_name || formData.fullName,
         }
       );
 

@@ -42,7 +42,7 @@ export const Header: React.FC = () => {
   ];
 
   const isAuthenticated = Boolean(token);
-  const displayName = user?.fullName || user?.email || 'User';
+  const displayName = user?.full_name || user?.email || 'User';
   const initials = displayName
     .split(' ')
     .filter(Boolean)

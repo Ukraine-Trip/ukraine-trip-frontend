@@ -34,7 +34,7 @@ export const LoginPage = () => {
       setUser(
         responseUser || {
           email: responseEmail || email,
-          fullName: full_name || '',
+          full_name: full_name || '',
         }
       );
 

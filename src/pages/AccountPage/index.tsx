@@ -17,13 +17,16 @@ interface UserData {
   full_name: string;
   email: string;
   avatarUrl?: string;
+  password?: string;
 }
 
 export const AccountPage: React.FC = () => {
-  const { token } = useContext(AuthContext);
+  const { token, setUser: setAuthUser } = useContext(AuthContext);
   const navigate = useNavigate();
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [newPassword, setNewPassword] = useState('');
+  const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -46,14 +49,29 @@ export const AccountPage: React.FC = () => {
   }, [token]);
 
   const handleSave = async () => {
+    setMessage(null);
     try {
-      await api.put('/users/me',
-        {full_name: user?.full_name},
-        {
-        headers: {Authorization: `Bearer ${token}`},
+      const payload: any = {
+        full_name: user?.full_name,
+        email: user?.email,
+      };
+
+      if (newPassword) {
+        payload.password = newPassword;
+      }
+
+      const response = await api.put('/users/me', payload, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-    } catch (error) {
+      setAuthUser(response.data);
+      setMessage({ text: 'Профіль успішно оновлено!', type: 'success' });
+      setNewPassword('');
+    } catch (error: any) {
       console.error('Помилка при збереженні:', error);
+      setMessage({
+        text: error.response?.data?.detail || 'Помилка при збереженні змін',
+        type: 'error'
+      });
     }
   };
 
@@ -129,8 +147,35 @@ export const AccountPage: React.FC = () => {
 
               <Box>
                 <SubTitle>Email Address</SubTitle>
-                <CommonInput fullWidth value={user.email} disabled />
+                <CommonInput
+                  fullWidth
+                  value={user.email}
+                  onChange={(e) => setUser({...user, email: e.target.value})}
+                />
               </Box>
+
+              <Box>
+                <SubTitle>New Password</SubTitle>
+                <CommonInput
+                  fullWidth
+                  type="password"
+                  placeholder="Leave blank to keep current password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+              </Box>
+
+              {message && (
+                <Typography
+                  sx={{
+                    color: message.type === 'success' ? 'success.main' : 'error.main',
+                    fontSize: '0.85rem',
+                    mt: 1
+                  }}
+                >
+                  {message.text}
+                </Typography>
+              )}
 
               <Box
                 sx={{

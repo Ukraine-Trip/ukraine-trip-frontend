@@ -130,12 +130,21 @@ export const CityPage: React.FC = () => {
   useEffect(() => {
     setTripsLoading(true);
     getAllTrips()
-      .then(setTrips)
-      .catch(() => setTrips([]))
+      .then((data) => {
+        console.log('TRIPS FROM API:', data);
+        setTrips(data);
+      })
+      .catch((err) => {
+        console.error('TRIPS ERROR:', err);
+        setTrips([]);
+      })
       .finally(() => setTripsLoading(false));
   }, []);
 
   const normalize = (s?: string | null) => s?.toLowerCase().trim() ?? '';
+
+  console.log('REGION FROM URL:', region, '| CITY:', cityName);
+  console.log('ALL TRIPS:', trips.length, trips.map(t => ({ title: t.title, nodes: t.trip_nodes.map(n => n.location?.region) })));
 
   const regionTrips = trips.filter((trip) =>
     trip.trip_nodes.some(
@@ -144,6 +153,8 @@ export const CityPage: React.FC = () => {
         normalize(node.location?.name) === normalize(cityName),
     ),
   );
+
+  console.log('REGION TRIPS:', regionTrips.length);
 
   const mapCenter: [number, number] | null =
     selectedLocation

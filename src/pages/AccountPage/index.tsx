@@ -53,7 +53,6 @@ export const AccountPage: React.FC = () => {
     try {
       const payload: any = {
         full_name: user?.full_name,
-        email: user?.email,
       };
 
       if (newPassword) {
@@ -149,8 +148,17 @@ export const AccountPage: React.FC = () => {
                 <SubTitle>Email Address</SubTitle>
                 <CommonInput
                   fullWidth
+                  slotProps={{
+                    input: {
+                      readOnly: true,
+                    },
+                  }}
                   value={user.email}
-                  onChange={(e) => setUser({...user, email: e.target.value})}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: '#f5f5f5',
+                    },
+                  }}
                 />
               </Box>
 

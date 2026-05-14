@@ -36,9 +36,8 @@ export const Header: React.FC = () => {
 
   const navItems = [
     { label: 'Regions', path: '/create-route' },
-    { label: 'Map', path: '/map-page', desktopOnly: true },
-    { label: 'Itinerary', path: '/itinerary' },
-    { label: "Traveler's Diary", path: '/diary' },
+    { label: 'Itinerary', path: '/itinerary', private: true },
+    { label: "Traveler's Diary", path: '/diary', private: true },
   ];
 
   const isAuthenticated = Boolean(token);
@@ -83,11 +82,13 @@ export const Header: React.FC = () => {
                 gap: 4,
               }}
             >
-              {navItems.map((item) => (
-                <NavButton key={item.label} component={Link} to={item.path}>
-                  {item.label}
-                </NavButton>
-              ))}
+              {navItems
+                .filter((item) => !item.private || isAuthenticated)
+                .map((item) => (
+                  <NavButton key={item.label} component={Link} to={item.path}>
+                    {item.label}
+                  </NavButton>
+                ))}
             </Box>
 
             <Box
@@ -150,17 +151,19 @@ export const Header: React.FC = () => {
         </Box>
         <Divider />
         <List sx={{ pt: 2 }}>
-          {navItems.map((item) => (
-            <ListItem key={item.label} disablePadding>
-              <ListItemButton
-                component={Link}
-                to={item.path}
-                onClick={handleDrawerToggle}
-              >
-                <ListItemText primary={item.label} />
-              </ListItemButton>
-            </ListItem>
-          ))}
+          {navItems
+            .filter((item) => !item.private || isAuthenticated)
+            .map((item) => (
+              <ListItem key={item.label} disablePadding>
+                <ListItemButton
+                  component={Link}
+                  to={item.path}
+                  onClick={handleDrawerToggle}
+                >
+                  <ListItemText primary={item.label} />
+                </ListItemButton>
+              </ListItem>
+            ))}
           {isAuthenticated ? (
             <ListItem disablePadding>
               <ListItemButton

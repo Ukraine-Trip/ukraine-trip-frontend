@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
@@ -11,29 +11,49 @@ import {
   NavigationAction as BottomNavigationAction,
   StyledBottomNavigation as BottomNavigation,
 } from './styled.tsx';
+import { AuthContext } from '../../context/AuthContext.tsx';
 
 export const Menu: React.FC = () => {
+  const { token } = useContext(AuthContext);
   const [value, setValue] = useState(0);
   const navigate = useNavigate();
+
+  const isAuthenticated = Boolean(token);
 
   const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
 
-    switch (newValue) {
-      case 0:
-        navigate('/');
-        break;
-      case 1:
-        navigate('/create-route'); // <-- Оновили шлях тут!
-        break;
-      case 2:
-        navigate('/map-page');
-        break;
-      case 3:
-        navigate('/login');
-        break;
-      default:
-        break;
+    if (isAuthenticated) {
+      switch (newValue) {
+        case 0:
+          navigate('/');
+          break;
+        case 1:
+          navigate('/create-route');
+          break;
+        case 2:
+          navigate('/map-page');
+          break;
+        case 3:
+          navigate('/login');
+          break;
+        default:
+          break;
+      }
+    } else {
+      switch (newValue) {
+        case 0:
+          navigate('/');
+          break;
+        case 1:
+          navigate('/create-route');
+          break;
+        case 2:
+          navigate('/account');
+          break;
+        default:
+          break;
+      }
     }
   };
 
@@ -54,11 +74,13 @@ export const Menu: React.FC = () => {
           icon={<SearchIcon />}
           disableRipple
         />
-        <BottomNavigationAction
-          id="nav-bookmarks-btn"
-          icon={<MapOutlinedIcon />}
-          disableRipple
-        />
+        {isAuthenticated && (
+          <BottomNavigationAction
+            id="nav-bookmarks-btn"
+            icon={<MapOutlinedIcon />}
+            disableRipple
+          />
+        )}
         <BottomNavigationAction
           id="nav-profile-btn"
           icon={<PersonOutlineIcon />}

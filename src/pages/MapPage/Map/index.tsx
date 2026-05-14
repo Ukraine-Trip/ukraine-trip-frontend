@@ -1,12 +1,13 @@
 import React, { useState, useMemo, useEffect, useContext, useRef } from 'react';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { api } from '../../../api/auth.ts';
 import { AuthContext } from '../../../context/AuthContext.tsx';
+import axios from 'axios';
 
 type LayerType = 'grey' | 'satellite' | 'none';
 
@@ -16,10 +17,11 @@ import { ZoomHandler } from './component/ZoomHandler.tsx';
 import { MarkerPopup } from './component/MarkerPopup.tsx';
 import { useVisibleMarkers } from './useVisibleMarkers.ts';
 import { MapController } from './component/MapController.tsx';
-import RouteDrawer from './component/RouteDrawer.tsx';
+import Routing from './component/Routing.tsx';
 import { UserLocation } from './component/UserLocation.tsx';
 import type { ItineraryPoint } from '../../../types/types.ts';
 import { optimizeRoute } from '../../../utils/routeOptimizer';
+import regionsData from '../../../librarian/cities.json';
 
 const HEADER_H = 80;
 const CTRL_TOP = HEADER_H + 12;
@@ -31,26 +33,6 @@ interface TripMeta {
   end_date: string | null;
   waypoints: Array<{ name: string; order_index: number }>;
 }
-
-const RouteBoundsController: React.FC<{ points: [number, number][] }> = ({
-  points,
-}) => {
-  const map = useMap();
-  const prevPointsRef = useRef<string>('');
-
-  useEffect(() => {
-    if (points.length < 2) return;
-    const key = JSON.stringify(points);
-    if (key === prevPointsRef.current) return;
-    prevPointsRef.current = key;
-    map.fitBounds(
-      L.latLngBounds(points.map(([lat, lng]) => L.latLng(lat, lng))),
-      { padding: [60, 60] }
-    );
-  }, [map, points]);
-
-  return null;
-};
 
 const createClusterCustomIcon = (cluster: any) => {
   return L.divIcon({
@@ -99,7 +81,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   const [isOptimized, setIsOptimized] = useState(false);
   const [activeLayer, setActiveLayer] = useState<LayerType>('grey');
   const [layerPanelOpen, setLayerPanelOpen] = useState(false);
-  const [routePanelOpen, setRoutePanelOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchParams] = useSearchParams();
   const navLocation = useLocation();
@@ -113,6 +94,20 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     []
   );
   const [isRouteLoading, setIsRouteLoading] = useState(false);
+  const [activePointDetails, setActivePointDetails] =
+    useState<ItineraryPoint | null>(null);
+
+  // Initialize selected route points from navigation state if available
+  useEffect(() => {
+    const state = navLocation.state as any;
+    if (
+      state &&
+      state.initialRoutePoints &&
+      Array.isArray(state.initialRoutePoints)
+    ) {
+      setSelectedRoutePoints(state.initialRoutePoints);
+    }
+  }, [navLocation.state]);
 
   const handleSelectPoint = (point: ItineraryPoint) => {
     setSelectedRoutePoints((prev) => {
@@ -123,15 +118,13 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
         return [...prev, point];
       }
     });
+    setActivePointDetails(point); // Set active point details when a marker is clicked
   };
 
   const isPointSelected = (point: ItineraryPoint) => {
     return selectedRoutePoints.some((p) => p.id === point.id);
   };
 
-  const stateRoutePoints: [number, number][] | undefined = (
-    navLocation.state as any
-  )?.routePoints;
   const tripMeta: TripMeta | undefined = (navLocation.state as any)?.tripMeta;
 
   const [apiLocations, setApiLocations] = useState<ItineraryPoint[]>([]);
@@ -161,6 +154,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
             description: loc.description ?? '',
             lat: loc.lat,
             lng: loc.lon,
+            imageUrl: loc.image_url ?? '',
           }));
         }
 
@@ -176,6 +170,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
               description: loc.description ?? '',
               lat: loc.lat,
               lng: loc.lon,
+              imageUrl: loc.image_url ?? '',
             }));
         } else if (myResult.status === 'rejected') {
           if (myResult.reason?.response?.status !== 401) {
@@ -210,7 +205,16 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
           optimized: isOptimized,
         };
 
-        const response = await api.post('/routes/', payload);
+        const config: any = {};
+        if (token) {
+          config.headers = { Authorization: `Bearer ${token}` };
+        }
+
+        const response = await axios.post(
+          'http://localhost:8000/api/v1/trips/build',
+          payload,
+          config
+        );
 
         if (response.data && response.data.trip_nodes) {
           const coords = response.data.trip_nodes
@@ -224,9 +228,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
 
           setRouteCoordinates(coords);
         } else {
-          console.error(
-            'Некоректна відповідь від бекенда при побудові маршруту'
-          );
           setRouteCoordinates([]);
         }
       } catch (error) {
@@ -238,7 +239,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     };
 
     fetchRoute();
-  }, [selectedRoutePoints, transportType, isOptimized]);
+  }, [selectedRoutePoints, transportType, isOptimized, token]);
 
   const latParam = searchParams.get('lat');
   const lngParam = searchParams.get('lng');
@@ -248,75 +249,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     latParam && lngParam ? [parseFloat(latParam), parseFloat(lngParam)] : null;
   const urlZoom = zoomParam ? parseInt(zoomParam) : undefined;
 
-  const testData: ItineraryPoint[] = [
-    {
-      id: '1',
-      name: 'Київ',
-      category: 'city',
-      priority: 1,
-      lat: 50.45,
-      lng: 30.52,
-      description: 'Старт',
-    },
-    {
-      id: '2',
-      name: 'Львів',
-      category: 'city',
-      priority: 1,
-      lat: 49.83,
-      lng: 24.02,
-      description: 'Захід',
-    },
-    {
-      id: '3',
-      name: 'Чернігів',
-      category: 'city',
-      priority: 2,
-      lat: 51.49,
-      lng: 31.28,
-      description: 'Північ',
-    },
-    {
-      id: '4',
-      name: 'Івано-Франківськ',
-      category: 'city',
-      priority: 2,
-      lat: 48.92,
-      lng: 24.71,
-      description: 'Гори',
-    },
-    {
-      id: '5',
-      name: 'Одеса',
-      category: 'city',
-      priority: 3,
-      lat: 46.48,
-      lng: 30.72,
-      description: 'Море',
-    },
-    {
-      id: '6',
-      name: 'Умань',
-      category: 'landmark',
-      priority: 3,
-      lat: 48.74,
-      lng: 30.22,
-      description: 'Центр',
-    },
-  ];
-
-  const activeData =
-    itinerary.length > 0
-      ? itinerary
-      : apiLocations.length > 0
-        ? apiLocations
-        : testData;
-
-  const polylinePositions = useMemo<[number, number][]>(() => {
-    if (stateRoutePoints && stateRoutePoints.length >= 2)
-      return stateRoutePoints;
-    return activeData.map((p) => [p.lat, p.lng] as [number, number]);
-  }, [stateRoutePoints, activeData]);
+  const activeData = itinerary.length > 0 ? itinerary : apiLocations;
 
   const routePoints = useMemo(() => {
     if (isOptimized && selectedRoutePoints.length > 2) {
@@ -325,7 +258,25 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     return selectedRoutePoints;
   }, [selectedRoutePoints, isOptimized]);
 
+  // Використовуємо routeCoordinates з бекенду, якщо вони є.
+  // Якщо ні, то використовуємо selectedRoutePoints для клієнтської маршрутизації.
+  const pointsForRouting = useMemo<[number, number][]>(() => {
+    if (routeCoordinates.length > 1) {
+      return routeCoordinates;
+    }
+    return routePoints.map((p) => [p.lat, p.lng] as [number, number]);
+  }, [routeCoordinates, routePoints]);
+
   useVisibleMarkers(activeData, zoom);
+
+  const getRegionForCity = (cityName: string) => {
+    const foundRegion = regionsData.find(
+      (region) =>
+        region.center === cityName ||
+        region.cities.some((city) => city.name === cityName)
+    );
+    return foundRegion ? foundRegion.name : null;
+  };
 
   return (
     <MapWrapper
@@ -557,6 +508,121 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
               </p>
             </div>
           )}
+
+          {/* Details of the active point */}
+          {activePointDetails && (
+            <div style={{ padding: '12px 20px 24px', flex: 1 }}>
+              <h2
+                style={{
+                  fontSize: '18px',
+                  fontWeight: 700,
+                  color: '#1a1a2e',
+                  margin: '0 0 8px',
+                  lineHeight: 1.2,
+                }}
+              >
+                {activePointDetails.name}
+              </h2>
+              {getRegionForCity(activePointDetails.name) && (
+                <span
+                  style={{
+                    fontSize: '0.75rem',
+                    color: '#888',
+                    textTransform: 'uppercase',
+                    display: 'block',
+                    marginBottom: '4px',
+                  }}
+                >
+                  {getRegionForCity(activePointDetails.name)}
+                </span>
+              )}
+              {activePointDetails.imageUrl && (
+                <img
+                  src={activePointDetails.imageUrl}
+                  alt={activePointDetails.name}
+                  style={{
+                    width: '100%',
+                    borderRadius: '4px',
+                    marginTop: '8px',
+                    marginBottom: '8px',
+                  }}
+                />
+              )}
+              <p
+                style={{
+                  fontSize: '14px',
+                  color: '#555',
+                  lineHeight: 1.6,
+                  margin: '0 0 20px',
+                }}
+              >
+                {activePointDetails.description || 'Опис відсутній.'}
+              </p>
+              <button
+                onClick={() => handleSelectPoint(activePointDetails)}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  backgroundColor: isPointSelected(activePointDetails)
+                    ? '#ff4d4f'
+                    : '#3b5bdb',
+                  color: 'white',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                }}
+              >
+                {isPointSelected(activePointDetails)
+                  ? 'Видалити з маршруту'
+                  : 'Додати до маршруту'}
+              </button>
+            </div>
+          )}
+
+          {/* Transport type selection buttons */}
+          <div
+            style={{
+              padding: '12px 20px',
+              borderTop: '1px solid #eee',
+              display: 'flex',
+              gap: '8px',
+              justifyContent: 'center',
+            }}
+          >
+            {(['car', 'bike', 'foot'] as TransportType[]).map((type) => (
+              <button
+                key={type}
+                onClick={() => setTransportType(type)}
+                title={type.charAt(0).toUpperCase() + type.slice(1)}
+                style={{
+                  background:
+                    transportType === type ? '#3b5bdb' : 'transparent',
+                  color: transportType === type ? 'white' : '#333',
+                  border: '1px solid #ddd',
+                  borderRadius: '8px',
+                  padding: '8px 12px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background 0.2s, color 0.2s, border-color 0.2s',
+                  flex: 1,
+                }}
+              >
+                <span
+                  style={{
+                    textTransform: 'capitalize',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                  }}
+                >
+                  {type}
+                </span>
+              </button>
+            ))}
+          </div>
         </RouteSidebar>
 
         <MapArea>
@@ -664,7 +730,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
           <div
             onClick={() => {
               setLayerPanelOpen(!layerPanelOpen);
-              setRoutePanelOpen(false);
             }}
             title="Базові шари"
             style={{
@@ -700,73 +765,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
               <polyline points="2 17 12 22 22 17" />
               <polyline points="2 12 12 17 22 12" />
             </svg>
-          </div>
-
-          <div
-            onClick={() => {
-              setRoutePanelOpen(!routePanelOpen);
-              setLayerPanelOpen(false);
-            }}
-            title="Обрані точки маршруту"
-            style={{
-              position: 'absolute',
-              top: CTRL_TOP + 52 + 56,
-              right: '16px',
-              zIndex: 999,
-              backgroundColor: 'white',
-              borderRadius: '10px',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
-              width: '44px',
-              height: '44px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              border: routePanelOpen
-                ? '1.5px solid #e74c3c'
-                : '1px solid #e8e8e8',
-            }}
-          >
-            <div style={{ position: 'relative' }}>
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#333"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="8" y1="6" x2="21" y2="6"></line>
-                <line x1="8" y1="12" x2="21" y2="12"></line>
-                <line x1="8" y1="18" x2="21" y2="18"></line>
-                <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                <line x1="3" y1="18" x2="3.01" y2="18"></line>
-              </svg>
-              {selectedRoutePoints.length > 0 && (
-                <span
-                  style={{
-                    position: 'absolute',
-                    top: '-8px',
-                    right: '-8px',
-                    backgroundColor: '#e74c3c',
-                    color: 'white',
-                    borderRadius: '50%',
-                    width: '18px',
-                    height: '18px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '10px',
-                    fontWeight: 'bold',
-                  }}
-                >
-                  {selectedRoutePoints.length}
-                </span>
-              )}
-            </div>
           </div>
 
           {layerPanelOpen && (
@@ -1059,188 +1057,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
             </div>
           )}
 
-          {routePanelOpen && (
-            <div
-              style={{
-                position: 'absolute',
-                top: CTRL_TOP + 52 + 56,
-                right: '68px',
-                zIndex: 999,
-                backgroundColor: 'white',
-                borderRadius: '16px',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-                padding: '20px',
-                width: '320px',
-                maxHeight: '60vh',
-                overflowY: 'auto',
-                fontFamily: 'inherit',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '16px',
-                }}
-              >
-                <span
-                  style={{ fontWeight: 800, fontSize: '16px', color: '#111' }}
-                >
-                  Мій маршрут
-                </span>
-                <button
-                  onClick={() => setRoutePanelOpen(false)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    fontSize: '20px',
-                    cursor: 'pointer',
-                    color: '#666',
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-
-              {selectedRoutePoints.length === 0 ? (
-                <p
-                  style={{
-                    color: '#888',
-                    fontSize: '14px',
-                    textAlign: 'center',
-                  }}
-                >
-                  Ви ще не обрали жодної точки. Натисніть на маркер на карті,
-                  щоб додати його до маршруту.
-                </p>
-              ) : (
-                <ol
-                  style={{
-                    listStyle: 'none',
-                    padding: 0,
-                    margin: 0,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px',
-                  }}
-                >
-                  {routePoints.map((point, index) => (
-                    <li
-                      key={point.id}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '10px',
-                        backgroundColor: '#f8f9fa',
-                        borderRadius: '8px',
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px',
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontWeight: 'bold',
-                            color: '#555',
-                            width: '20px',
-                          }}
-                        >
-                          {index + 1}.
-                        </span>
-                        <span style={{ fontSize: '14px', fontWeight: 500 }}>
-                          {point.name}
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => handleSelectPoint(point)}
-                        title="Видалити"
-                        style={{
-                          background: '#ff4757',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          width: '24px',
-                          height: '24px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <line x1="18" y1="6" x2="6" y2="18"></line>
-                          <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                      </button>
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </div>
-          )}
-
-          <div
-            style={{
-              position: 'absolute',
-              top: CTRL_TOP + 52 + 56 + 56,
-              right: '16px',
-              zIndex: 999,
-              backgroundColor: 'white',
-              borderRadius: '10px',
-              boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
-              display: 'flex',
-              padding: '4px',
-              gap: '4px',
-              border: '1px solid #e8e8e8',
-            }}
-          >
-            {(['car', 'bike', 'foot'] as TransportType[]).map((type) => (
-              <button
-                key={type}
-                onClick={() => setTransportType(type)}
-                title={type.charAt(0).toUpperCase() + type.slice(1)}
-                style={{
-                  background:
-                    transportType === type ? '#3b5bdb' : 'transparent',
-                  color: transportType === type ? 'white' : '#333',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '8px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'background 0.2s, color 0.2s',
-                }}
-              >
-                <span
-                  style={{
-                    textTransform: 'capitalize',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                  }}
-                >
-                  {type}
-                </span>
-              </button>
-            ))}
-          </div>
-
           <MapContainer
             center={[48.3794, 31.1656]}
             zoom={6}
@@ -1268,16 +1084,11 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
             <MapController center={urlCenter} zoom={urlZoom} />
             <UserLocation ctrlTop={CTRL_TOP + 52 + 56 + 56 + 56} />
 
-            <RouteBoundsController
-              points={
-                routeCoordinates.length > 0
-                  ? routeCoordinates
-                  : polylinePositions
-              }
-            />
-
-            {routeCoordinates.length > 0 && (
-              <RouteDrawer coordinates={routeCoordinates} />
+            {pointsForRouting.length > 1 && (
+              <Routing
+                points={pointsForRouting}
+                transportType={transportType}
+              />
             )}
 
             <MarkerClusterGroup

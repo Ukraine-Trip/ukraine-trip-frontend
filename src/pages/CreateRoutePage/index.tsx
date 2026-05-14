@@ -54,11 +54,10 @@ export const CreateRoutePage = () => {
 
   const handleCityClick = (city: City) => {
     setActiveCity(city.name);
-    const region = activeRegionIndex !== null ? destinations[activeRegionIndex].region : '';
-    navigate(
-      `/city/${encodeURIComponent(city.name)}?region=${encodeURIComponent(region)}`,
-      { state: { lat: city.lat, lng: city.lng } },
-    );
+
+    // Перенаправляємо на головну карту та центруємо на вибраному місті.
+    // Маршрут не починаємо будувати (точку в маршрут не додаємо).
+    navigate(`/map-page?lat=${city.lat}&lng=${city.lng}&zoom=12`);
   };
 
   const handleBackToRegions = () => {

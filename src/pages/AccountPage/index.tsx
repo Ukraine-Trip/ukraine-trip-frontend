@@ -1,6 +1,6 @@
 import { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Avatar, Stack, Typography, CircularProgress, Divider } from '@mui/material';
+import { Box, Avatar, Stack, Typography, CircularProgress, Divider, List, ListItem, ListItemText, Chip } from '@mui/material';
 import AddLocationAltIcon from '@mui/icons-material/AddLocationAlt';
 import {
   PageWrapper,
@@ -20,6 +20,16 @@ interface UserData {
   password?: string;
 }
 
+interface UserLocation {
+  id: string;
+  name: string;
+  description?: string;
+  region: string;
+  type: string;
+  priority: number;
+  is_approved: boolean;
+}
+
 export const AccountPage: React.FC = () => {
   const { token, setUser: setAuthUser } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -27,6 +37,9 @@ export const AccountPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [newPassword, setNewPassword] = useState('');
   const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+  const [myLocations, setMyLocations] = useState<UserLocation[]>([]);
+  const [locationsLoading, setLocationsLoading] = useState(true);
+  const [locationsError, setLocationsError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -45,6 +58,36 @@ export const AccountPage: React.FC = () => {
     };
     if (token) {
       fetchUserData();
+    } else {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    const fetchMyLocations = async () => {
+      setLocationsError(null);
+      setLocationsLoading(true);
+
+      try {
+        const response = await api.get<UserLocation[]>('/locations/my', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setMyLocations(response.data);
+      } catch (error: any) {
+        console.error('Помилка завантаження власних локацій:', error);
+        setLocationsError(error.response?.data?.detail || 'Не вдалося завантажити ваші точки');
+      } finally {
+        setLocationsLoading(false);
+      }
+    };
+
+    if (token) {
+      fetchMyLocations();
+    } else {
+      setLocationsLoading(false);
+      setMyLocations([]);
     }
   }, [token]);
 
@@ -196,6 +239,45 @@ export const AccountPage: React.FC = () => {
               </Box>
             </Stack>
           </Box>
+        </Box>
+
+        <Divider sx={{ my: 5 }} />
+
+        <Box>
+          <SubTitle>My Created Locations</SubTitle>
+          <Typography sx={{ fontSize: '0.95rem', color: '#666', mb: 3, maxWidth: 680 }}>
+            Тут відображаються лише ті місця, які ви додали особисто. Інші користувачі їх не бачать у вашому акаунті.
+          </Typography>
+
+          {locationsLoading ? (
+            <Typography sx={{ color: 'text.secondary' }}>Завантаження ваших точок...</Typography>
+          ) : locationsError ? (
+            <Typography sx={{ color: 'error.main' }}>{locationsError}</Typography>
+          ) : myLocations.length === 0 ? (
+            <Typography sx={{ color: 'text.secondary' }}>Ви ще не додали жодної локації.</Typography>
+          ) : (
+            <List sx={{ width: '100%', bgcolor: 'background.paper' }}>
+              {myLocations.map((location) => (
+                <ListItem key={location.id} sx={{ flexDirection: 'column', alignItems: 'flex-start', py: 2, borderBottom: '1px solid #eee' }}>
+                  <Box sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+                    <ListItemText
+                      primary={location.name}
+                      secondary={location.region}
+                      secondaryTypographyProps={{ sx: { color: 'text.secondary' } }}
+                    />
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <Chip label={location.type} size="small" />
+                      <Chip label={`Priority ${location.priority}`} size="small" />
+                      <Chip label={location.is_approved ? 'Approved' : 'Pending'} color={location.is_approved ? 'success' : 'warning'} size="small" />
+                    </Box>
+                  </Box>
+                  {location.description ? (
+                    <Typography sx={{ mt: 1, color: 'text.secondary' }}>{location.description}</Typography>
+                  ) : null}
+                </ListItem>
+              ))}
+            </List>
+          )}
         </Box>
 
         <Divider sx={{ my: 5 }} />

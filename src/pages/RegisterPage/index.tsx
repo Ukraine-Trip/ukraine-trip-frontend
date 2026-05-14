@@ -7,7 +7,7 @@ import {
   Alert,
 } from '@mui/material';
 import { Link, useNavigate } from 'react-router-dom';
-import { api, loginUser } from '../../api/auth.ts';
+import { api, loginUser, hashPassword } from '../../api/auth.ts';
 import { getApiErrorMessage } from '../../utils/apiError';
 
 import { PageWrapper } from '../../style/common';
@@ -37,15 +37,16 @@ export const RegisterPage = () => {
     setError(null);
 
     try {
+      const hashedPassword = await hashPassword(formData.password);
       await api.post('/auth/register', {
         full_name: formData.fullName,
         email: formData.email,
-        password: formData.password,
+        password: hashedPassword,
       });
 
       const loginResponse = await loginUser({
         username: formData.email,
-        password: formData.password,
+        password: hashedPassword,
       });
       const { access_token, token: tokenFromResponse, user: responseUser, email: responseEmail, full_name } = loginResponse.data || {};
       const authToken = access_token || tokenFromResponse;

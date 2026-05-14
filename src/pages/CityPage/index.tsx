@@ -146,7 +146,7 @@ export const CityPage: React.FC = () => {
   console.log('REGION FROM URL:', region, '| CITY:', cityName);
   if (trips.length > 0) {
     trips.slice(0, 3).forEach(t => {
-      console.log('TRIP:', t.title, '| nodes:', t.trip_nodes.map(n => ({ name: n.location?.name, region: n.location?.region })));
+      console.log('TRIP:', t.title, JSON.stringify(t.trip_nodes.map(n => ({ name: n.location?.name, region: n.location?.region }))));
     });
   }
 

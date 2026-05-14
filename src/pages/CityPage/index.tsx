@@ -135,11 +135,13 @@ export const CityPage: React.FC = () => {
       .finally(() => setTripsLoading(false));
   }, []);
 
+  const normalize = (s?: string | null) => s?.toLowerCase().trim() ?? '';
+
   const regionTrips = trips.filter((trip) =>
     trip.trip_nodes.some(
       (node) =>
-        node.location?.region === region ||
-        node.location?.name?.toLowerCase() === cityName?.toLowerCase(),
+        normalize(node.location?.region) === normalize(region) ||
+        normalize(node.location?.name) === normalize(cityName),
     ),
   );
 

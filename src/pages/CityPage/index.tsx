@@ -6,14 +6,20 @@ import {
   Chip,
   CircularProgress,
   IconButton,
+  Divider,
+  List,
+  ListItemButton,
+  ListItemText,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { api } from '../../api/auth';
 import { createCustomIcon } from '../MapPage/Map/icons';
+import { getAllTrips } from '../../api/trips';
+import type { Trip } from '../../types/types';
 
 interface LocationData {
   id: string;
@@ -51,6 +57,42 @@ const FlyToSelected: React.FC<{ center: [number, number] | null }> = ({ center }
   return null;
 };
 
+const FlyToRoute: React.FC<{ trip: Trip | null }> = ({ trip }) => {
+  const map = useMap();
+  const prevId = useRef('');
+
+  useEffect(() => {
+    if (!trip) {
+      prevId.current = '';
+      return;
+    }
+    if (trip.id === prevId.current) return;
+    prevId.current = trip.id;
+
+    const coords = trip.trip_nodes
+      .filter((n) => n.location?.lat != null && n.location?.lon != null)
+      .sort((a, b) => a.order_index - b.order_index)
+      .map((n) => [n.location.lat, n.location.lon] as [number, number]);
+
+    if (coords.length === 0) return;
+    if (coords.length === 1) {
+      map.flyTo(coords[0], 13, { animate: true, duration: 1.0 });
+    } else {
+      const bounds = L.latLngBounds(coords);
+      map.flyToBounds(bounds, { padding: [50, 50], animate: true, duration: 1.0 });
+    }
+  }, [map, trip]);
+
+  return null;
+};
+
+const pointsLabel = (count: number): string => {
+  if (count % 10 === 1 && count % 100 !== 11) return `${count} точка`;
+  if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100))
+    return `${count} точки`;
+  return `${count} точок`;
+};
+
 export const CityPage: React.FC = () => {
   const { cityName } = useParams<{ cityName: string }>();
   const [searchParams] = useSearchParams();
@@ -61,6 +103,9 @@ export const CityPage: React.FC = () => {
   const [locations, setLocations] = useState<LocationData[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<LocationData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [trips, setTrips] = useState<Trip[]>([]);
+  const [tripsLoading, setTripsLoading] = useState(true);
+  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
 
   useEffect(() => {
     const fetchLocations = async () => {
@@ -82,12 +127,39 @@ export const CityPage: React.FC = () => {
     fetchLocations();
   }, [cityName, region]);
 
+  useEffect(() => {
+    setTripsLoading(true);
+    getAllTrips()
+      .then(setTrips)
+      .catch(() => setTrips([]))
+      .finally(() => setTripsLoading(false));
+  }, []);
+
+  const regionTrips = trips.filter((trip) =>
+    trip.trip_nodes.some(
+      (node) =>
+        node.location?.region === region ||
+        node.location?.name?.toLowerCase() === cityName?.toLowerCase(),
+    ),
+  );
+
   const mapCenter: [number, number] | null =
     selectedLocation
       ? [selectedLocation.lat, selectedLocation.lon]
       : navState?.lat && navState?.lng
         ? [navState.lat, navState.lng]
         : null;
+
+  const routeCoords: [number, number][] = selectedTrip
+    ? selectedTrip.trip_nodes
+        .filter((n) => n.location?.lat != null && n.location?.lon != null)
+        .sort((a, b) => a.order_index - b.order_index)
+        .map((n) => [n.location.lat, n.location.lon])
+    : [];
+
+  const handleRouteClick = (trip: Trip) => {
+    setSelectedTrip((prev) => (prev?.id === trip.id ? null : trip));
+  };
 
   const descriptionPanel = (
     <Box
@@ -168,6 +240,55 @@ export const CityPage: React.FC = () => {
           </Typography>
         </>
       )}
+
+      <Divider sx={{ mt: 1 }} />
+
+      <Typography
+        variant="overline"
+        sx={{ letterSpacing: 1.5, color: 'text.secondary', fontWeight: 600 }}
+      >
+        Маршрути в регіоні
+      </Typography>
+
+      {tripsLoading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+          <CircularProgress size={24} />
+        </Box>
+      ) : regionTrips.length === 0 ? (
+        <Typography variant="body2" color="text.disabled">
+          Маршрутів для цього регіону не знайдено.
+        </Typography>
+      ) : (
+        <List disablePadding sx={{ mx: -1 }}>
+          {regionTrips.map((trip) => (
+            <ListItemButton
+              key={trip.id}
+              selected={selectedTrip?.id === trip.id}
+              onClick={() => handleRouteClick(trip)}
+              sx={{
+                borderRadius: 1,
+                mb: 0.5,
+                '&.Mui-selected': {
+                  bgcolor: 'primary.main',
+                  color: 'primary.contrastText',
+                  '&:hover': { bgcolor: 'primary.dark' },
+                  '& .MuiListItemText-secondary': { color: 'primary.contrastText', opacity: 0.8 },
+                },
+              }}
+            >
+              <ListItemText
+                primary={trip.title}
+                secondary={pointsLabel(trip.trip_nodes.length)}
+                primaryTypographyProps={{
+                  fontWeight: selectedTrip?.id === trip.id ? 700 : 500,
+                  fontSize: '0.875rem',
+                }}
+                secondaryTypographyProps={{ fontSize: '0.75rem' }}
+              />
+            </ListItemButton>
+          ))}
+        </List>
+      )}
     </Box>
   );
 
@@ -192,7 +313,15 @@ export const CityPage: React.FC = () => {
           url="https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"
           attribution="&copy; Stadia Maps"
         />
-        <FlyToSelected center={mapCenter} />
+        <FlyToSelected center={selectedTrip ? null : mapCenter} />
+        <FlyToRoute trip={selectedTrip} />
+
+        {routeCoords.length > 1 && (
+          <Polyline
+            positions={routeCoords}
+            pathOptions={{ color: '#1976d2', weight: 4, opacity: 0.85, dashArray: undefined }}
+          />
+        )}
 
         <MarkerClusterGroup
           chunkedLoading
@@ -207,7 +336,10 @@ export const CityPage: React.FC = () => {
                 position={[loc.lat, loc.lon]}
                 icon={createCustomIcon(loc.type)}
                 eventHandlers={{
-                  click: () => setSelectedLocation(loc),
+                  click: () => {
+                    setSelectedLocation(loc);
+                    setSelectedTrip(null);
+                  },
                 }}
               />
             ))}

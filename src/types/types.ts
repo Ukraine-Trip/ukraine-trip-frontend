@@ -3,6 +3,7 @@ export interface TripLocation {
   lat: number;
   lon: number;
   name?: string;
+  region?: string;
 }
 
 export interface TripNode {

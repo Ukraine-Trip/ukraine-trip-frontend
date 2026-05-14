@@ -263,10 +263,21 @@ export const AccountPage: React.FC = () => {
 
         <Collapse in={showLocations}>
           <Box>
-            <SubTitle>My Created Locations</SubTitle>
-            <Typography sx={{ fontSize: '0.95rem', color: '#666', mb: 3, maxWidth: 680 }}>
-              Тут відображаються лише ті місця, які ви додали особисто. Інші користувачі їх не бачать у вашому акаунті.
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2, mb: 2 }}>
+              <Box>
+                <SubTitle>My Created Locations</SubTitle>
+                <Typography sx={{ fontSize: '0.95rem', color: '#666', maxWidth: 680 }}>
+                  Тут відображаються лише ті місця, які ви додали особисто. Інші користувачі їх не бачать у вашому акаунті.
+                </Typography>
+              </Box>
+              <SecondaryButton
+                variant="outlined"
+                onClick={() => navigate('/create-location')}
+                sx={{ alignSelf: 'center' }}
+              >
+                Create New Place
+              </SecondaryButton>
+            </Box>
 
           {locationsLoading ? (
             <Typography sx={{ color: 'text.secondary' }}>Завантаження ваших точок...</Typography>

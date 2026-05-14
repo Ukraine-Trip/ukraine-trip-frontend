@@ -7,7 +7,7 @@ import {
   Alert,
 } from '@mui/material';
 import { Link, useNavigate } from 'react-router-dom';
-import { loginUser } from '../../api/auth.ts';
+import { loginUser, hashPassword } from '../../api/auth.ts';
 import { getApiErrorMessage } from '../../utils/apiError';
 
 import { PageWrapper } from '../../style/common';
@@ -26,7 +26,8 @@ export const LoginPage = () => {
     event.preventDefault();
     setError(null);
     try {
-      const response = await loginUser({ username: email, password });
+      const hashedPassword = await hashPassword(password);
+      const response = await loginUser({ username: email, password: hashedPassword });
       const { access_token, token: tokenFromResponse, user: responseUser, email: responseEmail, full_name } = response.data;
       const authToken = access_token || tokenFromResponse;
 

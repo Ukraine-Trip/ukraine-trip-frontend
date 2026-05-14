@@ -10,7 +10,7 @@ import {
   PrimaryButton,
   SecondaryButton,
 } from '../../style/common.tsx';
-import { api } from '../../api/auth.ts';
+import { api, hashPassword } from '../../api/auth.ts';
 import { AuthContext } from '../../context/AuthContext';
 
 interface UserData {
@@ -56,7 +56,7 @@ export const AccountPage: React.FC = () => {
       };
 
       if (newPassword) {
-        payload.password = newPassword;
+        payload.password = await hashPassword(newPassword);
       }
 
       const response = await api.put('/users/me', payload, {

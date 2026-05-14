@@ -299,5 +299,7 @@ export const AccountPage: React.FC = () => {
           )}
         </Box>
       </Collapse>
+      </Box>
+    </PageWrapper>
   );
 };

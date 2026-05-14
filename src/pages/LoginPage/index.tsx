@@ -46,7 +46,6 @@ export const LoginPage = () => {
 
   return (
     <PageWrapper sx={{ pt: 15, pb: 8 }}>
-      <style>{`footer { display: none !important; }`}</style>
       <Container component="main" maxWidth="xs">
         <FormContainer>
           <Typography component="h1" variant="h5" fontWeight="700">

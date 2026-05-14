@@ -77,7 +77,7 @@ export const CreateRoutePage = () => {
 
   return (
     <PageWrapper sx={{ pt: 14, pb: 12 }}>
-      <style>{`footer { display: none !important; }`}</style>
+    
 
       <MenuContainer sx={{ m: 0, mx: { xs: 2, md: 8 }, alignItems: 'flex-start' }}>
         {(!isMobile || !showCitiesMobile) && (

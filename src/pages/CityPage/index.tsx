@@ -227,7 +227,6 @@ export const CityPage: React.FC = () => {
       }}
     >
       <style>{`
-        footer { display: none !important; }
         .custom-cluster-icon {
           background: #ffffff;
           border: 2px solid #222222;

@@ -142,7 +142,7 @@ export const CreateLocationPage: React.FC = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setSuccess(true);
-      setTimeout(() => navigate(`/map-page?lat=${selectedPos.lat}&lng=${selectedPos.lng}&zoom=15`), 1800);
+      setTimeout(() => navigate('/account?showLocations=1'), 1800);
     } catch (err: any) {
       setError(err?.response?.data?.detail || 'Failed to create location. Please try again.');
     } finally {

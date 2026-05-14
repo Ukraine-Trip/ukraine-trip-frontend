@@ -1,6 +1,6 @@
 import { useEffect, useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Box, Avatar, Stack, Typography, CircularProgress, Divider } from '@mui/material';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Box, Avatar, Stack, Typography, CircularProgress, Divider, List, ListItem, ListItemText, Chip, Collapse } from '@mui/material';
 import AddLocationAltIcon from '@mui/icons-material/AddLocationAlt';
 import {
   PageWrapper,
@@ -20,13 +20,28 @@ interface UserData {
   password?: string;
 }
 
+interface UserLocation {
+  id: string;
+  name: string;
+  description?: string;
+  region: string;
+  type: string;
+  priority: number;
+  is_approved: boolean;
+}
+
 export const AccountPage: React.FC = () => {
   const { token, setUser: setAuthUser } = useContext(AuthContext);
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [newPassword, setNewPassword] = useState('');
   const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+  const [myLocations, setMyLocations] = useState<UserLocation[]>([]);
+  const [locationsLoading, setLocationsLoading] = useState(true);
+  const [locationsError, setLocationsError] = useState<string | null>(null);
+  const [showLocations, setShowLocations] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -45,8 +60,45 @@ export const AccountPage: React.FC = () => {
     };
     if (token) {
       fetchUserData();
+    } else {
+      setLoading(false);
     }
   }, [token]);
+
+  useEffect(() => {
+    const fetchMyLocations = async () => {
+      setLocationsError(null);
+      setLocationsLoading(true);
+
+      try {
+        const response = await api.get<UserLocation[]>('/locations/my', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setMyLocations(response.data);
+      } catch (error: any) {
+        console.error('Помилка завантаження власних локацій:', error);
+        setLocationsError(error.response?.data?.detail || 'Не вдалося завантажити ваші точки');
+      } finally {
+        setLocationsLoading(false);
+      }
+    };
+
+    if (token) {
+      fetchMyLocations();
+    } else {
+      setLocationsLoading(false);
+      setMyLocations([]);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('showLocations') === '1') {
+      setShowLocations(true);
+    }
+  }, [location.search]);
 
   const handleSave = async () => {
     setMessage(null);
@@ -200,25 +252,64 @@ export const AccountPage: React.FC = () => {
 
         <Divider sx={{ my: 5 }} />
 
-        <Box>
-          <SubTitle>Contribute</SubTitle>
-          <Typography
-            variant="h6"
-            sx={{ fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', mb: 1 }}
-          >
-            Add a Point of Interest
-          </Typography>
-          <Typography sx={{ fontSize: '0.85rem', color: '#666', mb: 3, maxWidth: 480 }}>
-            Know an interesting place in Ukraine? Pin it on the map and share it with other travelers.
-          </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
           <SecondaryButton
             variant="outlined"
-            onClick={() => navigate('/create-location')}
-            startIcon={<AddLocationAltIcon />}
+            onClick={() => setShowLocations((prev) => !prev)}
           >
-            Create New Place
+            {showLocations ? 'Hide my locations' : 'View my locations'}
           </SecondaryButton>
         </Box>
+
+        <Collapse in={showLocations}>
+          <Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2, mb: 2 }}>
+              <Box>
+                <SubTitle>My Created Locations</SubTitle>
+                <Typography sx={{ fontSize: '0.95rem', color: '#666', maxWidth: 680 }}>
+                  Тут відображаються лише ті місця, які ви додали особисто. Інші користувачі їх не бачать у вашому акаунті.
+                </Typography>
+              </Box>
+              <SecondaryButton
+                variant="outlined"
+                onClick={() => navigate('/create-location')}
+                sx={{ alignSelf: 'center' }}
+              >
+                Create New Place
+              </SecondaryButton>
+            </Box>
+
+          {locationsLoading ? (
+            <Typography sx={{ color: 'text.secondary' }}>Завантаження ваших точок...</Typography>
+          ) : locationsError ? (
+            <Typography sx={{ color: 'error.main' }}>{locationsError}</Typography>
+          ) : myLocations.length === 0 ? (
+            <Typography sx={{ color: 'text.secondary' }}>Ви ще не додали жодної локації.</Typography>
+          ) : (
+            <List sx={{ width: '100%', bgcolor: 'background.paper' }}>
+              {myLocations.map((location) => (
+                <ListItem key={location.id} sx={{ flexDirection: 'column', alignItems: 'flex-start', py: 2, borderBottom: '1px solid #eee' }}>
+                  <Box sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
+                    <ListItemText
+                      primary={location.name}
+                      secondary={location.region}
+                      secondaryTypographyProps={{ sx: { color: 'text.secondary' } }}
+                    />
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <Chip label={location.type} size="small" />
+                      <Chip label={`Priority ${location.priority}`} size="small" />
+                      <Chip label={location.is_approved ? 'Approved' : 'Pending'} color={location.is_approved ? 'success' : 'warning'} size="small" />
+                    </Box>
+                  </Box>
+                  {location.description ? (
+                    <Typography sx={{ mt: 1, color: 'text.secondary' }}>{location.description}</Typography>
+                  ) : null}
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </Box>
+      </Collapse>
       </Box>
     </PageWrapper>
   );

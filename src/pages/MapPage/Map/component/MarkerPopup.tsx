@@ -1,11 +1,19 @@
 import React from 'react';
 import { Popup } from 'react-leaflet';
 import type { ItineraryPoint } from '../../../../types/types.ts';
-// 1. Повертаємо імпорт довідника сюди
 import regionsData from '../../../../librarian/cities.json';
 
-export const MarkerPopup: React.FC<{ point: ItineraryPoint }> = ({ point }) => {
-  // 2. Логіка пошуку області тепер живе тут
+interface MarkerPopupProps {
+  point: ItineraryPoint;
+  onSelectPoint: (point: ItineraryPoint) => void;
+  isSelected: boolean;
+}
+
+export const MarkerPopup: React.FC<MarkerPopupProps> = ({
+  point,
+  onSelectPoint,
+  isSelected,
+}) => {
   const getRegionForCity = (cityName: string) => {
     const foundRegion = regionsData.find(
       (region) =>
@@ -20,7 +28,6 @@ export const MarkerPopup: React.FC<{ point: ItineraryPoint }> = ({ point }) => {
   return (
     <Popup minWidth={200}>
       <div style={{ textAlign: 'center', fontFamily: 'sans-serif' }}>
-        {/* 3. Відображаємо область, якщо знайшли її */}
         {regionName && (
           <span
             style={{
@@ -59,6 +66,24 @@ export const MarkerPopup: React.FC<{ point: ItineraryPoint }> = ({ point }) => {
             style={{ width: '100%', borderRadius: '4px', marginTop: '8px' }}
           />
         )}
+
+        <button
+          onClick={() => onSelectPoint(point)}
+          style={{
+            marginTop: '12px',
+            width: '100%',
+            padding: '8px',
+            borderRadius: '6px',
+            border: 'none',
+            backgroundColor: isSelected ? '#ff4d4f' : '#3b5bdb',
+            color: 'white',
+            fontWeight: 600,
+            cursor: 'pointer',
+            fontSize: '0.85rem',
+          }}
+        >
+          {isSelected ? 'Remove from route' : 'Add to route'}
+        </button>
       </div>
     </Popup>
   );

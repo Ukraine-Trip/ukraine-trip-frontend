@@ -130,35 +130,25 @@ export const CityPage: React.FC = () => {
   useEffect(() => {
     setTripsLoading(true);
     getAllTrips()
-      .then((data) => {
-        console.log('TRIPS FROM API:', data);
-        setTrips(data);
-      })
-      .catch((err) => {
-        console.error('TRIPS ERROR:', err);
-        setTrips([]);
-      })
+      .then(setTrips)
+      .catch(() => setTrips([]))
       .finally(() => setTripsLoading(false));
   }, []);
 
   const normalize = (s?: string | null) => s?.toLowerCase().trim() ?? '';
 
-  console.log('REGION FROM URL:', region, '| CITY:', cityName);
-  if (trips.length > 0) {
-    trips.slice(0, 3).forEach(t => {
-      console.log('TRIP:', t.title, JSON.stringify(t.trip_nodes.map(n => ({ name: n.location?.name, region: n.location?.region }))));
-    });
-  }
 
   const regionTrips = trips.filter((trip) =>
-    trip.trip_nodes.some(
-      (node) =>
-        normalize(node.location?.region) === normalize(region) ||
-        normalize(node.location?.name) === normalize(cityName),
-    ),
+    trip.trip_nodes.some((node) => {
+      const locRegion = normalize(node.location?.region);
+      const urlRegion = normalize(region);
+      return (
+        (locRegion && urlRegion && (urlRegion.includes(locRegion) || locRegion.includes(urlRegion))) ||
+        normalize(node.location?.name) === normalize(cityName)
+      );
+    }),
   );
 
-  console.log('REGION TRIPS:', regionTrips.length);
 
   const mapCenter: [number, number] | null =
     selectedLocation

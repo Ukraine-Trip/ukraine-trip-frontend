@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useEffect, useContext, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useContext } from 'react';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Polyline } from 'react-leaflet';
 
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
@@ -19,9 +19,10 @@ import { useVisibleMarkers } from './useVisibleMarkers.ts';
 import { MapController } from './component/MapController.tsx';
 import Routing from './component/Routing.tsx';
 import { UserLocation } from './component/UserLocation.tsx';
-import type { ItineraryPoint } from '../../../types/types.ts';
+import type { ItineraryPoint, Trip } from '../../../types/types.ts';
 import { optimizeRoute } from '../../../utils/routeOptimizer';
 import regionsData from '../../../librarian/cities.json';
+import { getAllTrips } from '../../../api/trips.ts';
 
 const HEADER_H = 80;
 const CTRL_TOP = HEADER_H + 12;
@@ -32,6 +33,12 @@ interface TripMeta {
   start_date: string | null;
   end_date: string | null;
   waypoints: Array<{ name: string; order_index: number }>;
+}
+
+interface CityMeta {
+  name: string;
+  lat: number;
+  lng: number;
 }
 
 const createClusterCustomIcon = (cluster: any) => {
@@ -96,6 +103,10 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   const [isRouteLoading, setIsRouteLoading] = useState(false);
   const [activePointDetails, setActivePointDetails] =
     useState<ItineraryPoint | null>(null);
+  const [cityTrips, setCityTrips] = useState<Trip[]>([]);
+  const [cityTripsLoading, setCityTripsLoading] = useState(false);
+  const [selectedCityTrip, setSelectedCityTrip] = useState<Trip | null>(null);
+  const [routeBuildingMode, setRouteBuildingMode] = useState(false);
 
   // Initialize selected route points from navigation state if available
   useEffect(() => {
@@ -126,6 +137,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   };
 
   const tripMeta: TripMeta | undefined = (navLocation.state as any)?.tripMeta;
+  const cityMeta: CityMeta | undefined = (navLocation.state as any)?.cityMeta;
 
   const [apiLocations, setApiLocations] = useState<ItineraryPoint[]>([]);
 
@@ -268,6 +280,44 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   }, [routeCoordinates, routePoints]);
 
   useVisibleMarkers(activeData, zoom);
+
+  useEffect(() => {
+    if (!cityMeta) return;
+    setCityTripsLoading(true);
+    getAllTrips()
+      .then((trips) => {
+        const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
+        const filtered = trips.filter((trip) =>
+          trip.trip_nodes.some(
+            (node) =>
+              norm(node.location?.name) === norm(cityMeta.name) ||
+              norm(node.location?.region).includes(norm(cityMeta.name)) ||
+              norm(cityMeta.name).includes(norm(node.location?.region)),
+          ),
+        );
+        setCityTrips(filtered);
+      })
+      .catch(() => setCityTrips([]))
+      .finally(() => setCityTripsLoading(false));
+  }, [cityMeta?.name]);
+
+  const cityLocation = useMemo(
+    () =>
+      cityMeta
+        ? apiLocations.find(
+            (loc) =>
+              loc.name.toLowerCase() === cityMeta.name.toLowerCase(),
+          ) ?? null
+        : null,
+    [cityMeta, apiLocations],
+  );
+
+  const pointsLabel = (count: number): string => {
+    if (count % 10 === 1 && count % 100 !== 11) return `${count} точка`;
+    if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100))
+      return `${count} точки`;
+    return `${count} точок`;
+  };
 
   const getRegionForCity = (cityName: string) => {
     const foundRegion = regionsData.find(
@@ -474,43 +524,399 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                 </>
               )}
             </div>
-          ) : (
+          ) : cityMeta && !routeBuildingMode ? (
             <div
               style={{
+                padding: '12px 20px 24px',
                 flex: 1,
+                overflowY: 'auto',
                 display: 'flex',
                 flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '32px 24px',
-                textAlign: 'center',
-                color: '#bbb',
               }}
             >
-              <svg
-                width="48"
-                height="48"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#ddd"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ marginBottom: '16px' }}
+              <h1
+                style={{
+                  fontSize: '22px',
+                  fontWeight: 800,
+                  color: '#1a1a2e',
+                  margin: '0 0 8px',
+                  lineHeight: 1.2,
+                  letterSpacing: '-0.3px',
+                }}
               >
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
-                <circle cx="12" cy="9" r="2.5" />
-              </svg>
-              <p style={{ margin: 0, fontSize: '14px', lineHeight: 1.5 }}>
-                Select a route from the
-                <br />
-                home page to see details
-              </p>
-            </div>
-          )}
+                {cityMeta.name}
+              </h1>
 
-          {/* Details of the active point */}
-          {activePointDetails && (
+              {cityLocation?.description && (
+                <p
+                  style={{
+                    fontSize: '14px',
+                    color: '#555',
+                    lineHeight: 1.6,
+                    margin: '0 0 16px',
+                  }}
+                >
+                  {cityLocation.description}
+                </p>
+              )}
+
+              {activePointDetails ? (
+                <div>
+                  <button
+                    onClick={() => setActivePointDetails(null)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#3b5bdb',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      padding: '0 0 12px',
+                    }}
+                  >
+                    ← Назад до міста
+                  </button>
+                  <h2
+                    style={{
+                      fontSize: '18px',
+                      fontWeight: 700,
+                      color: '#1a1a2e',
+                      margin: '0 0 8px',
+                    }}
+                  >
+                    {activePointDetails.name}
+                  </h2>
+                  {activePointDetails.imageUrl && (
+                    <img
+                      src={activePointDetails.imageUrl}
+                      alt={activePointDetails.name}
+                      style={{
+                        width: '100%',
+                        borderRadius: '4px',
+                        marginBottom: '8px',
+                      }}
+                    />
+                  )}
+                  <p
+                    style={{
+                      fontSize: '14px',
+                      color: '#555',
+                      lineHeight: 1.6,
+                      margin: '0 0 16px',
+                    }}
+                  >
+                    {activePointDetails.description || 'Опис відсутній.'}
+                  </p>
+                  <button
+                    onClick={() => handleSelectPoint(activePointDetails)}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      backgroundColor: isPointSelected(activePointDetails)
+                        ? '#ff4d4f'
+                        : '#3b5bdb',
+                      color: 'white',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                    }}
+                  >
+                    {isPointSelected(activePointDetails)
+                      ? 'Видалити з маршруту'
+                      : 'Додати до маршруту'}
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div
+                    style={{
+                      height: '1px',
+                      background: '#ebebeb',
+                      margin: '0 0 16px',
+                    }}
+                  />
+                  <div
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      color: '#999',
+                      letterSpacing: '1px',
+                      textTransform: 'uppercase',
+                      marginBottom: '12px',
+                    }}
+                  >
+                    Готові маршрути
+                  </div>
+
+                  {cityTripsLoading ? (
+                    <div
+                      style={{ fontSize: '13px', color: '#bbb', padding: '8px 0' }}
+                    >
+                      Завантаження...
+                    </div>
+                  ) : cityTrips.length === 0 ? (
+                    <div
+                      style={{ fontSize: '13px', color: '#bbb', padding: '8px 0' }}
+                    >
+                      Маршрутів для цього міста не знайдено.
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px',
+                        marginBottom: '20px',
+                      }}
+                    >
+                      {cityTrips.map((trip) => (
+                        <div
+                          key={trip.id}
+                          onClick={() =>
+                            setSelectedCityTrip((prev) =>
+                              prev?.id === trip.id ? null : trip,
+                            )
+                          }
+                          style={{
+                            padding: '10px 12px',
+                            borderRadius: '8px',
+                            background:
+                              selectedCityTrip?.id === trip.id
+                                ? '#3b5bdb'
+                                : '#f8f8f8',
+                            color:
+                              selectedCityTrip?.id === trip.id ? 'white' : '#222',
+                            cursor: 'pointer',
+                            border: `1px solid ${selectedCityTrip?.id === trip.id ? '#3b5bdb' : '#ebebeb'}`,
+                            transition: 'all 0.15s',
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontWeight: 600,
+                              fontSize: '13px',
+                              marginBottom: '2px',
+                            }}
+                          >
+                            {trip.title}
+                          </div>
+                          <div style={{ fontSize: '12px', opacity: 0.7 }}>
+                            {pointsLabel(trip.trip_nodes.length)}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div style={{ flex: 1 }} />
+
+                  <button
+                    onClick={() => {
+                      setSelectedCityTrip(null);
+                      setRouteBuildingMode(true);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      backgroundColor: '#3b5bdb',
+                      color: 'white',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      letterSpacing: '0.3px',
+                      marginTop: '16px',
+                    }}
+                  >
+                    Побудувати маршрут
+                  </button>
+                </>
+              )}
+            </div>
+          ) : routeBuildingMode ? (
+            <div
+              style={{
+                padding: '12px 20px 24px',
+                flex: 1,
+                overflowY: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <div
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: '#999',
+                  letterSpacing: '1px',
+                  textTransform: 'uppercase',
+                  marginBottom: '12px',
+                }}
+              >
+                Побудова маршруту
+              </div>
+
+              {selectedRoutePoints.length === 0 ? (
+                <p style={{ fontSize: '13px', color: '#888', lineHeight: 1.5 }}>
+                  Натискайте на маркери на карті, щоб додати точки до маршруту
+                </p>
+              ) : (
+                <ol
+                  style={{
+                    listStyle: 'none',
+                    margin: '0 0 16px',
+                    padding: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                  }}
+                >
+                  {selectedRoutePoints.map((p, i) => (
+                    <li
+                      key={p.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        padding: '8px 10px',
+                        borderRadius: '8px',
+                        background:
+                          i === 0
+                            ? '#f0f7f4'
+                            : i === selectedRoutePoints.length - 1
+                              ? '#f7f0f0'
+                              : 'transparent',
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: '22px',
+                          height: '22px',
+                          borderRadius: '50%',
+                          background:
+                            i === 0
+                              ? '#2e7d5a'
+                              : i === selectedRoutePoints.length - 1
+                                ? '#c0392b'
+                                : '#e8e8e8',
+                          color:
+                            i === 0 || i === selectedRoutePoints.length - 1
+                              ? '#fff'
+                              : '#555',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {i + 1}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '13px',
+                          color: '#222',
+                          fontWeight: 500,
+                          flex: 1,
+                        }}
+                      >
+                        {p.name}
+                      </span>
+                      <button
+                        onClick={() => handleSelectPoint(p)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          color: '#999',
+                          fontSize: '16px',
+                          padding: '0 4px',
+                          lineHeight: 1,
+                        }}
+                      >
+                        ×
+                      </button>
+                    </li>
+                  ))}
+                </ol>
+              )}
+
+              {activePointDetails && (
+                <div
+                  style={{
+                    padding: '12px',
+                    background: '#f8f9ff',
+                    borderRadius: '8px',
+                    border: '1px solid #e0e6ff',
+                    marginBottom: '16px',
+                  }}
+                >
+                  <h3
+                    style={{
+                      fontSize: '15px',
+                      fontWeight: 700,
+                      margin: '0 0 8px',
+                      color: '#1a1a2e',
+                    }}
+                  >
+                    {activePointDetails.name}
+                  </h3>
+                  <button
+                    onClick={() => handleSelectPoint(activePointDetails)}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      backgroundColor: isPointSelected(activePointDetails)
+                        ? '#ff4d4f'
+                        : '#3b5bdb',
+                      color: 'white',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                    }}
+                  >
+                    {isPointSelected(activePointDetails)
+                      ? 'Видалити з маршруту'
+                      : 'Додати до маршруту'}
+                  </button>
+                </div>
+              )}
+
+              <div style={{ flex: 1 }} />
+
+              {cityMeta && (
+                <button
+                  onClick={() => {
+                    setRouteBuildingMode(false);
+                    setSelectedRoutePoints([]);
+                    setActivePointDetails(null);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    border: '1px solid #ddd',
+                    backgroundColor: 'transparent',
+                    color: '#555',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                  }}
+                >
+                  ← Назад до {cityMeta.name}
+                </button>
+              )}
+            </div>
+          ) : activePointDetails ? (
             <div style={{ padding: '12px 20px 24px', flex: 1 }}>
               <h2
                 style={{
@@ -579,50 +985,40 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                   : 'Додати до маршруту'}
               </button>
             </div>
-          )}
-
-          {/* Transport type selection buttons */}
-          <div
-            style={{
-              padding: '12px 20px',
-              borderTop: '1px solid #eee',
-              display: 'flex',
-              gap: '8px',
-              justifyContent: 'center',
-            }}
-          >
-            {(['car', 'bike', 'foot'] as TransportType[]).map((type) => (
-              <button
-                key={type}
-                onClick={() => setTransportType(type)}
-                title={type.charAt(0).toUpperCase() + type.slice(1)}
-                style={{
-                  background:
-                    transportType === type ? '#3b5bdb' : 'transparent',
-                  color: transportType === type ? 'white' : '#333',
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  padding: '8px 12px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'background 0.2s, color 0.2s, border-color 0.2s',
-                  flex: 1,
-                }}
+          ) : (
+            <div
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '32px 24px',
+                textAlign: 'center',
+                color: '#bbb',
+              }}
+            >
+              <svg
+                width="48"
+                height="48"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#ddd"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ marginBottom: '16px' }}
               >
-                <span
-                  style={{
-                    textTransform: 'capitalize',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                  }}
-                >
-                  {type}
-                </span>
-              </button>
-            ))}
-          </div>
+                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
+                <circle cx="12" cy="9" r="2.5" />
+              </svg>
+              <p style={{ margin: 0, fontSize: '14px', lineHeight: 1.5 }}>
+                Select a route from the
+                <br />
+                home page to see details
+              </p>
+            </div>
+          )}
         </RouteSidebar>
 
         <MapArea>
@@ -1057,6 +1453,45 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
             </div>
           )}
 
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '32px',
+              right: '16px',
+              zIndex: 999,
+              display: 'flex',
+              flexDirection: 'row',
+              gap: '4px',
+              background: 'white',
+              borderRadius: '12px',
+              padding: '5px',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.15)',
+              border: '1px solid #e8e8e8',
+            }}
+          >
+            {(['car', 'bike', 'foot'] as TransportType[]).map((type) => (
+              <button
+                key={type}
+                onClick={() => setTransportType(type)}
+                title={type.charAt(0).toUpperCase() + type.slice(1)}
+                style={{
+                  background: transportType === type ? '#3b5bdb' : 'transparent',
+                  color: transportType === type ? 'white' : '#555',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '6px 14px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  textTransform: 'capitalize',
+                  transition: 'background 0.2s, color 0.2s',
+                }}
+              >
+                {type}
+              </button>
+            ))}
+          </div>
+
           <MapContainer
             center={[48.3794, 31.1656]}
             zoom={6}
@@ -1088,6 +1523,18 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
               <Routing
                 points={pointsForRouting}
                 transportType={transportType}
+              />
+            )}
+
+            {selectedCityTrip && (
+              <Polyline
+                positions={selectedCityTrip.trip_nodes
+                  .filter(
+                    (n) => n.location?.lat != null && n.location?.lon != null,
+                  )
+                  .sort((a, b) => a.order_index - b.order_index)
+                  .map((n) => [n.location.lat, n.location.lon] as [number, number])}
+                pathOptions={{ color: '#1976d2', weight: 4, opacity: 0.85 }}
               />
             )}
 

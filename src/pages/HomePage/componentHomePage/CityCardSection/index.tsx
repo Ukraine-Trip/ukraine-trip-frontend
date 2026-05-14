@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -20,6 +20,7 @@ export const CityCardsSection: React.FC<CityCardsSectionProps> = ({
   cities,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const navigate = useNavigate();
 
   // Фільтруємо унікальні міста
   const uniqueCities = useMemo(() => {
@@ -60,8 +61,9 @@ export const CityCardsSection: React.FC<CityCardsSectionProps> = ({
           {initialCities.map((city) => (
             <CityCard as={Card} key={city.id}>
               <CardActionArea
-                component={RouterLink}
-                to={`/map-page?lat=${city.lat}&lng=${city.lng}&zoom=13`}
+                onClick={() => navigate(`/map-page?lat=${city.lat}&lng=${city.lng}&zoom=13`, {
+                  state: { cityMeta: { name: city.cityName, lat: city.lat, lng: city.lng } },
+                })}
               >
                 <CardMedia
                   component="img"
@@ -83,8 +85,9 @@ export const CityCardsSection: React.FC<CityCardsSectionProps> = ({
               {remainingCities.map((city) => (
                 <CityCard as={Card} key={city.id}>
                   <CardActionArea
-                    component={RouterLink}
-                    to={`/map-page?lat=${city.lat}&lng=${city.lng}&zoom=13`}
+                    onClick={() => navigate(`/map-page?lat=${city.lat}&lng=${city.lng}&zoom=13`, {
+                      state: { cityMeta: { name: city.cityName, lat: city.lat, lng: city.lng } },
+                    })}
                   >
                     <CardMedia
                       component="img"

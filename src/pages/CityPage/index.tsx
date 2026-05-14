@@ -144,7 +144,11 @@ export const CityPage: React.FC = () => {
   const normalize = (s?: string | null) => s?.toLowerCase().trim() ?? '';
 
   console.log('REGION FROM URL:', region, '| CITY:', cityName);
-  console.log('ALL TRIPS:', trips.length, trips.map(t => ({ title: t.title, nodes: t.trip_nodes.map(n => n.location?.region) })));
+  if (trips.length > 0) {
+    trips.slice(0, 3).forEach(t => {
+      console.log('TRIP:', t.title, '| nodes:', t.trip_nodes.map(n => ({ name: n.location?.name, region: n.location?.region })));
+    });
+  }
 
   const regionTrips = trips.filter((trip) =>
     trip.trip_nodes.some(

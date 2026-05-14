@@ -57,7 +57,9 @@ export const CreateRoutePage = () => {
 
     // Перенаправляємо на головну карту та центруємо на вибраному місті.
     // Маршрут не починаємо будувати (точку в маршрут не додаємо).
-    navigate(`/map-page?lat=${city.lat}&lng=${city.lng}&zoom=12`);
+    navigate(`/map-page?lat=${city.lat}&lng=${city.lng}&zoom=12`, {
+      state: { cityMeta: { name: city.name, lat: city.lat, lng: city.lng } },
+    });
   };
 
   const handleBackToRegions = () => {

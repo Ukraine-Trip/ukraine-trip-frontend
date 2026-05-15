@@ -107,16 +107,19 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   const [cityTripsLoading, setCityTripsLoading] = useState(false);
   const [selectedCityTrip, setSelectedCityTrip] = useState<Trip | null>(null);
   const [routeBuildingMode, setRouteBuildingMode] = useState(false);
+  const [saveMode, setSaveMode] = useState(false);
+  const [tripTitle, setTripTitle] = useState('');
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Initialize selected route points from navigation state if available
+  // Initialize selected route points and transport from navigation state if available
   useEffect(() => {
     const state = navLocation.state as any;
-    if (
-      state &&
-      state.initialRoutePoints &&
-      Array.isArray(state.initialRoutePoints)
-    ) {
+    if (state?.initialRoutePoints && Array.isArray(state.initialRoutePoints)) {
       setSelectedRoutePoints(state.initialRoutePoints);
+    }
+    if (state?.transport) {
+      setTransportType(state.transport);
     }
   }, [navLocation.state]);
 
@@ -134,6 +137,26 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
 
   const isPointSelected = (point: ItineraryPoint) => {
     return selectedRoutePoints.some((p) => p.id === point.id);
+  };
+
+  const handleSaveTrip = async () => {
+    if (!tripTitle.trim() || selectedRoutePoints.length < 2) return;
+    setSaveLoading(true);
+    setSaveError(null);
+    try {
+      const payload = {
+        title: tripTitle.trim(),
+        location_ids: selectedRoutePoints.map((p) => p.id),
+        transport_type: transportType,
+        optimized: isOptimized,
+      };
+      const config: any = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+      await axios.post('http://localhost:8000/api/v1/trips/build', payload, config);
+      navigate('/account?showItinerary=1');
+    } catch (err: any) {
+      setSaveError(err.response?.data?.detail || 'Помилка при збереженні маршруту');
+      setSaveLoading(false);
+    }
   };
 
   const tripMeta: TripMeta | undefined = (navLocation.state as any)?.tripMeta;
@@ -914,6 +937,203 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                 >
                   ← Назад до {cityMeta.name}
                 </button>
+              )}
+            </div>
+          ) : selectedRoutePoints.length > 0 && !cityMeta ? (
+            <div
+              style={{
+                padding: '12px 20px 24px',
+                flex: 1,
+                overflowY: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <div
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: '#999',
+                  letterSpacing: '1px',
+                  textTransform: 'uppercase',
+                  marginBottom: '12px',
+                }}
+              >
+                Route · {selectedRoutePoints.length} stops
+              </div>
+
+              <ol
+                style={{
+                  listStyle: 'none',
+                  margin: '0 0 16px',
+                  padding: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px',
+                }}
+              >
+                {selectedRoutePoints.map((p, i) => (
+                  <li
+                    key={p.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      background:
+                        i === 0
+                          ? '#f0f7f4'
+                          : i === selectedRoutePoints.length - 1
+                            ? '#f7f0f0'
+                            : 'transparent',
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: '22px',
+                        height: '22px',
+                        borderRadius: '50%',
+                        background:
+                          i === 0
+                            ? '#2e7d5a'
+                            : i === selectedRoutePoints.length - 1
+                              ? '#c0392b'
+                              : '#e8e8e8',
+                        color:
+                          i === 0 || i === selectedRoutePoints.length - 1
+                            ? '#fff'
+                            : '#555',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {i + 1}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '13px',
+                        color: '#222',
+                        fontWeight: 500,
+                        flex: 1,
+                      }}
+                    >
+                      {p.name}
+                    </span>
+                    <button
+                      onClick={() => handleSelectPoint(p)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: '#bbb',
+                        fontSize: '18px',
+                        padding: '0 4px',
+                        lineHeight: 1,
+                      }}
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ol>
+
+              <div style={{ height: '1px', background: '#ebebeb', margin: '0 0 16px' }} />
+
+              {!saveMode ? (
+                <button
+                  onClick={() => setSaveMode(true)}
+                  disabled={!token}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    backgroundColor: token ? '#1a1a2e' : '#ccc',
+                    color: 'white',
+                    fontWeight: 700,
+                    cursor: token ? 'pointer' : 'not-allowed',
+                    fontSize: '14px',
+                    letterSpacing: '0.5px',
+                    marginBottom: '8px',
+                  }}
+                  title={!token ? 'Увійдіть, щоб зберегти маршрут' : ''}
+                >
+                  Зберегти маршрут
+                </button>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <input
+                    type="text"
+                    placeholder="Назва маршруту..."
+                    value={tripTitle}
+                    onChange={(e) => setTripTitle(e.target.value)}
+                    autoFocus
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      border: '1.5px solid #3b5bdb',
+                      fontSize: '14px',
+                      outline: 'none',
+                      fontFamily: 'inherit',
+                    }}
+                  />
+                  {saveError && (
+                    <p style={{ margin: 0, fontSize: '12px', color: '#c0392b' }}>
+                      {saveError}
+                    </p>
+                  )}
+                  <button
+                    onClick={handleSaveTrip}
+                    disabled={saveLoading || !tripTitle.trim()}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      backgroundColor:
+                        saveLoading || !tripTitle.trim() ? '#aaa' : '#2e7d5a',
+                      color: 'white',
+                      fontWeight: 700,
+                      cursor:
+                        saveLoading || !tripTitle.trim()
+                          ? 'not-allowed'
+                          : 'pointer',
+                      fontSize: '14px',
+                    }}
+                  >
+                    {saveLoading ? 'Збереження...' : 'Зберегти'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSaveMode(false);
+                      setSaveError(null);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: '8px',
+                      border: '1px solid #ddd',
+                      backgroundColor: 'transparent',
+                      color: '#555',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                    }}
+                  >
+                    Скасувати
+                  </button>
+                </div>
+              )}
+
+              {!token && (
+                <p style={{ margin: '8px 0 0', fontSize: '12px', color: '#999', textAlign: 'center' }}>
+                  Увійдіть в акаунт, щоб зберегти маршрут
+                </p>
               )}
             </div>
           ) : activePointDetails ? (

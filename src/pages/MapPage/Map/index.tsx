@@ -717,8 +717,13 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
 
                   <button
                     onClick={() => {
-                      setSelectedCityTrip(null);
-                      setRouteBuildingMode(true);
+                      if(token){
+                        setSelectedCityTrip(null);
+                        setRouteBuildingMode(true);
+                      }
+                      else{
+                        navigate('/login', { state: { from: '/map' } });
+                      }
                     }}
                     style={{
                       width: '100%',

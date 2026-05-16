@@ -108,7 +108,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   const [saveLoading, setSaveLoading] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Initialize selected route points and transport from navigation state if available
   useEffect(() => {
     const state = navLocation.state as any;
     if (state?.initialRoutePoints && Array.isArray(state.initialRoutePoints)) {
@@ -121,7 +120,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
 
   const handleSelectPoint = (point: ItineraryPoint) => {
     if (isOptimized) {
-      // Restore original user order before modifying selection
       const base =
         originalRoutePointsRef.current.length > 0
           ? originalRoutePointsRef.current
@@ -146,12 +144,10 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     return selectedRoutePoints.some((p) => p.id === point.id);
   };
 
-  // Nearest Neighbor greedy algorithm: start is always index 0, then pick the
-  // closest unvisited point by squared Euclidean distance on lat/lng.
   const nearestNeighborSort = (points: ItineraryPoint[]): ItineraryPoint[] => {
     if (points.length <= 2) return [...points];
 
-    const unvisited = points.slice(1); // first point is fixed start
+    const unvisited = points.slice(1);
     const result: ItineraryPoint[] = [points[0]];
 
     while (unvisited.length > 0) {
@@ -162,7 +158,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       unvisited.forEach((pt, idx) => {
         const dLat = pt.lat - current.lat;
         const dLng = pt.lng - current.lng;
-        const dist = dLat * dLat + dLng * dLng; // squared distance, no sqrt needed
+        const dist = dLat * dLat + dLng * dLng;
         if (dist < minDist) {
           minDist = dist;
           nearestIdx = idx;
@@ -178,7 +174,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
 
   const handleSmartRouteToggle = () => {
     if (isOptimized) {
-      // Turn OFF: restore original user order
       const restored = [...originalRoutePointsRef.current];
       originalRoutePointsRef.current = [];
       setIsOptimized(false);
@@ -188,12 +183,11 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       return;
     }
 
-    // Turn ON: run Nearest Neighbor sort synchronously
     if (selectedRoutePoints.length < 2) return;
 
     const optimized = nearestNeighborSort(selectedRoutePoints);
     originalRoutePointsRef.current = [...selectedRoutePoints];
-    setSelectedRoutePoints([...optimized]); // spread = guaranteed new array reference
+    setSelectedRoutePoints([...optimized]);
     setIsOptimized(true);
   };
 
@@ -202,7 +196,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     setSaveLoading(true);
     setSaveError(null);
     try {
-      // selectedRoutePoints is already in the correct order (optimized or user-defined)
       const payload = {
         title: tripTitle.trim(),
         location_ids: selectedRoutePoints.map((p) => p.id),
@@ -292,8 +285,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
 
   const activeData = itinerary.length > 0 ? itinerary : apiLocations;
 
-  // pointsForRouting as state ensures Routing.tsx always receives a new array
-  // reference on every selectedRoutePoints change, triggering its useEffect reliably.
   const [pointsForRouting, setPointsForRouting] = useState<[number, number][]>([]);
 
   useEffect(() => {
@@ -1666,7 +1657,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
             </div>
           )}
 
-          {/* Transport type — vertical pill group, top-right below layer toggle */}
+          {}
           <div
             style={{
               position: 'absolute',

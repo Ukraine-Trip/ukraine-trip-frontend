@@ -663,6 +663,33 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                       margin: '0 0 16px',
                     }}
                   />
+
+                  <button
+                    onClick={() => {
+                      if(token){
+                        setSelectedCityTrip(null);
+                        setRouteBuildingMode(true);
+                      }
+                      else{
+                        navigate('/login', { state: { from: '/map' } });
+                      }
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      backgroundColor: '#3b5bdb',
+                      color: 'white',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      letterSpacing: '0.3px',
+                      marginBottom: '24px',
+                    }}
+                  >
+                    Create Route
+                  </button>
                   <div
                     style={{
                       fontSize: '11px',
@@ -673,7 +700,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                       marginBottom: '12px',
                     }}
                   >
-                    Готові маршрути
+                    Created Routes
                   </div>
 
                   {cityTripsLoading ? (
@@ -738,27 +765,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
 
                   <div style={{ flex: 1 }} />
 
-                  <button
-                    onClick={() => {
-                      setSelectedCityTrip(null);
-                      setRouteBuildingMode(true);
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      border: 'none',
-                      backgroundColor: '#3b5bdb',
-                      color: 'white',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      fontSize: '14px',
-                      letterSpacing: '0.3px',
-                      marginTop: '16px',
-                    }}
-                  >
-                    Побудувати маршрут
-                  </button>
+
                 </>
               )}
             </div>

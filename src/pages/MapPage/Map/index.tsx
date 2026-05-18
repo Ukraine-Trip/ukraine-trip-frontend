@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useContext } from 'react';
+import React, { useState, useMemo, useEffect, useContext, useRef } from 'react';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Polyline } from 'react-leaflet';
 
@@ -20,7 +20,6 @@ import { MapController } from './component/MapController.tsx';
 import Routing from './component/Routing.tsx';
 import { UserLocation } from './component/UserLocation.tsx';
 import type { ItineraryPoint, Trip } from '../../../types/types.ts';
-import { optimizeRoute } from '../../../utils/routeOptimizer';
 import regionsData from '../../../librarian/cities.json';
 import { getAllTrips } from '../../../api/trips.ts';
 
@@ -86,6 +85,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   const { token } = useContext(AuthContext);
   const [zoom, setZoom] = useState(6);
   const [isOptimized, setIsOptimized] = useState(false);
+  const originalRoutePointsRef = useRef<ItineraryPoint[]>([]);
   const [activeLayer, setActiveLayer] = useState<LayerType>('grey');
   const [layerPanelOpen, setLayerPanelOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -97,10 +97,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     ItineraryPoint[]
   >([]);
   const [transportType, setTransportType] = useState<TransportType>('car');
-  const [routeCoordinates, setRouteCoordinates] = useState<[number, number][]>(
-    []
-  );
-  const [isRouteLoading, setIsRouteLoading] = useState(false);
   const [activePointDetails, setActivePointDetails] =
     useState<ItineraryPoint | null>(null);
   const [cityTrips, setCityTrips] = useState<Trip[]>([]);
@@ -112,7 +108,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   const [saveLoading, setSaveLoading] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Initialize selected route points and transport from navigation state if available
   useEffect(() => {
     const state = navLocation.state as any;
     if (state?.initialRoutePoints && Array.isArray(state.initialRoutePoints)) {
@@ -124,19 +119,76 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   }, [navLocation.state]);
 
   const handleSelectPoint = (point: ItineraryPoint) => {
-    setSelectedRoutePoints((prev) => {
-      const isSelected = prev.find((p) => p.id === point.id);
-      if (isSelected) {
-        return prev.filter((p) => p.id !== point.id);
-      } else {
+    if (isOptimized) {
+      const base =
+        originalRoutePointsRef.current.length > 0
+          ? originalRoutePointsRef.current
+          : selectedRoutePoints;
+      const isSelected = base.some((p) => p.id === point.id);
+      setSelectedRoutePoints(
+        isSelected ? base.filter((p) => p.id !== point.id) : [...base, point],
+      );
+      originalRoutePointsRef.current = [];
+      setIsOptimized(false);
+    } else {
+      setSelectedRoutePoints((prev) => {
+        const isSelected = prev.find((p) => p.id === point.id);
+        if (isSelected) return prev.filter((p) => p.id !== point.id);
         return [...prev, point];
-      }
-    });
-    setActivePointDetails(point); // Set active point details when a marker is clicked
+      });
+    }
+    setActivePointDetails(point);
   };
 
   const isPointSelected = (point: ItineraryPoint) => {
     return selectedRoutePoints.some((p) => p.id === point.id);
+  };
+
+  const nearestNeighborSort = (points: ItineraryPoint[]): ItineraryPoint[] => {
+    if (points.length <= 2) return [...points];
+
+    const unvisited = points.slice(1);
+    const result: ItineraryPoint[] = [points[0]];
+
+    while (unvisited.length > 0) {
+      const current = result[result.length - 1];
+      let minDist = Infinity;
+      let nearestIdx = 0;
+
+      unvisited.forEach((pt, idx) => {
+        const dLat = pt.lat - current.lat;
+        const dLng = pt.lng - current.lng;
+        const dist = dLat * dLat + dLng * dLng;
+        if (dist < minDist) {
+          minDist = dist;
+          nearestIdx = idx;
+        }
+      });
+
+      result.push(unvisited[nearestIdx]);
+      unvisited.splice(nearestIdx, 1);
+    }
+
+    return result;
+  };
+
+  const handleSmartRouteToggle = () => {
+    if (isOptimized) {
+      const restored = [...originalRoutePointsRef.current];
+      originalRoutePointsRef.current = [];
+      setIsOptimized(false);
+      if (restored.length > 0) {
+        setSelectedRoutePoints(restored);
+      }
+      return;
+    }
+
+    if (selectedRoutePoints.length < 2) return;
+
+    const optimized = nearestNeighborSort(selectedRoutePoints);
+    originalRoutePointsRef.current = [...selectedRoutePoints];
+    setSelectedRoutePoints([...optimized]);
+    setIsOptimized(true);
   };
 
   const handleSaveTrip = async () => {
@@ -147,8 +199,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       const payload = {
         title: tripTitle.trim(),
         location_ids: selectedRoutePoints.map((p) => p.id),
-        transport_type: transportType,
-        optimized: isOptimized,
+        optimize: false,
       };
       const config: any = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
       await axios.post('http://localhost:8000/api/v1/trips/build', payload, config);
@@ -224,58 +275,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     fetchLocations();
   }, [token]);
 
-  useEffect(() => {
-    const fetchRoute = async () => {
-      if (selectedRoutePoints.length < 2) {
-        setRouteCoordinates([]);
-        return;
-      }
-
-      setIsRouteLoading(true);
-      try {
-        const payload = {
-          title: 'My Route',
-          location_ids: selectedRoutePoints.map((p) => p.id),
-          transport_type: transportType,
-          optimized: isOptimized,
-        };
-
-        const config: any = {};
-        if (token) {
-          config.headers = { Authorization: `Bearer ${token}` };
-        }
-
-        const response = await axios.post(
-          'http://localhost:8000/api/v1/trips/build',
-          payload,
-          config
-        );
-
-        if (response.data && response.data.trip_nodes) {
-          const coords = response.data.trip_nodes
-            .map((node: any) => {
-              if (node.location && node.location.lat && node.location.lon) {
-                return [node.location.lat, node.location.lon];
-              }
-              return null;
-            })
-            .filter((coord: any) => coord !== null);
-
-          setRouteCoordinates(coords);
-        } else {
-          setRouteCoordinates([]);
-        }
-      } catch (error) {
-        console.error('Помилка при запиті маршруту:', error);
-        setRouteCoordinates([]);
-      } finally {
-        setIsRouteLoading(false);
-      }
-    };
-
-    fetchRoute();
-  }, [selectedRoutePoints, transportType, isOptimized, token]);
-
   const latParam = searchParams.get('lat');
   const lngParam = searchParams.get('lng');
   const zoomParam = searchParams.get('zoom');
@@ -286,21 +285,13 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
 
   const activeData = itinerary.length > 0 ? itinerary : apiLocations;
 
-  const routePoints = useMemo(() => {
-    if (isOptimized && selectedRoutePoints.length > 2) {
-      return optimizeRoute(selectedRoutePoints);
-    }
-    return selectedRoutePoints;
-  }, [selectedRoutePoints, isOptimized]);
+  const [pointsForRouting, setPointsForRouting] = useState<[number, number][]>([]);
 
-  // Використовуємо routeCoordinates з бекенду, якщо вони є.
-  // Якщо ні, то використовуємо selectedRoutePoints для клієнтської маршрутизації.
-  const pointsForRouting = useMemo<[number, number][]>(() => {
-    if (routeCoordinates.length > 1) {
-      return routeCoordinates;
-    }
-    return routePoints.map((p) => [p.lat, p.lng] as [number, number]);
-  }, [routeCoordinates, routePoints]);
+  useEffect(() => {
+    setPointsForRouting(
+      selectedRoutePoints.map((p) => [p.lat, p.lng] as [number, number]),
+    );
+  }, [selectedRoutePoints]);
 
   useVisibleMarkers(activeData, zoom);
 
@@ -1249,26 +1240,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
         </RouteSidebar>
 
         <MapArea>
-          {isRouteLoading && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '20px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                zIndex: 9999,
-                backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                color: 'white',
-                padding: '8px 16px',
-                borderRadius: '20px',
-                fontSize: '14px',
-                fontWeight: 600,
-                boxShadow: '0 2px 10px rgba(0,0,0,0.2)',
-              }}
-            >
-              🔄 Будуємо маршрут...
-            </div>
-          )}
 
           <button
             onClick={() => setSidebarOpen((v) => !v)}
@@ -1315,13 +1286,13 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
 
           {selectedRoutePoints.length > 2 && (
             <div
-              onClick={() => setIsOptimized(!isOptimized)}
+              onClick={handleSmartRouteToggle}
               style={{
                 position: 'absolute',
                 top: CTRL_TOP,
                 right: '16px',
                 zIndex: 999,
-                backgroundColor: 'white',
+                backgroundColor: isOptimized ? '#f0f4ff' : 'white',
                 padding: '10px 16px',
                 borderRadius: '30px',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
@@ -1329,7 +1300,8 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                 alignItems: 'center',
                 gap: '12px',
                 cursor: 'pointer',
-                border: '1px solid #eee',
+                border: isOptimized ? '1px solid #3b5bdb' : '1px solid #eee',
+                transition: 'all 0.2s',
               }}
             >
               <input
@@ -1340,12 +1312,17 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                   cursor: 'pointer',
                   transform: 'scale(1.2)',
                   margin: 0,
+                  accentColor: '#3b5bdb',
                 }}
               />
               <span
-                style={{ fontWeight: 800, fontSize: '12px', color: '#111' }}
+                style={{
+                  fontWeight: 800,
+                  fontSize: '12px',
+                  color: isOptimized ? '#3b5bdb' : '#111',
+                }}
               >
-                {isOptimized ? '🚀 SMART ROUTE' : '📍 MY ORDER'}
+                {isOptimized ? 'SMART ROUTE' : 'MY ORDER'}
               </span>
             </div>
           )}
@@ -1680,7 +1657,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
             </div>
           )}
 
-          {/* Transport type — vertical pill group, top-right below layer toggle */}
+          {}
           <div
             style={{
               position: 'absolute',

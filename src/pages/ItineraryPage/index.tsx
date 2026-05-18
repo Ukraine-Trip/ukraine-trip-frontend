@@ -59,7 +59,10 @@ export const ItineraryPage: React.FC = () => {
       try {
         const publicReq = api.get('/locations/');
         const myReq = (token && token !== 'null' && token !== 'undefined')
-          ? api.get('/locations/my', { headers: { Authorization: `Bearer ${token}` } })
+          ? api.get('/locations/', {
+              params: { filter_type: 'my' },
+              headers: { Authorization: `Bearer ${token}` },
+            })
           : Promise.resolve(null);
 
         const [publicResult, myResult] = await Promise.allSettled([publicReq, myReq]);

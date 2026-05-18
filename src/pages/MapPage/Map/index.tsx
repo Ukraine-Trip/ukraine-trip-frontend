@@ -222,7 +222,8 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       try {
         const publicReq = api.get('/locations/');
         const myReq = (token && token !== 'null' && token !== 'undefined')
-          ? api.get('/locations/my', {
+          ? api.get('/locations/', {
+              params: { filter_type: 'my' },
               headers: { Authorization: `Bearer ${token}` },
             })
           : Promise.resolve(null);

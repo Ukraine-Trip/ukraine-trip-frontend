@@ -9,6 +9,9 @@ export const getMyTrips = (token: string): Promise<Trip[]> => {
     return Promise.resolve([]);
   }
   return api
-    .get<Trip[]>('/trips/my', { headers: { Authorization: `Bearer ${token}` } })
+    .get<Trip[]>('/trips/', {
+      params: { filter_type: 'my' },
+      headers: { Authorization: `Bearer ${token}` },
+    })
     .then((res) => res.data);
 };

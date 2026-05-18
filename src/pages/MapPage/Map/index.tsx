@@ -21,7 +21,7 @@ import Routing from './component/Routing.tsx';
 import { UserLocation } from './component/UserLocation.tsx';
 import type { ItineraryPoint, Trip } from '../../../types/types.ts';
 import regionsData from '../../../librarian/cities.json';
-import { getAllTrips } from '../../../api/trips.ts';
+import { getAllTrips, getMyTrips } from '../../../api/trips.ts';
 
 const HEADER_H = 80;
 const CTRL_TOP = HEADER_H + 12;
@@ -100,6 +100,8 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   const [activePointDetails, setActivePointDetails] =
     useState<ItineraryPoint | null>(null);
   const [cityTrips, setCityTrips] = useState<Trip[]>([]);
+  const [myCityTrips, setMyCityTrips] = useState<Trip[]>([]);
+  const [routeSource, setRouteSource] = useState<'provided' | 'my'>('provided');
   const [cityTripsLoading, setCityTripsLoading] = useState(false);
   const [selectedCityTrip, setSelectedCityTrip] = useState<Trip | null>(null);
   const [routeBuildingMode, setRouteBuildingMode] = useState(false);
@@ -268,8 +270,9 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     const fetchLocations = async () => {
       try {
         const publicReq = api.get('/locations/');
-        const myReq = token
-          ? api.get('/locations/my', {
+        const myReq = (token && token !== 'null' && token !== 'undefined')
+          ? api.get('/locations/', {
+              params: { filter_type: 'my' },
               headers: { Authorization: `Bearer ${token}` },
             })
           : Promise.resolve(null);
@@ -321,7 +324,11 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
         console.error('Не вдалось завантажити локації:', err);
       }
     };
+
     fetchLocations();
+
+    const interval = setInterval(fetchLocations, 120000);
+    return () => clearInterval(interval);
   }, [token]);
 
   const latParam = searchParams.get('lat');
@@ -359,22 +366,46 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   useEffect(() => {
     if (!cityMeta) return;
     setCityTripsLoading(true);
-    getAllTrips()
-      .then((trips) => {
-        const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
-        const filtered = trips.filter((trip) =>
-          trip.trip_nodes.some(
-            (node) =>
-              norm(node.location?.name) === norm(cityMeta.name) ||
-              norm(node.location?.region).includes(norm(cityMeta.name)) ||
-              norm(cityMeta.name).includes(norm(node.location?.region))
-          )
-        );
-        setCityTrips(filtered);
+const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
+    
+    const filterByCity = (trips: Trip[]) => trips.filter((trip) => {
+      if (!trip.trip_nodes) return false;
+      return trip.trip_nodes.some(
+        (node) =>
+          norm(node.location?.name) === norm(cityMeta.name) ||
+          norm(node.location?.region).includes(norm(cityMeta.name)) ||
+          norm(cityMeta.name).includes(norm(node.location?.region)),
+      );
+    });
+
+    const promises: [Promise<Trip[]>, Promise<Trip[]> | null] = [
+      getAllTrips(),
+      (token && token !== 'null' && token !== 'undefined') ? getMyTrips(token) : null
+    ];
+
+    Promise.allSettled(promises)
+      .then(([allRes, myRes]) => {
+        if (allRes.status === 'fulfilled') {
+          const trips = Array.isArray(allRes.value) ? allRes.value : [];
+          setCityTrips(filterByCity(trips));
+        } else {
+          console.error('Error loading shared trips:', allRes.reason);
+          setCityTrips([]);
+        }
+
+        if (myRes && myRes.status === 'fulfilled') {
+          const trips = Array.isArray(myRes.value) ? myRes.value : [];
+          setMyCityTrips(filterByCity(trips));
+        } else {
+          if (myRes && myRes.status === 'rejected') {
+             console.error('Error loading own trips:', myRes.reason);
+          }
+          setMyCityTrips([]);
+        }
+      });
       })
-      .catch(() => setCityTrips([]))
       .finally(() => setCityTripsLoading(false));
-  }, [cityMeta?.name]);
+  }, [cityMeta?.name, token]);
 
   const cityLocation = useMemo(
     () =>
@@ -740,6 +771,55 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                   >
                     Create Route
                   </button>
+
+                  {token && (
+                    <div style={{
+                      display: 'flex',
+                      background: '#f0f0f0',
+                      borderRadius: '8px',
+                      padding: '4px',
+                      marginBottom: '20px',
+                      gap: '4px'
+                    }}>
+                      <button
+                        onClick={() => setRouteSource('provided')}
+                        style={{
+                          flex: 1,
+                          padding: '8px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          backgroundColor: routeSource === 'provided' ? '#fff' : 'transparent',
+                          color: routeSource === 'provided' ? '#3b5bdb' : '#666',
+                          boxShadow: routeSource === 'provided' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        Надані
+                      </button>
+                      <button
+                        onClick={() => setRouteSource('my')}
+                        style={{
+                          flex: 1,
+                          padding: '8px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          backgroundColor: routeSource === 'my' ? '#fff' : 'transparent',
+                          color: routeSource === 'my' ? '#3b5bdb' : '#666',
+                          boxShadow: routeSource === 'my' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        Мої
+                      </button>
+                    </div>
+                  )}
+
                   <div
                     style={{
                       fontSize: '11px',
@@ -750,7 +830,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                       marginBottom: '12px',
                     }}
                   >
-                    Created Routes
+                    {routeSource === 'my' ? 'My Routes' : 'Created Routes'}
                   </div>
 
                   {cityTripsLoading ? (
@@ -763,7 +843,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                     >
                       Завантаження...
                     </div>
-                  ) : cityTrips.length === 0 ? (
+                  ) : (routeSource === 'my' ? myCityTrips : cityTrips).length === 0 ? (
                     <div
                       style={{
                         fontSize: '13px',
@@ -771,7 +851,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                         padding: '8px 0',
                       }}
                     >
-                      Маршрутів для цього міста не знайдено.
+                      {routeSource === 'my' ? 'Ви ще не створили маршрутів у цьому регіоні.' : 'Маршрутів для цього міста не знайдено.'}
                     </div>
                   ) : (
                     <div
@@ -782,7 +862,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                         marginBottom: '20px',
                       }}
                     >
-                      {cityTrips.map((trip) => (
+                      {(routeSource === 'my' ? myCityTrips : cityTrips).map((trip) => (
                         <div
                           key={trip.id}
                           onClick={() =>

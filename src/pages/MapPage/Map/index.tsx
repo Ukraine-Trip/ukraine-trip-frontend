@@ -325,14 +325,16 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     Promise.allSettled(promises)
       .then(([allRes, myRes]) => {
         if (allRes.status === 'fulfilled') {
-          setCityTrips(filterByCity(allRes.value));
+          const trips = Array.isArray(allRes.value) ? allRes.value : [];
+          setCityTrips(filterByCity(trips));
         } else {
           console.error('Помилка завантаження спільних маршрутів:', allRes.reason);
           setCityTrips([]);
         }
 
         if (myRes && myRes.status === 'fulfilled') {
-          setMyCityTrips(filterByCity(myRes.value));
+          const trips = Array.isArray(myRes.value) ? myRes.value : [];
+          setMyCityTrips(filterByCity(trips));
         } else {
           if (myRes && myRes.status === 'rejected') {
              console.error('Помилка завантаження власних маршрутів:', myRes.reason);

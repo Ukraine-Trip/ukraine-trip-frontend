@@ -69,24 +69,15 @@ export const CarouselSection: React.FC = () => {
   }, []);
 
   const handleCardClick = (trip: Trip) => {
-    const sortedNodes = [...trip.trip_nodes].sort((a, b) => a.order_index - b.order_index);
-    const validNodes = sortedNodes.filter(
-      (node) => node.location?.lat != null && node.location?.lon != null,
-    );
-    const routePoints: [number, number][] = validNodes.map((node) => [
-      node.location.lat,
-      node.location.lon,
-    ]);
-
     navigate('/map-page', {
       state: {
-        routePoints,
+        tripId: trip.id, // Передаємо ID готового маршруту
         tripMeta: {
           title: trip.title,
           description: trip.description,
           start_date: trip.start_date,
           end_date: trip.end_date,
-          waypoints: validNodes.map((node) => ({
+          waypoints: trip.trip_nodes.sort((a, b) => a.order_index - b.order_index).map((node) => ({
             name: node.location.name ?? `Point ${node.order_index + 1}`,
             order_index: node.order_index,
           })),

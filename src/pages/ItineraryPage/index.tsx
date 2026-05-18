@@ -58,7 +58,7 @@ export const ItineraryPage: React.FC = () => {
       setLocationsError(null);
       try {
         const publicReq = api.get('/locations/');
-        const myReq = token
+        const myReq = (token && token !== 'null' && token !== 'undefined')
           ? api.get('/locations/my', { headers: { Authorization: `Bearer ${token}` } })
           : Promise.resolve(null);
 

@@ -402,10 +402,9 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
           }
           setMyCityTrips([]);
         }
-      });
       })
       .finally(() => setCityTripsLoading(false));
-  }, [cityMeta?.name, token]);
+  }, [cityMeta, token]);
 
   const cityLocation = useMemo(
     () =>

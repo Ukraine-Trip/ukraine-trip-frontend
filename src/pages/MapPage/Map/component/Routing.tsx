@@ -10,7 +10,6 @@ interface RoutingProps {
   transportType: TransportType;
 }
 
-// Simplified CustomRouter - just passes through to OSRMv1
 class CustomRouter implements L.Routing.IRouter {
   private osrmRouter: L.Routing.OSRMv1;
 
@@ -29,83 +28,84 @@ class CustomRouter implements L.Routing.IRouter {
 }
 
 const getServiceUrl = (type: TransportType): string => {
-  switch (type) {
-    case 'car':
-      return 'https://routing.openstreetmap.de/routed-car/route/v1';
-    case 'bike':
-      return 'https://routing.openstreetmap.de/routed-bike/route/v1';
-    case 'foot':
-      return 'https://routing.openstreetmap.de/routed-foot/route/v1';
-    default:
-      return 'https://routing.openstreetmap.de/routed-car/route/v1';
-  }
+  const urls = {
+    car: 'https://routing.openstreetmap.de/routed-car/route/v1',
+    bike: 'https://routing.openstreetmap.de/routed-bike/route/v1',
+    foot: 'https://routing.openstreetmap.de/routed-foot/route/v1',
+  };
+  return urls[type] || urls.car;
 };
 
 const getOSRMProfile = (type: TransportType): string => {
-  switch (type) {
-    case 'car':
-      return 'driving';
-    case 'bike':
-      return 'cycling';
-    case 'foot':
-      return 'walking';
-    default:
-      return 'driving';
-  }
+  const profiles = {
+    car: 'driving',
+    bike: 'cycling',
+    foot: 'walking',
+  };
+  return profiles[type] || profiles.car;
 };
 
 const Routing: React.FC<RoutingProps> = ({ points, transportType }) => {
   const map = useMap();
   const routingControlRef = useRef<L.Routing.Control | null>(null);
+  const transportTypeRef = useRef<TransportType>(transportType);
 
   useEffect(() => {
-    if (!map || points.length < 2) {
-      // Clear existing route if not enough points
+    if (!map) return;
+
+    // Recreate the control only if it doesn't exist or if transport type has changed
+    if (
+      !routingControlRef.current ||
+      transportTypeRef.current !== transportType
+    ) {
       if (routingControlRef.current) {
+        map.removeControl(routingControlRef.current);
+      }
+
+      const serviceUrl = getServiceUrl(transportType);
+      const profile = getOSRMProfile(transportType);
+
+      const control = L.Routing.control({
+        router: new CustomRouter({
+          serviceUrl: serviceUrl,
+          profile: profile,
+        }),
+        lineOptions: {
+          styles: [{ color: '#2A6FD9', weight: 5, opacity: 0.8 }],
+          extendToWaypoints: false,
+          missingRouteTolerance: 100,
+        },
+        show: false,
+        addWaypoints: false,
+        fitSelectedRoutes: false,
+        createMarker: () => null,
+      }).addTo(map);
+
+      routingControlRef.current = control;
+      transportTypeRef.current = transportType;
+    }
+
+    // Update waypoints on the existing control
+    if (routingControlRef.current) {
+      if (points.length < 2) {
+        routingControlRef.current.setWaypoints([]);
+      } else {
+        routingControlRef.current.setWaypoints(
+          points.map((p) => L.latLng(p[0], p[1]))
+        );
+      }
+    }
+  }, [map, points, transportType]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (map && routingControlRef.current) {
         map.removeControl(routingControlRef.current);
         routingControlRef.current = null;
       }
-      return;
-    }
-
-    const serviceUrl = getServiceUrl(transportType);
-    const profile = getOSRMProfile(transportType);
-
-    // Remove existing control before creating a new one
-    if (routingControlRef.current) {
-      map.removeControl(routingControlRef.current);
-    }
-
-    const routingControl = L.Routing.control({
-      waypoints: points.map((p) => L.latLng(p[0], p[1])),
-      router: new CustomRouter({
-        serviceUrl: serviceUrl,
-        profile: profile,
-      }),
-      lineOptions: {
-        styles: [{ color: '#2A6FD9', weight: 5, opacity: 0.8 }],
-        extendToWaypoints: false,
-        missingRouteTolerance: 100,
-      },
-      show: false,
-      addWaypoints: false,
-      fitSelectedRoutes: false,
-      createMarker: () => null,
-    }).addTo(map);
-
-    routingControlRef.current = routingControl;
-
-    return () => {
-      if (map && routingControlRef.current) {
-        try {
-          map.removeControl(routingControlRef.current);
-          routingControlRef.current = null;
-        } catch (e) {
-          console.error('Не вдалося видалити контроль маршрутизації:', e);
-        }
-      }
     };
-  }, [map, points, transportType]); // Re-run effect if map, points, or transportType changes
+  }, [map]);
 
   return null;
 };

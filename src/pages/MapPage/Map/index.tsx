@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useContext, useRef } from 'react';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
@@ -107,6 +107,10 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   const [tripTitle, setTripTitle] = useState('');
   const [saveLoading, setSaveLoading] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [fetchedTripRoute, setFetchedTripRoute] = useState<[number, number][]>(
+    []
+  );
+  const [isRouteLoading, setIsRouteLoading] = useState(false);
 
   useEffect(() => {
     const state = navLocation.state as any;
@@ -115,6 +119,43 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     }
     if (state?.transport) {
       setTransportType(state.transport);
+    }
+
+    if (state?.tripId) {
+      const fetchTrip = async () => {
+        setIsRouteLoading(true);
+        try {
+          const response = await axios.get(
+            `http://localhost:8000/api/v1/trips/${state.tripId}`
+          );
+          if (response.data && response.data.trip_nodes) {
+            const sortedNodes = [...response.data.trip_nodes].sort(
+              (a, b) => a.order_index - b.order_index
+            );
+            const coords: [number, number][] = sortedNodes
+              .map((node: any) => {
+                if (
+                  node.location &&
+                  node.location.lat != null &&
+                  node.location.lon != null
+                ) {
+                  return [node.location.lat, node.location.lon] as [
+                    number,
+                    number,
+                  ];
+                }
+                return null;
+              })
+              .filter((coord: any) => coord !== null) as [number, number][];
+            setFetchedTripRoute(coords);
+          }
+        } catch (error) {
+          console.error('Failed to fetch trip details:', error);
+        } finally {
+          setIsRouteLoading(false);
+        }
+      };
+      fetchTrip();
     }
   }, [navLocation.state]);
 
@@ -126,7 +167,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
           : selectedRoutePoints;
       const isSelected = base.some((p) => p.id === point.id);
       setSelectedRoutePoints(
-        isSelected ? base.filter((p) => p.id !== point.id) : [...base, point],
+        isSelected ? base.filter((p) => p.id !== point.id) : [...base, point]
       );
       originalRoutePointsRef.current = [];
       setIsOptimized(false);
@@ -201,11 +242,19 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
         location_ids: selectedRoutePoints.map((p) => p.id),
         optimize: false,
       };
-      const config: any = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
-      await axios.post('http://localhost:8000/api/v1/trips/build', payload, config);
+      const config: any = token
+        ? { headers: { Authorization: `Bearer ${token}` } }
+        : {};
+      await axios.post(
+        'http://localhost:8000/api/v1/trips/build',
+        payload,
+        config
+      );
       navigate('/account?showItinerary=1');
     } catch (err: any) {
-      setSaveError(err.response?.data?.detail || 'Помилка при збереженні маршруту');
+      setSaveError(
+        err.response?.data?.detail || 'Помилка при збереженні маршруту'
+      );
       setSaveLoading(false);
     }
   };
@@ -285,13 +334,25 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
 
   const activeData = itinerary.length > 0 ? itinerary : apiLocations;
 
-  const [pointsForRouting, setPointsForRouting] = useState<[number, number][]>([]);
+  const [pointsForRouting, setPointsForRouting] = useState<[number, number][]>(
+    []
+  );
 
   useEffect(() => {
-    setPointsForRouting(
-      selectedRoutePoints.map((p) => [p.lat, p.lng] as [number, number]),
-    );
-  }, [selectedRoutePoints]);
+    if (selectedCityTrip) {
+      const tripPoints = selectedCityTrip.trip_nodes
+        .filter((n) => n.location?.lat != null && n.location?.lon != null)
+        .sort((a, b) => a.order_index - b.order_index)
+        .map((n) => [n.location.lat, n.location.lon] as [number, number]);
+      setPointsForRouting(tripPoints);
+    } else if (fetchedTripRoute.length > 0) {
+      setPointsForRouting(fetchedTripRoute);
+    } else {
+      setPointsForRouting(
+        selectedRoutePoints.map((p) => [p.lat, p.lng] as [number, number])
+      );
+    }
+  }, [selectedRoutePoints, fetchedTripRoute, selectedCityTrip]);
 
   useVisibleMarkers(activeData, zoom);
 
@@ -306,8 +367,8 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
             (node) =>
               norm(node.location?.name) === norm(cityMeta.name) ||
               norm(node.location?.region).includes(norm(cityMeta.name)) ||
-              norm(cityMeta.name).includes(norm(node.location?.region)),
-          ),
+              norm(cityMeta.name).includes(norm(node.location?.region))
+          )
         );
         setCityTrips(filtered);
       })
@@ -318,12 +379,11 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   const cityLocation = useMemo(
     () =>
       cityMeta
-        ? apiLocations.find(
-            (loc) =>
-              loc.name.toLowerCase() === cityMeta.name.toLowerCase(),
-          ) ?? null
+        ? (apiLocations.find(
+            (loc) => loc.name.toLowerCase() === cityMeta.name.toLowerCase()
+          ) ?? null)
         : null,
-    [cityMeta, apiLocations],
+    [cityMeta, apiLocations]
   );
 
   const pointsLabel = (count: number): string => {
@@ -657,11 +717,10 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
 
                   <button
                     onClick={() => {
-                      if(token){
+                      if (token) {
                         setSelectedCityTrip(null);
                         setRouteBuildingMode(true);
-                      }
-                      else{
+                      } else {
                         navigate('/login', { state: { from: '/map' } });
                       }
                     }}
@@ -696,13 +755,21 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
 
                   {cityTripsLoading ? (
                     <div
-                      style={{ fontSize: '13px', color: '#bbb', padding: '8px 0' }}
+                      style={{
+                        fontSize: '13px',
+                        color: '#bbb',
+                        padding: '8px 0',
+                      }}
                     >
                       Завантаження...
                     </div>
                   ) : cityTrips.length === 0 ? (
                     <div
-                      style={{ fontSize: '13px', color: '#bbb', padding: '8px 0' }}
+                      style={{
+                        fontSize: '13px',
+                        color: '#bbb',
+                        padding: '8px 0',
+                      }}
                     >
                       Маршрутів для цього міста не знайдено.
                     </div>
@@ -720,7 +787,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                           key={trip.id}
                           onClick={() =>
                             setSelectedCityTrip((prev) =>
-                              prev?.id === trip.id ? null : trip,
+                              prev?.id === trip.id ? null : trip
                             )
                           }
                           style={{
@@ -731,7 +798,9 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                                 ? '#3b5bdb'
                                 : '#f8f8f8',
                             color:
-                              selectedCityTrip?.id === trip.id ? 'white' : '#222',
+                              selectedCityTrip?.id === trip.id
+                                ? 'white'
+                                : '#222',
                             cursor: 'pointer',
                             border: `1px solid ${selectedCityTrip?.id === trip.id ? '#3b5bdb' : '#ebebeb'}`,
                             transition: 'all 0.15s',
@@ -755,8 +824,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                   )}
 
                   <div style={{ flex: 1 }} />
-
-
                 </>
               )}
             </div>
@@ -1040,7 +1107,13 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                 ))}
               </ol>
 
-              <div style={{ height: '1px', background: '#ebebeb', margin: '0 0 16px' }} />
+              <div
+                style={{
+                  height: '1px',
+                  background: '#ebebeb',
+                  margin: '0 0 16px',
+                }}
+              />
 
               {!saveMode ? (
                 <button
@@ -1064,7 +1137,13 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                   Зберегти маршрут
                 </button>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                  }}
+                >
                   <input
                     type="text"
                     placeholder="Назва маршруту..."
@@ -1081,7 +1160,9 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                     }}
                   />
                   {saveError && (
-                    <p style={{ margin: 0, fontSize: '12px', color: '#c0392b' }}>
+                    <p
+                      style={{ margin: 0, fontSize: '12px', color: '#c0392b' }}
+                    >
                       {saveError}
                     </p>
                   )}
@@ -1129,7 +1210,14 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
               )}
 
               {!token && (
-                <p style={{ margin: '8px 0 0', fontSize: '12px', color: '#999', textAlign: 'center' }}>
+                <p
+                  style={{
+                    margin: '8px 0 0',
+                    fontSize: '12px',
+                    color: '#999',
+                    textAlign: 'center',
+                  }}
+                >
                   Увійдіть в акаунт, щоб зберегти маршрут
                 </p>
               )}
@@ -1240,7 +1328,27 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
         </RouteSidebar>
 
         <MapArea>
-
+          {isRouteLoading && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000,
+                fontSize: '1.2rem',
+                fontWeight: 'bold',
+              }}
+            >
+              Завантаження маршруту...
+            </div>
+          )}
           <button
             onClick={() => setSidebarOpen((v) => !v)}
             title={sidebarOpen ? 'Сховати маршрут' : 'Показати маршрут'}
@@ -1679,9 +1787,16 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                 )}
                 <button
                   onClick={() => setTransportType(type)}
-                  title={type === 'car' ? 'Автомобіль' : type === 'bike' ? 'Велосипед' : 'Пішки'}
+                  title={
+                    type === 'car'
+                      ? 'Автомобіль'
+                      : type === 'bike'
+                        ? 'Велосипед'
+                        : 'Пішки'
+                  }
                   style={{
-                    background: transportType === type ? '#3b5bdb' : 'transparent',
+                    background:
+                      transportType === type ? '#3b5bdb' : 'transparent',
                     color: transportType === type ? 'white' : '#666',
                     border: 'none',
                     padding: '9px 0 7px',
@@ -1696,32 +1811,79 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                   }}
                 >
                   {type === 'car' && (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M5 11L7 6h10l2 5"/>
-                      <rect x="2" y="11" width="20" height="7" rx="2"/>
-                      <circle cx="7" cy="18" r="1.5" fill="currentColor" stroke="none"/>
-                      <circle cx="17" cy="18" r="1.5" fill="currentColor" stroke="none"/>
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M5 11L7 6h10l2 5" />
+                      <rect x="2" y="11" width="20" height="7" rx="2" />
+                      <circle
+                        cx="7"
+                        cy="18"
+                        r="1.5"
+                        fill="currentColor"
+                        stroke="none"
+                      />
+                      <circle
+                        cx="17"
+                        cy="18"
+                        r="1.5"
+                        fill="currentColor"
+                        stroke="none"
+                      />
                     </svg>
                   )}
                   {type === 'bike' && (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="5.5" cy="17.5" r="3.5"/>
-                      <circle cx="18.5" cy="17.5" r="3.5"/>
-                      <path d="M15 6a1 1 0 0 0-1-1h-4"/>
-                      <path d="M5.5 17.5L9 9l3.5 8.5"/>
-                      <path d="M18.5 17.5L15 6"/>
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="5.5" cy="17.5" r="3.5" />
+                      <circle cx="18.5" cy="17.5" r="3.5" />
+                      <path d="M15 6a1 1 0 0 0-1-1h-4" />
+                      <path d="M5.5 17.5L9 9l3.5 8.5" />
+                      <path d="M18.5 17.5L15 6" />
                     </svg>
                   )}
                   {type === 'foot' && (
-                    <svg width="16" height="18" viewBox="0 0 16 22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="8" cy="3" r="2"/>
-                      <path d="M5 21l2-7 1 2 1-2 2 7"/>
-                      <path d="M3.5 12l2-5h5"/>
-                      <path d="M3.5 12l-1.5 3"/>
-                      <path d="M12.5 12l1.5 3"/>
+                    <svg
+                      width="16"
+                      height="18"
+                      viewBox="0 0 16 22"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="8" cy="3" r="2" />
+                      <path d="M5 21l2-7 1 2 1-2 2 7" />
+                      <path d="M3.5 12l2-5h5" />
+                      <path d="M3.5 12l-1.5 3" />
+                      <path d="M12.5 12l1.5 3" />
                     </svg>
                   )}
-                  <span style={{ fontSize: '8px', fontWeight: 700, letterSpacing: '0.4px', textTransform: 'uppercase', lineHeight: 1 }}>
+                  <span
+                    style={{
+                      fontSize: '8px',
+                      fontWeight: 700,
+                      letterSpacing: '0.4px',
+                      textTransform: 'uppercase',
+                      lineHeight: 1,
+                    }}
+                  >
                     {type}
                   </span>
                 </button>
@@ -1760,18 +1922,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
               <Routing
                 points={pointsForRouting}
                 transportType={transportType}
-              />
-            )}
-
-            {selectedCityTrip && (
-              <Polyline
-                positions={selectedCityTrip.trip_nodes
-                  .filter(
-                    (n) => n.location?.lat != null && n.location?.lon != null,
-                  )
-                  .sort((a, b) => a.order_index - b.order_index)
-                  .map((n) => [n.location.lat, n.location.lon] as [number, number])}
-                pathOptions={{ color: '#1976d2', weight: 4, opacity: 0.85 }}
               />
             )}
 

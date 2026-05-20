@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, useMemo } from 'react';
+import { useState, useEffect, useContext, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -15,6 +15,10 @@ import {
   Stack,
   ToggleButtonGroup,
   ToggleButton,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
@@ -51,6 +55,24 @@ export const ItineraryPage: React.FC = () => {
   const [selectedPoints, setSelectedPoints] = useState<LocationItem[]>([]);
   const [search, setSearch] = useState('');
   const [transport, setTransport] = useState<TransportType>('car');
+  const [filterRegion, setFilterRegion] = useState<string>('');
+  const [filterType, setFilterType] = useState<string>('');
+  const [filterOwner, setFilterOwner] = useState<'all' | 'my' | 'public'>('all');
+
+  const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+  const dragNode = useRef<number | null>(null);
+  const routeListRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
+
+  // Non-passive touchmove so we can preventDefault and block page scroll during drag
+  useEffect(() => {
+    const el = routeListRef.current;
+    if (!el) return;
+    const block = (e: TouchEvent) => { if (isDraggingRef.current) e.preventDefault(); };
+    el.addEventListener('touchmove', block, { passive: false });
+    return () => el.removeEventListener('touchmove', block);
+  }, []);
 
   useEffect(() => {
     const fetchLocations = async () => {
@@ -107,16 +129,35 @@ export const ItineraryPage: React.FC = () => {
     fetchLocations();
   }, [token]);
 
+  const allRegions = useMemo(
+    () => [...new Set(locations.map((l) => l.region).filter(Boolean))].sort(),
+    [locations],
+  );
+
+  const allTypes = useMemo(
+    () => [...new Set(locations.map((l) => l.type).filter(Boolean))].sort(),
+    [locations],
+  );
+
   const filteredLocations = useMemo(() => {
+    let result = locations;
+
+    if (filterRegion) result = result.filter((l) => l.region === filterRegion);
+    if (filterType) result = result.filter((l) => l.type === filterType);
+    if (filterOwner === 'my') result = result.filter((l) => l.isOwn);
+    else if (filterOwner === 'public') result = result.filter((l) => !l.isOwn);
+
     const q = search.toLowerCase().trim();
-    if (!q) return locations;
-    return locations.filter(
-      (l) =>
-        l.name.toLowerCase().includes(q) ||
-        l.region.toLowerCase().includes(q) ||
-        l.type.toLowerCase().includes(q),
-    );
-  }, [locations, search]);
+    if (q) {
+      result = result.filter(
+        (l) =>
+          l.name.toLowerCase().includes(q) ||
+          l.region.toLowerCase().includes(q) ||
+          l.type.toLowerCase().includes(q),
+      );
+    }
+    return result;
+  }, [locations, search, filterRegion, filterType, filterOwner]);
 
   const isSelected = (id: string) => selectedPoints.some((p) => p.id === id);
 
@@ -130,6 +171,74 @@ export const ItineraryPage: React.FC = () => {
 
   const removePoint = (id: string) => {
     setSelectedPoints((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const handleDragStart = (idx: number) => {
+    dragNode.current = idx;
+    setDraggingIdx(idx);
+  };
+
+  const handleDragOver = (e: React.DragEvent, idx: number) => {
+    e.preventDefault();
+    if (dragNode.current !== null && dragNode.current !== idx) {
+      setDragOverIdx(idx);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, toIdx: number) => {
+    e.preventDefault();
+    const fromIdx = dragNode.current;
+    if (fromIdx === null || fromIdx === toIdx) {
+      setDraggingIdx(null);
+      setDragOverIdx(null);
+      dragNode.current = null;
+      return;
+    }
+    setSelectedPoints((prev) => {
+      const updated = [...prev];
+      const [moved] = updated.splice(fromIdx, 1);
+      updated.splice(toIdx, 0, moved);
+      return updated;
+    });
+    dragNode.current = null;
+    setDraggingIdx(null);
+    setDragOverIdx(null);
+  };
+
+  const handleDragEnd = () => {
+    dragNode.current = null;
+    setDraggingIdx(null);
+    setDragOverIdx(null);
+  };
+
+  const handleTouchStart = (idx: number) => {
+    isDraggingRef.current = true;
+    dragNode.current = idx;
+    setDraggingIdx(idx);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const item = el?.closest('[data-route-idx]') as HTMLElement | null;
+    if (!item) return;
+    const idx = parseInt(item.dataset.routeIdx ?? '-1', 10);
+    if (!isNaN(idx) && idx !== dragNode.current) setDragOverIdx(idx);
+  };
+
+  const handleTouchEnd = () => {
+    isDraggingRef.current = false;
+    const fromIdx = dragNode.current;
+    setSelectedPoints((prev) => {
+      if (fromIdx === null || dragOverIdx === null || fromIdx === dragOverIdx) return prev;
+      const updated = [...prev];
+      const [moved] = updated.splice(fromIdx, 1);
+      updated.splice(dragOverIdx, 0, moved);
+      return updated;
+    });
+    dragNode.current = null;
+    setDraggingIdx(null);
+    setDragOverIdx(null);
   };
 
   const handleViewOnMap = () => {
@@ -173,6 +282,61 @@ export const ItineraryPage: React.FC = () => {
           {/* Left: Locations list */}
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <SubTitle>Available Locations</SubTitle>
+
+            {/* Filters */}
+            <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexWrap: 'wrap' }}>
+              <FormControl size="small" sx={{ minWidth: 140 }}>
+                <InputLabel sx={{ fontSize: '0.8rem' }}>City</InputLabel>
+                <Select
+                  value={filterRegion}
+                  label="City"
+                  onChange={(e) => setFilterRegion(e.target.value)}
+                  sx={{ borderRadius: 0, fontSize: '0.8rem' }}
+                >
+                  <MenuItem value="">All cities</MenuItem>
+                  {allRegions.map((r) => (
+                    <MenuItem key={r} value={r} sx={{ fontSize: '0.8rem' }}>{r}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl size="small" sx={{ minWidth: 150 }}>
+                <InputLabel sx={{ fontSize: '0.8rem' }}>Type</InputLabel>
+                <Select
+                  value={filterType}
+                  label="Type"
+                  onChange={(e) => setFilterType(e.target.value)}
+                  sx={{ borderRadius: 0, fontSize: '0.8rem' }}
+                >
+                  <MenuItem value="">All types</MenuItem>
+                  {allTypes.map((t) => (
+                    <MenuItem key={t} value={t} sx={{ fontSize: '0.8rem', textTransform: 'capitalize' }}>{t}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
+                {(['all', 'public', 'my'] as const).map((v) => (
+                  <Chip
+                    key={v}
+                    label={v === 'all' ? 'All' : v === 'my' ? 'My locations' : 'Existing'}
+                    size="small"
+                    onClick={() => setFilterOwner(v)}
+                    variant={filterOwner === v ? 'filled' : 'outlined'}
+                    sx={{
+                      borderRadius: 0,
+                      fontSize: '0.72rem',
+                      fontWeight: filterOwner === v ? 700 : 400,
+                      bgcolor: filterOwner === v ? '#000' : 'transparent',
+                      color: filterOwner === v ? '#fff' : '#000',
+                      borderColor: '#000',
+                      cursor: 'pointer',
+                      '&:hover': { bgcolor: filterOwner === v ? '#333' : '#f5f5f5' },
+                    }}
+                  />
+                ))}
+              </Box>
+            </Box>
 
             <TextField
               fullWidth
@@ -289,44 +453,71 @@ export const ItineraryPage: React.FC = () => {
             {selectedPoints.length === 0 ? (
               <Box
                 sx={{
-                  border: '1px dashed #ccc',
+                  border: '2px dashed #e0e0e0',
                   borderRadius: 0,
-                  py: 6,
+                  py: 5,
                   px: 3,
                   textAlign: 'center',
                   color: 'text.secondary',
                   mb: 3,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 1,
                 }}
               >
-                <Typography sx={{ fontSize: '0.9rem' }}>
-                  Оберіть точки зі списку зліва, щоб додати їх до маршруту.
+                <DragIndicatorIcon sx={{ fontSize: 32, color: '#ccc' }} />
+                <Typography sx={{ fontSize: '0.85rem', color: '#999' }}>
+                  Оберіть точки зі списку зліва,
+                </Typography>
+                <Typography sx={{ fontSize: '0.85rem', color: '#999' }}>
+                  щоб додати їх до маршруту.
                 </Typography>
               </Box>
             ) : (
               <Box
+                ref={routeListRef}
                 sx={{
                   border: '1px solid #eee',
                   borderRadius: 0,
                   mb: 3,
                   maxHeight: '400px',
                   overflowY: 'auto',
+                  userSelect: 'none',
                 }}
               >
                 <List disablePadding>
                   {selectedPoints.map((point, idx) => (
                     <ListItem
                       key={point.id}
+                      data-route-idx={idx}
+                      draggable
+                      onDragStart={() => handleDragStart(idx)}
+                      onDragOver={(e) => handleDragOver(e, idx)}
+                      onDrop={(e) => handleDrop(e, idx)}
+                      onDragEnd={handleDragEnd}
+                      onTouchStart={() => handleTouchStart(idx)}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
                       sx={{
                         borderBottom: idx < selectedPoints.length - 1 ? '1px solid #f0f0f0' : 'none',
+                        borderTop: dragOverIdx === idx && draggingIdx !== idx ? '2px solid #000' : '2px solid transparent',
                         py: 1.5,
                         pr: 1,
+                        opacity: draggingIdx === idx ? 0.35 : 1,
+                        bgcolor: dragOverIdx === idx && draggingIdx !== idx ? '#fafafa' : 'transparent',
+                        cursor: 'grab',
+                        transition: 'opacity 0.15s, background 0.1s',
+                        '&:active': { cursor: 'grabbing' },
+                        touchAction: 'none',
                       }}
                       secondaryAction={
                         <IconButton
                           edge="end"
                           size="small"
+                          onMouseDown={(e) => e.stopPropagation()}
                           onClick={() => removePoint(point.id)}
-                          sx={{ color: '#999', '&:hover': { color: '#000' } }}
+                          sx={{ color: '#bbb', '&:hover': { color: '#e53935' }, cursor: 'pointer' }}
                         >
                           <RemoveIcon sx={{ fontSize: 16 }} />
                         </IconButton>
@@ -335,16 +526,16 @@ export const ItineraryPage: React.FC = () => {
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: 1 }}>
                         <Typography
                           sx={{
-                            fontSize: '0.75rem',
+                            fontSize: '0.72rem',
                             fontWeight: 700,
-                            color: '#999',
-                            minWidth: 20,
+                            color: '#bbb',
+                            minWidth: 18,
                             textAlign: 'center',
                           }}
                         >
                           {idx + 1}
                         </Typography>
-                        <DragIndicatorIcon sx={{ fontSize: 16, color: '#ccc' }} />
+                        <DragIndicatorIcon sx={{ fontSize: 18, color: '#ccc' }} />
                       </Box>
                       <ListItemText
                         primary={

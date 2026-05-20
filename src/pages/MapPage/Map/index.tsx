@@ -2016,7 +2016,7 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
                 <Marker
                   key={point.id}
                   position={[point.lat, point.lng]}
-                  icon={createCustomIcon(point.category)}
+                  icon={createCustomIcon(point.category, isPointSelected(point))}
                 >
                   <MarkerPopup
                     point={point}

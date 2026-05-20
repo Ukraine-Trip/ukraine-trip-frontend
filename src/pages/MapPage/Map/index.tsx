@@ -114,6 +114,65 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   );
   const [isRouteLoading, setIsRouteLoading] = useState(false);
 
+  const [mapDraggingIdx, setMapDraggingIdx] = useState<number | null>(null);
+  const [mapDragOverIdx, setMapDragOverIdx] = useState<number | null>(null);
+  const mapDragNodeRef = useRef<number | null>(null);
+
+  const handleMapDragStart = (idx: number) => {
+    mapDragNodeRef.current = idx;
+    setMapDraggingIdx(idx);
+  };
+  const handleMapDragOver = (e: React.DragEvent, idx: number) => {
+    e.preventDefault();
+    if (mapDragNodeRef.current !== null && mapDragNodeRef.current !== idx)
+      setMapDragOverIdx(idx);
+  };
+  const handleMapDrop = (e: React.DragEvent, toIdx: number) => {
+    e.preventDefault();
+    const fromIdx = mapDragNodeRef.current;
+    if (fromIdx !== null && fromIdx !== toIdx) {
+      setSelectedRoutePoints((prev) => {
+        const u = [...prev];
+        const [m] = u.splice(fromIdx, 1);
+        u.splice(toIdx, 0, m);
+        return u;
+      });
+    }
+    mapDragNodeRef.current = null;
+    setMapDraggingIdx(null);
+    setMapDragOverIdx(null);
+  };
+  const handleMapDragEnd = () => {
+    mapDragNodeRef.current = null;
+    setMapDraggingIdx(null);
+    setMapDragOverIdx(null);
+  };
+  const handleMapTouchStart = (idx: number) => {
+    mapDragNodeRef.current = idx;
+    setMapDraggingIdx(idx);
+  };
+  const handleMapTouchMove = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const item = el?.closest('[data-map-route-idx]') as HTMLElement | null;
+    if (!item) return;
+    const idx = parseInt(item.dataset.mapRouteIdx ?? '-1', 10);
+    if (!isNaN(idx) && idx !== mapDragNodeRef.current) setMapDragOverIdx(idx);
+  };
+  const handleMapTouchEnd = () => {
+    const fromIdx = mapDragNodeRef.current;
+    setSelectedRoutePoints((prev) => {
+      if (fromIdx === null || mapDragOverIdx === null || fromIdx === mapDragOverIdx) return prev;
+      const u = [...prev];
+      const [m] = u.splice(fromIdx, 1);
+      u.splice(mapDragOverIdx, 0, m);
+      return u;
+    });
+    mapDragNodeRef.current = null;
+    setMapDraggingIdx(null);
+    setMapDragOverIdx(null);
+  };
+
   useEffect(() => {
     const state = navLocation.state as any;
     if (state?.initialRoutePoints && Array.isArray(state.initialRoutePoints)) {
@@ -942,40 +1001,57 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '4px',
+                    userSelect: 'none',
                   }}
                 >
                   {selectedRoutePoints.map((p, i) => (
                     <li
                       key={p.id}
+                      data-map-route-idx={i}
+                      draggable
+                      onDragStart={() => handleMapDragStart(i)}
+                      onDragOver={(e) => handleMapDragOver(e, i)}
+                      onDrop={(e) => handleMapDrop(e, i)}
+                      onDragEnd={handleMapDragEnd}
+                      onTouchStart={() => handleMapTouchStart(i)}
+                      onTouchMove={handleMapTouchMove}
+                      onTouchEnd={handleMapTouchEnd}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '10px',
+                        gap: '8px',
                         padding: '8px 10px',
                         borderRadius: '8px',
-                        background:
-                          i === 0
-                            ? '#f0f7f4'
-                            : i === selectedRoutePoints.length - 1
-                              ? '#f7f0f0'
-                              : 'transparent',
+                        borderTop: mapDragOverIdx === i && mapDraggingIdx !== i ? '2px solid #3b5bdb' : '2px solid transparent',
+                        background: mapDragOverIdx === i && mapDraggingIdx !== i
+                          ? '#e8f0fe'
+                          : i === 0 ? '#f0f7f4'
+                          : i === selectedRoutePoints.length - 1 ? '#f7f0f0'
+                          : 'transparent',
+                        opacity: mapDraggingIdx === i ? 0.35 : 1,
+                        cursor: 'grab',
+                        touchAction: 'none',
+                        transition: 'opacity 0.15s, background 0.1s',
                       }}
                     >
+                      <svg width="10" height="14" viewBox="0 0 10 14" style={{ flexShrink: 0 }}>
+                        <circle cx="3" cy="3" r="1.3" fill="#ccc" />
+                        <circle cx="7" cy="3" r="1.3" fill="#ccc" />
+                        <circle cx="3" cy="7" r="1.3" fill="#ccc" />
+                        <circle cx="7" cy="7" r="1.3" fill="#ccc" />
+                        <circle cx="3" cy="11" r="1.3" fill="#ccc" />
+                        <circle cx="7" cy="11" r="1.3" fill="#ccc" />
+                      </svg>
                       <span
                         style={{
                           width: '22px',
                           height: '22px',
                           borderRadius: '50%',
                           background:
-                            i === 0
-                              ? '#2e7d5a'
-                              : i === selectedRoutePoints.length - 1
-                                ? '#c0392b'
-                                : '#e8e8e8',
-                          color:
-                            i === 0 || i === selectedRoutePoints.length - 1
-                              ? '#fff'
-                              : '#555',
+                            i === 0 ? '#2e7d5a'
+                            : i === selectedRoutePoints.length - 1 ? '#c0392b'
+                            : '#e8e8e8',
+                          color: i === 0 || i === selectedRoutePoints.length - 1 ? '#fff' : '#555',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -986,24 +1062,18 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
                       >
                         {i + 1}
                       </span>
-                      <span
-                        style={{
-                          fontSize: '13px',
-                          color: '#222',
-                          fontWeight: 500,
-                          flex: 1,
-                        }}
-                      >
+                      <span style={{ fontSize: '13px', color: '#222', fontWeight: 500, flex: 1 }}>
                         {p.name}
                       </span>
                       <button
+                        onMouseDown={(e) => e.stopPropagation()}
                         onClick={() => handleSelectPoint(p)}
                         style={{
                           background: 'none',
                           border: 'none',
                           cursor: 'pointer',
-                          color: '#999',
-                          fontSize: '16px',
+                          color: '#bbb',
+                          fontSize: '18px',
                           padding: '0 4px',
                           lineHeight: 1,
                         }}
@@ -1114,40 +1184,57 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '4px',
+                  userSelect: 'none',
                 }}
               >
                 {selectedRoutePoints.map((p, i) => (
                   <li
                     key={p.id}
+                    data-map-route-idx={i}
+                    draggable
+                    onDragStart={() => handleMapDragStart(i)}
+                    onDragOver={(e) => handleMapDragOver(e, i)}
+                    onDrop={(e) => handleMapDrop(e, i)}
+                    onDragEnd={handleMapDragEnd}
+                    onTouchStart={() => handleMapTouchStart(i)}
+                    onTouchMove={handleMapTouchMove}
+                    onTouchEnd={handleMapTouchEnd}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '10px',
+                      gap: '8px',
                       padding: '8px 10px',
                       borderRadius: '8px',
-                      background:
-                        i === 0
-                          ? '#f0f7f4'
-                          : i === selectedRoutePoints.length - 1
-                            ? '#f7f0f0'
-                            : 'transparent',
+                      borderTop: mapDragOverIdx === i && mapDraggingIdx !== i ? '2px solid #3b5bdb' : '2px solid transparent',
+                      background: mapDragOverIdx === i && mapDraggingIdx !== i
+                        ? '#e8f0fe'
+                        : i === 0 ? '#f0f7f4'
+                        : i === selectedRoutePoints.length - 1 ? '#f7f0f0'
+                        : 'transparent',
+                      opacity: mapDraggingIdx === i ? 0.35 : 1,
+                      cursor: 'grab',
+                      touchAction: 'none',
+                      transition: 'opacity 0.15s, background 0.1s',
                     }}
                   >
+                    <svg width="10" height="14" viewBox="0 0 10 14" style={{ flexShrink: 0 }}>
+                      <circle cx="3" cy="3" r="1.3" fill="#ccc" />
+                      <circle cx="7" cy="3" r="1.3" fill="#ccc" />
+                      <circle cx="3" cy="7" r="1.3" fill="#ccc" />
+                      <circle cx="7" cy="7" r="1.3" fill="#ccc" />
+                      <circle cx="3" cy="11" r="1.3" fill="#ccc" />
+                      <circle cx="7" cy="11" r="1.3" fill="#ccc" />
+                    </svg>
                     <span
                       style={{
                         width: '22px',
                         height: '22px',
                         borderRadius: '50%',
                         background:
-                          i === 0
-                            ? '#2e7d5a'
-                            : i === selectedRoutePoints.length - 1
-                              ? '#c0392b'
-                              : '#e8e8e8',
-                        color:
-                          i === 0 || i === selectedRoutePoints.length - 1
-                            ? '#fff'
-                            : '#555',
+                          i === 0 ? '#2e7d5a'
+                          : i === selectedRoutePoints.length - 1 ? '#c0392b'
+                          : '#e8e8e8',
+                        color: i === 0 || i === selectedRoutePoints.length - 1 ? '#fff' : '#555',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -1158,17 +1245,11 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
                     >
                       {i + 1}
                     </span>
-                    <span
-                      style={{
-                        fontSize: '13px',
-                        color: '#222',
-                        fontWeight: 500,
-                        flex: 1,
-                      }}
-                    >
+                    <span style={{ fontSize: '13px', color: '#222', fontWeight: 500, flex: 1 }}>
                       {p.name}
                     </span>
                     <button
+                      onMouseDown={(e) => e.stopPropagation()}
                       onClick={() => handleSelectPoint(p)}
                       style={{
                         background: 'none',

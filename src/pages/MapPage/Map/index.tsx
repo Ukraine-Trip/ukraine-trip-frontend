@@ -21,7 +21,7 @@ import Routing from './component/Routing.tsx';
 import { UserLocation } from './component/UserLocation.tsx';
 import type { ItineraryPoint, Trip } from '../../../types/types.ts';
 import regionsData from '../../../librarian/cities.json';
-import { getAllTrips, getMyTrips } from '../../../api/trips.ts';
+import { getAllTrips, getMyTrips, createTrip } from '../../../api/trips.ts';
 
 const HEADER_H = 80;
 const CTRL_TOP = HEADER_H + 12;
@@ -294,24 +294,19 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   };
 
   const handleSaveTrip = async () => {
-    if (!tripTitle.trim() || selectedRoutePoints.length < 2) return;
+    if (!tripTitle.trim() || selectedRoutePoints.length < 2 || !token) return;
     setSaveLoading(true);
     setSaveError(null);
     try {
-      const payload = {
-        title: tripTitle.trim(),
-        location_ids: selectedRoutePoints.map((p) => p.id),
-        optimize: false,
-      };
-      const config: any = token
-        ? { headers: { Authorization: `Bearer ${token}` } }
-        : {};
-      await axios.post(
-        'http://localhost:8000/api/v1/trips/build',
-        payload,
-        config
+      await createTrip(
+        {
+          title: tripTitle.trim(),
+          location_ids: selectedRoutePoints.map((p) => p.id),
+          optimize: false,
+        },
+        token
       );
-      navigate('/account?showItinerary=1');
+      navigate('/my-trips');
     } catch (err: any) {
       setSaveError(
         err.response?.data?.detail || 'Помилка при збереженні маршруту'

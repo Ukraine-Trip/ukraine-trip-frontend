@@ -591,7 +591,7 @@ export const ItineraryPage: React.FC = () => {
                 disabled={selectedPoints.length < 2}
                 sx={{ width: '100%' }}
               >
-                View on Map ({selectedPoints.length} points)
+                Show Trip ({selectedPoints.length} points)
               </PrimaryButton>
               {selectedPoints.length < 2 && (
                 <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', textAlign: 'center' }}>

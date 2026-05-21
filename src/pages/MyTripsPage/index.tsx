@@ -140,15 +140,6 @@ export const MyTripsPage: React.FC = () => {
             ))}
           </List>
         )}
-
-        <Box sx={{ mt: 4 }}>
-          <SecondaryButton
-            variant="outlined"
-            onClick={() => navigate('/account')}
-          >
-            Back to Account
-          </SecondaryButton>
-        </Box>
       </Box>
     </PageWrapper>
   );

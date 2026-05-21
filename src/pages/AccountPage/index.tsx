@@ -62,7 +62,7 @@ export const AccountPage: React.FC = () => {
       try {
         const response = await api.get('/users/me', {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${token.replace(/["']/g, '')}`,
           },
         });
         setUser(response.data);
@@ -87,7 +87,7 @@ export const AccountPage: React.FC = () => {
       try {
         const response = await api.get<UserLocation[]>('/locations/my', {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${token.replace(/["']/g, '')}`,
           },
         });
         setMyLocations(response.data);
@@ -147,7 +147,7 @@ export const AccountPage: React.FC = () => {
       }
 
       const response = await api.put('/users/me', payload, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token.replace(/["']/g, '')}` },
       });
       setAuthUser(response.data);
       setMessage({ text: 'Профіль успішно оновлено!', type: 'success' });

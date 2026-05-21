@@ -3,14 +3,30 @@ import { Popup } from 'react-leaflet';
 import type { ItineraryPoint } from '../../../../types/types.ts';
 import regionsData from '../../../../librarian/cities.json';
 
+const DANGEROUS_REGIONS = [
+  'DONETSK OBLAST', 'DONETSK',
+  'LUHANSK OBLAST', 'LUHANSK',
+  'ZAPORIZHZHIA OBLAST', 'ZAPORIZHZHIA',
+  'KHERSON OBLAST', 'KHERSON',
+  'MYKOLAIV OBLAST', 'MYKOLAIV',
+  'KHARKIV OBLAST', 'KHARKIV',
+  'SUMY OBLAST', 'SUMY',
+  'KYIV OBLAST', 'KYIV',
+  'CHERNIHIV OBLAST', 'CHERNIHIV',
+  'DNIPROPETROVSK OBLAST', 'DNIPROPETROVSK',
+  'ODESA OBLAST', 'ODESA'
+];
+
 interface MarkerPopupProps {
   point: ItineraryPoint;
+  region?: string;
   onSelectPoint: (point: ItineraryPoint) => void;
   isSelected: boolean;
 }
 
 export const MarkerPopup: React.FC<MarkerPopupProps> = ({
   point,
+  region,
   onSelectPoint,
   isSelected,
 }) => {
@@ -23,7 +39,7 @@ export const MarkerPopup: React.FC<MarkerPopupProps> = ({
     return foundRegion ? foundRegion.name : null;
   };
 
-  const regionName = getRegionForCity(point.name);
+  const regionName = point.region || getRegionForCity(point.name);
 
   return (
     <Popup minWidth={200}>
@@ -43,6 +59,20 @@ export const MarkerPopup: React.FC<MarkerPopupProps> = ({
         )}
 
         <strong style={{ fontSize: '1.1rem' }}>{point.name}</strong>
+
+        {region && DANGEROUS_REGIONS.includes(region.toUpperCase()) && (
+          <div style={{
+            backgroundColor: '#ff9800',
+            color: '#fff',
+            padding: '4px 8px',
+            margin: '8px 0',
+            borderRadius: '4px',
+            fontSize: '12px',
+            lineHeight: '1.4'
+          }}>
+            ⚠️ Warning: This point is in a dangerous area due to war.
+          </div>
+        )}
 
         {point.priority <= 2 && (
           <>

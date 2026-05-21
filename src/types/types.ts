@@ -34,4 +34,5 @@ export interface ItineraryPoint {
   imageUrl?: string;
   lat: number;
   lng: number;
+  region?: string;
 }

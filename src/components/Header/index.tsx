@@ -37,6 +37,7 @@ export const Header: React.FC = () => {
   const navItems = [
     { label: 'Regions', path: '/create-route' },
     { label: 'Itinerary', path: '/itinerary', private: true },
+    { label: 'My Trips', path: '/my-trips', private: true },
   ];
 
   const isAuthenticated = Boolean(token);

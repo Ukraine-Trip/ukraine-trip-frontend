@@ -1,6 +1,16 @@
 import { api } from './auth';
 import type { Trip } from '../types/types';
 
+export const createTrip = (
+  payload: { title: string; location_ids: string[]; optimize?: boolean },
+  token: string,
+): Promise<Trip> =>
+  api
+    .post<Trip>('/trips/build', payload, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    .then((res) => res.data);
+
 export const getAllTrips = (): Promise<Trip[]> =>
   api.get<Trip[]>('/trips/').then((res) => res.data);
 
@@ -15,3 +25,19 @@ export const getMyTrips = (token: string): Promise<Trip[]> => {
     })
     .then((res) => res.data);
 };
+
+export const getTripById = (tripId: string): Promise<Trip> =>
+  api.get<Trip>(`/trips/${tripId}`).then((res) => res.data);
+
+export const updateTrip = (
+  tripId: string,
+  payload: Partial<Pick<Trip, 'title' | 'description' | 'start_date' | 'end_date'>> & {
+    location_ids?: string[];
+  },
+  token?: string,
+): Promise<Trip> =>
+  api
+    .put<Trip>(`/trips/${tripId}`, payload, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    })
+    .then((res) => res.data);

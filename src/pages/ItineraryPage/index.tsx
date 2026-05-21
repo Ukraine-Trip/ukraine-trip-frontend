@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -73,6 +73,31 @@ export const ItineraryPage: React.FC = () => {
     el.addEventListener('touchmove', block, { passive: false });
     return () => el.removeEventListener('touchmove', block);
   }, []);
+
+  const location = useLocation();
+
+  useEffect(() => {
+    const state = location.state as any;
+    if (Array.isArray(state?.selectedRoutePoints) && state.selectedRoutePoints.length > 0) {
+      const normalizedPoints = state.selectedRoutePoints.map((point: any) => ({
+        id: String(point.id),
+        name: point.name || '',
+        region: point.region || point.city || '',
+        type: point.type || point.category || 'landmark',
+        lat: point.lat ?? point.latitude ?? 0,
+        lng: point.lng ?? point.longitude ?? 0,
+        description: point.description || '',
+        isOwn: point.isOwn || false,
+      }));
+      setSelectedPoints(normalizedPoints);
+    }
+    if (state?.filterRegion) {
+      setFilterRegion(String(state.filterRegion));
+    }
+    if (state?.transport) {
+      setTransport(state.transport as TransportType);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     const fetchLocations = async () => {

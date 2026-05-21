@@ -3,7 +3,7 @@ import { AppBar, Toolbar, Typography, Box, TextField, InputAdornment } from '@mu
 import { Link } from 'react-router-dom';
 import { HeroSection as StyledHeroSection } from '../../style.tsx';
 import { PrimaryButton } from '../../../../style/common.tsx';
-
+import  AutoAwesomeIcon  from '@mui/icons-material/AutoAwesome';
 export const HeroSection: React.FC = () => {
   const [prompt, setPrompt] = useState('');
   const isWaitingForAI = true;
@@ -65,23 +65,29 @@ export const HeroSection: React.FC = () => {
             placeholder="Напиши запит для ШІ, щоб створити точки маршруту"
             fullWidth
             variant="outlined"
+            multiline
+            minRows={8}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start" sx={{ color: '#fff' }}>
-                  🌟
+                  <AutoAwesomeIcon />
                 </InputAdornment>
               ),
             }}
             sx={{
-              backgroundColor: 'rgba(255, 255, 255, 0.16)',
-              borderRadius: '8px',
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              borderRadius: '16px',
+              width: '100%',
               '& .MuiOutlinedInput-root': {
+                minHeight: '200px',
+                alignItems: 'flex-start',
                 color: '#fff',
                 '& fieldset': {
-                  borderColor: 'rgba(255,255,255,0.35)',
+                  borderColor: 'rgba(255,255,255,0.55)',
+                  borderWidth: '1px',
                 },
                 '&:hover fieldset': {
-                  borderColor: 'rgba(255,255,255,0.7)',
+                  borderColor: 'rgba(255,255,255,0.8)',
                 },
                 '&.Mui-focused fieldset': {
                   borderColor: '#fff',
@@ -90,20 +96,29 @@ export const HeroSection: React.FC = () => {
               '& .MuiInputBase-input': {
                 color: '#fff',
               },
-              width: '100%',
             }}
           />
 
           <PrimaryButton
             disabled
             sx={{
-              width: '100%',
-              opacity: 0.65,
+              width: 'auto',
+              minWidth: '220px',
+              px: 3,
+              py: 1.5,
+              opacity: 1,
               cursor: 'not-allowed',
               textTransform: 'none',
+              backgroundColor: 'rgba(0,0,0,0.25)',
+              color: '#fff',
+              '&.Mui-disabled': {
+                color: '#fff',
+                opacity: 0.85,
+                backgroundColor: 'rgba(0,0,0,0.25)',
+              },
             }}
           >
-            Waiting for AI response...
+            View my trip
           </PrimaryButton>
         </Box>
       </StyledHeroSection>

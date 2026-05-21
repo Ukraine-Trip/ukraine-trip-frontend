@@ -293,6 +293,27 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     setIsOptimized(true);
   };
 
+  const handleViewItinerary = () => {
+    if (selectedRoutePoints.length === 0) return;
+    const routePoints = selectedRoutePoints.map((point) => ({
+      id: point.id,
+      name: point.name,
+      category: point.category || point.type || 'landmark',
+      description: point.description || '',
+      lat: point.lat,
+      lng: point.lng,
+      priority: point.priority ?? 3,
+      region: point.region ?? '',
+    }));
+
+    navigate('/itinerary', {
+      state: {
+        selectedRoutePoints: routePoints,
+        transport: transportType,
+      },
+    });
+  };
+
   const handleSaveTrip = async () => {
     if (!tripTitle.trim() || selectedRoutePoints.length < 2 || !token) return;
     setSaveLoading(true);
@@ -801,12 +822,12 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
 
                   <button
                     onClick={() => {
-                      if (token) {
-                        setSelectedCityTrip(null);
-                        setRouteBuildingMode(true);
-                      } else {
-                        navigate('/login', { state: { from: '/map' } });
-                      }
+                      navigate('/itinerary', {
+                        state: {
+                          filterRegion: cityMeta?.name || cityMeta?.name,
+                          selectedRoutePoints: [],
+                        },
+                      });
                     }}
                     style={{
                       width: '100%',
@@ -1125,6 +1146,27 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
 
               <div style={{ flex: 1 }} />
 
+              {selectedRoutePoints.length > 0 && (
+                <button
+                  onClick={handleViewItinerary}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    backgroundColor: selectedRoutePoints.length > 0 ? '#3b5bdb' : '#ccc',
+                    color: 'white',
+                    fontWeight: 700,
+                    cursor: selectedRoutePoints.length > 0 ? 'pointer' : 'not-allowed',
+                    fontSize: '14px',
+                    letterSpacing: '0.5px',
+                    marginBottom: '10px',
+                  }}
+                >
+                  Переглянути маршрут у Itinerary
+                </button>
+              )}
+
               {cityMeta && (
                 <button
                   onClick={() => {
@@ -1271,26 +1313,47 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
               />
 
               {!saveMode ? (
-                <button
-                  onClick={() => setSaveMode(true)}
-                  disabled={!token}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    borderRadius: '8px',
-                    border: 'none',
-                    backgroundColor: token ? '#1a1a2e' : '#ccc',
-                    color: 'white',
-                    fontWeight: 700,
-                    cursor: token ? 'pointer' : 'not-allowed',
-                    fontSize: '14px',
-                    letterSpacing: '0.5px',
-                    marginBottom: '8px',
-                  }}
-                  title={!token ? 'Увійдіть, щоб зберегти маршрут' : ''}
-                >
-                  Зберегти маршрут
-                </button>
+                <>
+                  <button
+                    onClick={handleViewItinerary}
+                    disabled={selectedRoutePoints.length === 0}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      backgroundColor: selectedRoutePoints.length > 0 ? '#3b5bdb' : '#ccc',
+                      color: 'white',
+                      fontWeight: 700,
+                      cursor: selectedRoutePoints.length > 0 ? 'pointer' : 'not-allowed',
+                      fontSize: '14px',
+                      letterSpacing: '0.5px',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    Перейти до Itinerary
+                  </button>
+                  <button
+                    onClick={() => setSaveMode(true)}
+                    disabled={!token}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      backgroundColor: token ? '#1a1a2e' : '#ccc',
+                      color: 'white',
+                      fontWeight: 700,
+                      cursor: token ? 'pointer' : 'not-allowed',
+                      fontSize: '14px',
+                      letterSpacing: '0.5px',
+                      marginBottom: '8px',
+                    }}
+                    title={!token ? 'Увійдіть, щоб зберегти маршрут' : ''}
+                  >
+                    Зберегти маршрут
+                  </button>
+                </>
               ) : (
                 <div
                   style={{

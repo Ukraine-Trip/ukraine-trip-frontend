@@ -1,6 +1,6 @@
 import { useEffect, useState, useContext } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Box, Avatar, Stack, Typography, CircularProgress, Divider, List, ListItem, ListItemText, Chip, Collapse } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { Box, Avatar, Stack, Typography, CircularProgress, Divider } from '@mui/material';
 import {
   PageWrapper,
   PageTitle,
@@ -11,8 +11,6 @@ import {
 } from '../../style/common.tsx';
 import { api, hashPassword } from '../../api/auth.ts';
 import { AuthContext } from '../../context/AuthContext';
-import { getMyTrips } from '../../api/trips.ts';
-import type { Trip } from '../../types/types.ts';
 
 interface UserData {
   full_name: string;
@@ -21,41 +19,13 @@ interface UserData {
   password?: string;
 }
 
-interface UserLocation {
-  id: string;
-  name: string;
-  description?: string;
-  region: string;
-  type: string;
-  priority: number;
-  is_approved: boolean;
-}
-
-const formatTripDate = (start: string | null, end: string | null): string => {
-  if (!start) return '';
-  const fmt = (d: Date) =>
-    d.toLocaleString('uk-UA', { day: 'numeric', month: 'short', year: 'numeric' });
-  const s = new Date(start);
-  if (!end || start === end) return fmt(s);
-  return `${fmt(s)} — ${fmt(new Date(end))}`;
-};
-
 export const AccountPage: React.FC = () => {
   const { token, setUser: setAuthUser } = useContext(AuthContext);
   const navigate = useNavigate();
-  const location = useLocation();
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [newPassword, setNewPassword] = useState('');
   const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
-  const [myLocations, setMyLocations] = useState<UserLocation[]>([]);
-  const [locationsLoading, setLocationsLoading] = useState(true);
-  const [locationsError, setLocationsError] = useState<string | null>(null);
-  const [showLocations, setShowLocations] = useState(false);
-  const [showItinerary, setShowItinerary] = useState(false);
-  const [myTrips, setMyTrips] = useState<Trip[]>([]);
-  const [tripsLoading, setTripsLoading] = useState(false);
-  const [tripsError, setTripsError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -79,62 +49,61 @@ export const AccountPage: React.FC = () => {
     }
   }, [token]);
 
-  useEffect(() => {
-    const fetchMyLocations = async () => {
-      setLocationsError(null);
-      setLocationsLoading(true);
+useEffect(() => {
+    const fetchMyLocations = async () => {
+      setLocationsError(null);
+      setLocationsLoading(true);
 
-      try {
-        const response = await api.get<UserLocation[]>('/locations/my', {
-          headers: {
-            Authorization: `Bearer ${token.replace(/["']/g, '')}`,
-          },
-        });
-        setMyLocations(response.data);
-      } catch (error: any) {
-        console.error('Помилка завантаження власних локацій:', error);
-        setLocationsError(error.response?.data?.detail || 'Не вдалося завантажити ваші точки');
-      } finally {
-        setLocationsLoading(false);
-      }
-    };
+      try {
+        const response = await api.get<UserLocation[]>('/locations/my', {
+          headers: {
+            Authorization: `Bearer ${token.replace(/["']/g, '')}`,
+          },
+        });
+        setMyLocations(response.data);
+      } catch (error: any) {
+        console.error('Помилка завантаження власних локацій:', error);
+        setLocationsError(error.response?.data?.detail || 'Не вдалося завантажити ваші точки');
+      } finally {
+        setLocationsLoading(false);
+      }
+    };
 
-    if (token) {
-      fetchMyLocations();
-    } else {
-      setLocationsLoading(false);
-      setMyLocations([]);
-    }
-  }, [token]);
+    if (token) {
+      fetchMyLocations();
+    } else {
+      setLocationsLoading(false);
+      setMyLocations([]);
+    }
+  }, [token]);
 
-  useEffect(() => {
-    if (!token) return;
-    const fetchMyTrips = async () => {
-      setTripsError(null);
-      setTripsLoading(true);
-      try {
-        const trips = await getMyTrips(token);
-        setMyTrips(trips);
-      } catch (error: any) {
-        console.error('Помилка завантаження маршрутів:', error);
-        setTripsError('Не вдалося завантажити ваші маршрути');
-      } finally {
-        setTripsLoading(false);
-      }
-    };
-    fetchMyTrips();
-  }, [token]);
+  useEffect(() => {
+    if (!token) return;
+    const fetchMyTrips = async () => {
+      setTripsError(null);
+      setTripsLoading(true);
+      try {
+        const trips = await getMyTrips(token);
+        setMyTrips(trips);
+      } catch (error: any) {
+        console.error('Помилка завантаження маршрутів:', error);
+        setTripsError('Не вдалося завантажити ваші маршрути');
+      } finally {
+        setTripsLoading(false);
+      }
+    };
+    fetchMyTrips();
+  }, [token]);
 
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    if (params.get('showLocations') === '1') {
-      setShowLocations(true);
-    }
-    if (params.get('showItinerary') === '1') {
-      setShowItinerary(true);
-    }
-  }, [location.search]);
-
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('showLocations') === '1') {
+      setShowLocations(true);
+    }
+    if (params.get('showItinerary') === '1') {
+      setShowItinerary(true);
+    }
+  }, [location.search]);
   const handleSave = async () => {
     setMessage(null);
     try {
@@ -287,157 +256,22 @@ export const AccountPage: React.FC = () => {
 
         <Divider sx={{ my: 5 }} />
 
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mb: 1, flexWrap: 'wrap' }}>
-          <SecondaryButton
-            variant="outlined"
-            onClick={() => setShowItinerary((prev) => !prev)}
-          >
-            {showItinerary ? 'Hide my itinerary' : 'View my itinerary'}
-          </SecondaryButton>
-          <SecondaryButton
-            variant="outlined"
-            onClick={() => setShowLocations((prev) => !prev)}
-          >
-            {showLocations ? 'Hide my locations' : 'View my locations'}
-          </SecondaryButton>
-        </Box>
-
-        <Collapse in={showItinerary}>
-          <Box sx={{ mb: 4 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2, mb: 2 }}>
-              <Box>
-                <SubTitle>My Itineraries</SubTitle>
-                <Typography sx={{ fontSize: '0.95rem', color: '#666', maxWidth: 680 }}>
-                  Тут відображаються маршрути, які ви створили. Ви можете переглянути їх або побудувати новий маршрут.
-                </Typography>
-              </Box>
-              <SecondaryButton
-                variant="outlined"
-                onClick={() => navigate('/itinerary')}
-                sx={{ alignSelf: 'center' }}
-              >
-                Create New Itinerary
-              </SecondaryButton>
-            </Box>
-
-            {tripsLoading ? (
-              <Typography sx={{ color: 'text.secondary' }}>Завантаження ваших маршрутів...</Typography>
-            ) : tripsError ? (
-              <Typography sx={{ color: 'error.main' }}>{tripsError}</Typography>
-            ) : myTrips.length === 0 ? (
-              <Box sx={{ py: 3, textAlign: 'center' }}>
-                <Typography sx={{ color: 'text.secondary', mb: 2 }}>
-                  Ви ще не створили жодного маршруту.
-                </Typography>
-                <PrimaryButton onClick={() => navigate('/itinerary')}>
-                  Build Your First Itinerary
-                </PrimaryButton>
-              </Box>
-            ) : (
-              <List sx={{ width: '100%', bgcolor: 'background.paper' }}>
-                {myTrips.map((trip) => (
-                  <ListItem
-                    key={trip.id}
-                    sx={{ flexDirection: 'column', alignItems: 'flex-start', py: 2, borderBottom: '1px solid #eee' }}
-                  >
-                    <Box sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-                      <ListItemText
-                        primary={trip.title}
-                        secondary={formatTripDate(trip.start_date, trip.end_date)}
-                        secondaryTypographyProps={{ sx: { color: 'text.secondary' } }}
-                      />
-                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-                        <Chip
-                          label={`${trip.trip_nodes.length} ${trip.trip_nodes.length === 1 ? 'point' : 'points'}`}
-                          size="small"
-                        />
-                        <SecondaryButton
-                          variant="outlined"
-                          size="small"
-                          sx={{ fontSize: '0.65rem', py: '6px', px: '14px' }}
-                          onClick={() =>
-                            navigate('/map-page', {
-                              state: {
-                                tripMeta: {
-                                  title: trip.title,
-                                  description: trip.description,
-                                  start_date: trip.start_date,
-                                  end_date: trip.end_date,
-                                  waypoints: trip.trip_nodes.map((n) => ({
-                                    name: n.location?.name ?? '',
-                                    order_index: n.order_index,
-                                  })),
-                                },
-                              },
-                            })
-                          }
-                        >
-                          View on Map
-                        </SecondaryButton>
-                      </Box>
-                    </Box>
-                    {trip.description && (
-                      <Typography sx={{ mt: 1, color: 'text.secondary', fontSize: '0.9rem' }}>
-                        {trip.description}
-                      </Typography>
-                    )}
-                  </ListItem>
-                ))}
-              </List>
-            )}
+        <Box>
+          <SubTitle sx={{ mb: 3 }}>My Content</SubTitle>
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <PrimaryButton
+              onClick={() => navigate('/my-trips')}
+            >
+              View My Itineraries
+            </PrimaryButton>
+            <SecondaryButton
+              variant="outlined"
+              onClick={() => navigate('/my-locations')}
+            >
+              View My Locations
+            </SecondaryButton>
           </Box>
-          <Divider sx={{ mb: 3 }} />
-        </Collapse>
-
-        <Collapse in={showLocations}>
-          <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2, mb: 2 }}>
-              <Box>
-                <SubTitle>My Created Locations</SubTitle>
-                <Typography sx={{ fontSize: '0.95rem', color: '#666', maxWidth: 680 }}>
-                  Тут відображаються лише ті місця, які ви додали особисто. Інші користувачі їх не бачать у вашому акаунті.
-                </Typography>
-              </Box>
-              <SecondaryButton
-                variant="outlined"
-                onClick={() => navigate('/create-location')}
-                sx={{ alignSelf: 'center' }}
-              >
-                Create New Place
-              </SecondaryButton>
-            </Box>
-
-          {locationsLoading ? (
-            <Typography sx={{ color: 'text.secondary' }}>Завантаження ваших точок...</Typography>
-          ) : locationsError ? (
-            <Typography sx={{ color: 'error.main' }}>{locationsError}</Typography>
-          ) : myLocations.length === 0 ? (
-            <Typography sx={{ color: 'text.secondary' }}>Ви ще не додали жодної локації.</Typography>
-          ) : (
-            <List sx={{ width: '100%', bgcolor: 'background.paper' }}>
-              {myLocations.map((location) => (
-                <ListItem key={location.id} sx={{ flexDirection: 'column', alignItems: 'flex-start', py: 2, borderBottom: '1px solid #eee' }}>
-                  <Box sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
-                    <ListItemText
-                      primary={location.name}
-                      secondary={location.region}
-                      secondaryTypographyProps={{ sx: { color: 'text.secondary' } }}
-                    />
-                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-                      <Chip label={location.type} size="small" />
-                      <Chip label={`Priority ${location.priority}`} size="small" />
-                      <Chip label={location.is_approved ? 'Approved' : 'Pending'} color={location.is_approved ? 'success' : 'warning'} size="small" />
-                    </Box>
-                  </Box>
-                  {location.description ? (
-                    <Typography sx={{ mt: 1, color: 'text.secondary' }}>{location.description}</Typography>
-                  ) : null}
-                </ListItem>
-              ))}
-            </List>
-          )}
         </Box>
-      </Collapse>
       </Box>
     </PageWrapper>
   );

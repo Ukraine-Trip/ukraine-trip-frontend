@@ -8,7 +8,7 @@ import LocationCityIcon from '@mui/icons-material/LocationCity';
 import DirectionsBusIcon from '@mui/icons-material/DirectionsBus';
 
 // Функція для створення іконки
-export const createCustomIcon = (category: string) => {
+export const createCustomIcon = (category: string, isSelected: boolean = false) => {
   const getIcon = () => {
     switch (category) {
       case 'city':
@@ -29,6 +29,8 @@ export const createCustomIcon = (category: string) => {
   };
 
   const IconComponent = getIcon();
+  const mainColor = isSelected ? '#06dc0a' : '#302d2c';
+  const shadowColor = isSelected ? '0 0 0 4px rgba(16, 185, 129, 0.3)' : '0 2px 4px rgba(0,0,0,0.2)';
 
   // Саме через цей рядок файл має бути .tsx
   const iconHTML = renderToString(
@@ -37,12 +39,12 @@ export const createCustomIcon = (category: string) => {
         backgroundColor: 'white',
         borderRadius: '50%',
         padding: '5px',
-        border: '2px solid #302d2c',
+        border: `2px solid ${mainColor}`,
         display: 'flex',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+        boxShadow: shadowColor,
       }}
     >
-      <IconComponent style={{ color: '#302d2c', fontSize: '20px' }} />
+      <IconComponent style={{ color: mainColor, fontSize: '20px' }} />
     </div>
   );
 

@@ -24,7 +24,8 @@ import regionsData from '../../../librarian/cities.json';
 import { getAllTrips, getMyTrips, createTrip } from '../../../api/trips.ts';
 
 const HEADER_H = 80;
-const CTRL_TOP = HEADER_H + 12;
+//const CTRL_TOP = HEADER_H + 12;
+
 
 interface TripMeta {
   title: string;
@@ -82,6 +83,8 @@ type TransportType = 'car' | 'foot' | 'bike';
 export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   itinerary = [],
 }) => {
+  const isMobile = window.innerWidth <= 768; 
+  const CTRL_TOP = isMobile ? 16 : HEADER_H + 12;
   const { token } = useContext(AuthContext);
   const [zoom, setZoom] = useState(6);
   const [isOptimized, setIsOptimized] = useState(false);
@@ -1660,7 +1663,7 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
             title="Базові шари"
             style={{
               position: 'absolute',
-              top: CTRL_TOP + 162,
+              top: selectedRoutePoints.length > 2 ? CTRL_TOP + 162 +56 : CTRL_TOP + 162,
               right: '16px',
               zIndex: 999,
               backgroundColor: 'white',
@@ -1697,7 +1700,7 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
             <div
               style={{
                 position: 'absolute',
-                top: CTRL_TOP + 162,
+                top: selectedRoutePoints.length > 2 ? CTRL_TOP + 162 + 56 : CTRL_TOP + 162,
                 right: '68px',
                 zIndex: 999,
                 backgroundColor: 'white',
@@ -1987,7 +1990,7 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
           <div
             style={{
               position: 'absolute',
-              top: CTRL_TOP,
+              top: selectedRoutePoints.length > 2 ? CTRL_TOP + 56 : CTRL_TOP,
               right: '16px',
               zIndex: 999,
               backgroundColor: 'white',
@@ -2134,7 +2137,7 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
             )}
             <ZoomHandler setZoom={setZoom} />
             <MapController center={urlCenter} zoom={urlZoom} />
-            <UserLocation ctrlTop={CTRL_TOP + 162 + 56} />
+            <UserLocation ctrlTop={selectedRoutePoints.length > 2 ? CTRL_TOP + 162 + 56 + 56 : CTRL_TOP + 162 + 56} />
 
             {pointsForRouting.length > 1 && (
               <Routing
@@ -2152,7 +2155,7 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
                 <Marker
                   key={point.id}
                   position={[point.lat, point.lng]}
-                  icon={createCustomIcon(point.category)}
+                  icon={createCustomIcon(point.category, isPointSelected(point))}
                 >
                   <MarkerPopup
                     point={point}

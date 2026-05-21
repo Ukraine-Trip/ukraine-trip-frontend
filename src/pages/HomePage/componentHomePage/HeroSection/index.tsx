@@ -1,10 +1,13 @@
-import React from 'react';
-import { AppBar, Toolbar, Typography } from '@mui/material';
-import { Link } from 'react-router-dom'; // 1. Додаємо імпорт Link
+import React, { useState } from 'react';
+import { AppBar, Toolbar, Typography, Box, TextField, InputAdornment } from '@mui/material';
+import { Link } from 'react-router-dom';
 import { HeroSection as StyledHeroSection } from '../../style.tsx';
 import { PrimaryButton } from '../../../../style/common.tsx';
-
+import  AutoAwesomeIcon  from '@mui/icons-material/AutoAwesome';
 export const HeroSection: React.FC = () => {
+  const [prompt, setPrompt] = useState('');
+  const isWaitingForAI = true;
+
   return (
     <>
       <AppBar
@@ -37,14 +40,87 @@ export const HeroSection: React.FC = () => {
           Country research site
         </Typography>
 
-        {/* 2. Перетворюємо кнопку на посилання */}
-        <PrimaryButton
-          component={Link}
-          to="/create-route"
-          sx={{ mt: 4 }}
+        <Box
+          sx={{
+            mt: 4,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 2,
+            width: '100%',
+            maxWidth: '560px',
+          }}
         >
-          Explore trip
-        </PrimaryButton>
+          <PrimaryButton
+            component={Link}
+            to="/create-route"
+            sx={{ width: '100%' }}
+          >
+            Explore trip
+          </PrimaryButton>
+
+          <TextField
+            value={prompt}
+            onChange={(event) => setPrompt(event.target.value)}
+            placeholder="Напиши запит для ШІ, щоб створити точки маршруту"
+            fullWidth
+            variant="outlined"
+            multiline
+            minRows={8}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start" sx={{ color: '#fff' }}>
+                  <AutoAwesomeIcon />
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              borderRadius: '16px',
+              width: '100%',
+              '& .MuiOutlinedInput-root': {
+                minHeight: '200px',
+                alignItems: 'flex-start',
+                color: '#fff',
+                '& fieldset': {
+                  borderColor: 'rgba(255,255,255,0.55)',
+                  borderWidth: '1px',
+                },
+                '&:hover fieldset': {
+                  borderColor: 'rgba(255,255,255,0.8)',
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#fff',
+                },
+              },
+              '& .MuiInputBase-input': {
+                color: '#fff',
+              },
+            }}
+          />
+
+          <PrimaryButton
+            disabled
+            sx={{
+              width: 'auto',
+              minWidth: '220px',
+              px: 3,
+              py: 1.5,
+              opacity: 1,
+              cursor: 'not-allowed',
+              textTransform: 'none',
+              backgroundColor: 'rgba(0,0,0,0.25)',
+              color: '#fff',
+              '&.Mui-disabled': {
+                color: '#fff',
+                opacity: 0.85,
+                backgroundColor: 'rgba(0,0,0,0.25)',
+              },
+            }}
+          >
+            View my trip
+          </PrimaryButton>
+        </Box>
       </StyledHeroSection>
     </>
   );

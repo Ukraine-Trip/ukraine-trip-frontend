@@ -25,7 +25,8 @@ import regionsData from '../../../librarian/cities.json';
 import { getAllTrips, getMyTrips, createTrip } from '../../../api/trips.ts';
 
 const HEADER_H = 80;
-//const CTRL_TOP = HEADER_H + 12;
+const UKRAINE_CENTER: [number, number] = [48.3794, 31.1656];
+const DEFAULT_ZOOM = 6;
 
 interface TripMeta {
   title: string;
@@ -105,7 +106,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   const isMobile = window.innerWidth <= 768;
   const CTRL_TOP = isMobile ? 16 : HEADER_H + 12;
   const { token } = useContext(AuthContext);
-  const [zoom, setZoom] = useState(6);
+  const [zoom, setZoom] = useState(DEFAULT_ZOOM);
   const [isOptimized, setIsOptimized] = useState(false);
   const originalRoutePointsRef = useRef<ItineraryPoint[]>([]);
   const [activeLayer, setActiveLayer] = useState<LayerType>('grey');
@@ -139,6 +140,20 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   const [mapDraggingIdx, setMapDraggingIdx] = useState<number | null>(null);
   const [mapDragOverIdx, setMapDragOverIdx] = useState<number | null>(null);
   const mapDragNodeRef = useRef<number | null>(null);
+
+  const urlView = useMemo(() => {
+    const latParam = searchParams.get('lat');
+    const lngParam = searchParams.get('lng');
+    const zoomParam = searchParams.get('zoom');
+
+    const center: [number, number] | null =
+      latParam && lngParam
+        ? [parseFloat(latParam), parseFloat(lngParam)]
+        : null;
+    const zoom = zoomParam ? parseInt(zoomParam) : undefined;
+
+    return { center, zoom };
+  }, [searchParams]);
 
   const handleMapDragStart = (idx: number) => {
     mapDragNodeRef.current = idx;
@@ -351,15 +366,15 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     setSaveLoading(true);
     setSaveError(null);
     try {
-await createTrip(
-        {
-          title: tripTitle.trim(),
-          location_ids: selectedRoutePoints.map((p) => p.id),
-          optimize: false,
-        },
-        token
+      await createTrip(
+        {
+          title: tripTitle.trim(),
+          location_ids: selectedRoutePoints.map((p) => p.id),
+          optimize: false,
+        },
+        token
       );
-      );
+
       navigate('/my-trips');
     } catch (err: any) {
       setSaveError(
@@ -378,12 +393,15 @@ await createTrip(
     const fetchLocations = async () => {
       try {
         const publicReq = api.get('/locations/');
-        const myReq = (token && token !== 'null' && token !== 'undefined')
-          ? api.get('/locations/', {
-              params: { filter_type: 'my' },
-              headers: { Authorization: `Bearer ${token.replace(/["']/g, '')}` },
-            })
-          : Promise.resolve(null);
+        const myReq =
+          token && token !== 'null' && token !== 'undefined'
+            ? api.get('/locations/', {
+                params: { filter_type: 'my' },
+                headers: {
+                  Authorization: `Bearer ${token.replace(/["']/g, '')}`,
+                },
+              })
+            : Promise.resolve(null);
 
         const [publicResult, myResult] = await Promise.allSettled([
           publicReq,
@@ -440,14 +458,6 @@ await createTrip(
     const interval = setInterval(fetchLocations, 120000);
     return () => clearInterval(interval);
   }, [token]);
-
-  const latParam = searchParams.get('lat');
-  const lngParam = searchParams.get('lng');
-  const zoomParam = searchParams.get('zoom');
-
-  const urlCenter: [number, number] | null =
-    latParam && lngParam ? [parseFloat(latParam), parseFloat(lngParam)] : null;
-  const urlZoom = zoomParam ? parseInt(zoomParam) : undefined;
 
   const activeData = itinerary.length > 0 ? itinerary : apiLocations;
 
@@ -810,9 +820,12 @@ await createTrip(
                     DANGEROUS_REGIONS.includes(
                       getRegionForCity(activePointDetails.name) || ''
                     ) && (
-                      <Alert severity="warning" style={{ marginBottom: '16px' }}>
-                        Warning: This route point is located in a high-risk area due
-                        to the ongoing war.
+                      <Alert
+                        severity="warning"
+                        style={{ marginBottom: '16px' }}
+                      >
+                        Warning: This route point is located in a high-risk area
+                        due to the ongoing war.
                       </Alert>
                     )}
                   {activePointDetails.imageUrl && (
@@ -1215,8 +1228,8 @@ await createTrip(
                         severity="warning"
                         style={{ marginBottom: '12px', fontSize: '12px' }}
                       >
-                        Warning: This route point is located in a high-risk area due
-                        to the ongoing war.
+                        Warning: This route point is located in a high-risk area
+                        due to the ongoing war.
                       </Alert>
                     )}
                   <button
@@ -1587,8 +1600,8 @@ await createTrip(
                   getRegionForCity(activePointDetails.name) || ''
                 ) && (
                   <Alert severity="warning" style={{ marginBottom: '16px' }}>
-                    Warning: This route point is located in a high-risk area due to
-                    the ongoing war.
+                    Warning: This route point is located in a high-risk area due
+                    to the ongoing war.
                   </Alert>
                 )}
               {getRegionForCity(activePointDetails.name) && (
@@ -2254,8 +2267,8 @@ await createTrip(
           </div>
 
           <MapContainer
-            center={[48.3794, 31.1656]}
-            zoom={6}
+            center={urlView.center || UKRAINE_CENTER}
+            zoom={urlView.zoom || DEFAULT_ZOOM}
             zoomControl={false}
             scrollWheelZoom={true}
             style={{ height: '100%', width: '100%' }}
@@ -2277,7 +2290,7 @@ await createTrip(
               />
             )}
             <ZoomHandler setZoom={setZoom} />
-            <MapController center={urlCenter} zoom={urlZoom} />
+            <MapController center={urlView.center} zoom={urlView.zoom} />
             <UserLocation
               ctrlTop={
                 selectedRoutePoints.length > 2

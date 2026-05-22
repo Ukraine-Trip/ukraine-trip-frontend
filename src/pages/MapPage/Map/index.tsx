@@ -345,7 +345,6 @@ await createTrip(
         },
         token
       );
-      );
       navigate('/my-trips');
     } catch (err: any) {
       setSaveError(

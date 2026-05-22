@@ -42,3 +42,26 @@ export const updateTrip = (
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     })
     .then((res) => res.data);
+
+// Функція для отримання всіх твоїх лайків (з правильним URL)
+export const getLikedTrips = (token: string): Promise<Trip[]> => {
+  if (!token || token === 'null' || token === 'undefined') {
+    return Promise.resolve([]);
+  }
+  const cleanToken = token.replace(/["']/g, '');
+  return api
+    .get<Trip[]>('/users/me/liked-trips', {
+      headers: { Authorization: `Bearer ${cleanToken}` },
+    })
+    .then((res) => res.data);
+};
+
+// Функція для кліку по сердечку
+export const toggleTripLike = (tripId: string, token: string): Promise<any> => {
+  const cleanToken = token.replace(/["']/g, '');
+  
+  // Відправляємо null замість {}, щоб FastAPI не сварився на зайве тіло запиту
+  return api.post(`/trips/${tripId}/like`, null, {
+    headers: { Authorization: `Bearer ${cleanToken}` },
+  });
+};

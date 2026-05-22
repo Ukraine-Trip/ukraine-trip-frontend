@@ -14,6 +14,7 @@ import { MyLocationsPage } from './pages/MyLocationsPage';
 import { MyTripsPage } from './pages/MyTripsPage';
 import { TripDetailsPage } from './pages/TripDetailsPage';
 import { EditTripPage } from './pages/EditTripPage';
+import { TripsPage } from './pages/TripsPage'; // <-- 1. Додали імпорт нашої нової сторінки
 
 export const router = createBrowserRouter([
   {
@@ -23,6 +24,10 @@ export const router = createBrowserRouter([
       {
         index: true,
         element: <HomePage />,
+      },
+      {
+        path: 'trips', // <-- 2. Додали новий роут для всіх маршрутів
+        element: <TripsPage />,
       },
       {
         path: 'create-route',

@@ -18,10 +18,11 @@ export const getMyTrips = (token: string): Promise<Trip[]> => {
   if (!token || token === 'null' || token === 'undefined') {
     return Promise.resolve([]);
   }
+  const cleanToken = token.replace(/["']/g, '');
   return api
     .get<Trip[]>('/trips/', {
       params: { filter_type: 'my' },
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${cleanToken}` },
     })
     .then((res) => res.data);
 };

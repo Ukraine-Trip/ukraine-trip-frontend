@@ -8,6 +8,7 @@ import 'leaflet/dist/leaflet.css';
 import { api } from '../../../api/auth.ts';
 import { AuthContext } from '../../../context/AuthContext.tsx';
 import axios from 'axios';
+import { Alert } from '@mui/material';
 
 type LayerType = 'grey' | 'satellite' | 'none';
 
@@ -81,6 +82,20 @@ const formatDate = (start: string | null, end: string | null): string => {
   if (!end || start === end) return fmt(s);
   return `${fmt(s)} — ${fmt(new Date(end))}`;
 };
+
+const DANGEROUS_REGIONS = [
+  'Donetsk',
+  'Luhansk',
+  'Zaporizhzhia',
+  'Kherson',
+  'Mykolaiv',
+  'Kharkiv',
+  'Sumy',
+  'Kyiv',
+  'Chernihiv',
+  'Dnipropetrovsk',
+  'Odesa',
+];
 
 type TransportType = 'car' | 'foot' | 'bike';
 
@@ -336,13 +351,14 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     setSaveLoading(true);
     setSaveError(null);
     try {
-      await createTrip(
-        {
-          title: tripTitle.trim(),
-          location_ids: selectedRoutePoints.map((p) => p.id),
-          optimize: false,
-        },
-        token
+await createTrip(
+        {
+          title: tripTitle.trim(),
+          location_ids: selectedRoutePoints.map((p) => p.id),
+          optimize: false,
+        },
+        token
+      );
       );
       navigate('/my-trips');
     } catch (err: any) {
@@ -362,13 +378,12 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     const fetchLocations = async () => {
       try {
         const publicReq = api.get('/locations/');
-        const myReq =
-          token && token !== 'null' && token !== 'undefined'
-            ? api.get('/locations/', {
-                params: { filter_type: 'my' },
-                headers: { Authorization: `Bearer ${token}` },
-              })
-            : Promise.resolve(null);
+        const myReq = (token && token !== 'null' && token !== 'undefined')
+          ? api.get('/locations/', {
+              params: { filter_type: 'my' },
+              headers: { Authorization: `Bearer ${token.replace(/["']/g, '')}` },
+            })
+          : Promise.resolve(null);
 
         const [publicResult, myResult] = await Promise.allSettled([
           publicReq,
@@ -386,6 +401,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
             lat: loc.lat,
             lng: loc.lon,
             imageUrl: loc.image_url ?? '',
+            region: loc.region,
           }));
         }
 
@@ -402,6 +418,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
               lat: loc.lat,
               lng: loc.lon,
               imageUrl: loc.image_url ?? '',
+              region: loc.region,
             }));
         } else if (myResult.status === 'rejected') {
           if (myResult.reason?.response?.status !== 401) {
@@ -789,6 +806,15 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                   >
                     {activePointDetails.name}
                   </h2>
+                  {activePointDetails &&
+                    DANGEROUS_REGIONS.includes(
+                      getRegionForCity(activePointDetails.name) || ''
+                    ) && (
+                      <Alert severity="warning" style={{ marginBottom: '16px' }}>
+                        Warning: This route point is located in a high-risk area due
+                        to the ongoing war.
+                      </Alert>
+                    )}
                   {activePointDetails.imageUrl && (
                     <img
                       src={activePointDetails.imageUrl}
@@ -1181,6 +1207,18 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                   >
                     {activePointDetails.name}
                   </h3>
+                  {activePointDetails &&
+                    DANGEROUS_REGIONS.includes(
+                      getRegionForCity(activePointDetails.name) || ''
+                    ) && (
+                      <Alert
+                        severity="warning"
+                        style={{ marginBottom: '12px', fontSize: '12px' }}
+                      >
+                        Warning: This route point is located in a high-risk area due
+                        to the ongoing war.
+                      </Alert>
+                    )}
                   <button
                     onClick={() => handleSelectPoint(activePointDetails)}
                     style={{
@@ -1544,6 +1582,15 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
               >
                 {activePointDetails.name}
               </h2>
+              {activePointDetails &&
+                DANGEROUS_REGIONS.includes(
+                  getRegionForCity(activePointDetails.name) || ''
+                ) && (
+                  <Alert severity="warning" style={{ marginBottom: '16px' }}>
+                    Warning: This route point is located in a high-risk area due to
+                    the ongoing war.
+                  </Alert>
+                )}
               {getRegionForCity(activePointDetails.name) && (
                 <span
                   style={{
@@ -2262,6 +2309,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                 >
                   <MarkerPopup
                     point={point}
+                    region={point.region}
                     onSelectPoint={handleSelectPoint}
                     isSelected={isPointSelected(point)}
                   />

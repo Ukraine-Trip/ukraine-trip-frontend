@@ -108,7 +108,7 @@ export const ItineraryPage: React.FC = () => {
         const myReq = (token && token !== 'null' && token !== 'undefined')
           ? api.get('/locations/', {
               params: { filter_type: 'my' },
-              headers: { Authorization: `Bearer ${token}` },
+              headers: { Authorization: `Bearer ${token.replace(/["']/g, '')}` },
             })
           : Promise.resolve(null);
 
@@ -616,7 +616,7 @@ export const ItineraryPage: React.FC = () => {
                 disabled={selectedPoints.length < 2}
                 sx={{ width: '100%' }}
               >
-                View on Map ({selectedPoints.length} points)
+                Show Trip ({selectedPoints.length} points)
               </PrimaryButton>
               {selectedPoints.length < 2 && (
                 <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', textAlign: 'center' }}>

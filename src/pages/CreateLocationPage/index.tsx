@@ -80,12 +80,25 @@ interface LocationPickerProps {
   onSelect: (lat: number, lng: number) => void;
 }
 
+const ukraineBounds: L.LatLngBoundsLiteral = [
+  [44.3863, 22.1372], // Southwest
+  [52.3791, 40.2277], // Northeast
+];
+
 const LocationPicker: React.FC<LocationPickerProps> = ({ onSelect }) => {
-  useMapEvents({
+  const map = useMapEvents({
     click(e) {
-      onSelect(e.latlng.lat, e.latlng.lng);
+      const bounds = L.latLngBounds(ukraineBounds);
+      if (bounds.contains(e.latlng)) {
+        onSelect(e.latlng.lat, e.latlng.lng);
+      }
     },
   });
+
+  React.useEffect(() => {
+    map.setMaxBounds(L.latLngBounds(ukraineBounds));
+  }, [map]);
+
   return null;
 };
 

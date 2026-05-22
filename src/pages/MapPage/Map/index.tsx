@@ -27,7 +27,6 @@ import { getAllTrips, getMyTrips, createTrip } from '../../../api/trips.ts';
 const HEADER_H = 80;
 //const CTRL_TOP = HEADER_H + 12;
 
-
 interface TripMeta {
   title: string;
   description: string | null;
@@ -41,6 +40,11 @@ interface CityMeta {
   lat: number;
   lng: number;
 }
+
+const ukraineBounds: L.LatLngBoundsLiteral = [
+  [44.3863, 22.1372], // Southwest
+  [52.3791, 40.2277], // Northeast
+];
 
 const createClusterCustomIcon = (cluster: any) => {
   return L.divIcon({
@@ -98,7 +102,7 @@ type TransportType = 'car' | 'foot' | 'bike';
 export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   itinerary = [],
 }) => {
-  const isMobile = window.innerWidth <= 768; 
+  const isMobile = window.innerWidth <= 768;
   const CTRL_TOP = isMobile ? 16 : HEADER_H + 12;
   const { token } = useContext(AuthContext);
   const [zoom, setZoom] = useState(6);
@@ -180,7 +184,12 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   const handleMapTouchEnd = () => {
     const fromIdx = mapDragNodeRef.current;
     setSelectedRoutePoints((prev) => {
-      if (fromIdx === null || mapDragOverIdx === null || fromIdx === mapDragOverIdx) return prev;
+      if (
+        fromIdx === null ||
+        mapDragOverIdx === null ||
+        fromIdx === mapDragOverIdx
+      )
+        return prev;
       const u = [...prev];
       const [m] = u.splice(fromIdx, 1);
       u.splice(mapDragOverIdx, 0, m);
@@ -239,6 +248,11 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   }, [navLocation.state]);
 
   const handleSelectPoint = (point: ItineraryPoint) => {
+    const bounds = L.latLngBounds(ukraineBounds);
+    if (!bounds.contains([point.lat, point.lng])) {
+      return;
+    }
+
     if (isOptimized) {
       const base =
         originalRoutePointsRef.current.length > 0
@@ -462,21 +476,24 @@ await createTrip(
   useEffect(() => {
     if (!cityMeta) return;
     setCityTripsLoading(true);
-const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
-    
-    const filterByCity = (trips: Trip[]) => trips.filter((trip) => {
-      if (!trip.trip_nodes) return false;
-      return trip.trip_nodes.some(
-        (node) =>
-          norm(node.location?.name) === norm(cityMeta.name) ||
-          norm(node.location?.region).includes(norm(cityMeta.name)) ||
-          norm(cityMeta.name).includes(norm(node.location?.region)),
-      );
-    });
+    const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
+
+    const filterByCity = (trips: Trip[]) =>
+      trips.filter((trip) => {
+        if (!trip.trip_nodes) return false;
+        return trip.trip_nodes.some(
+          (node) =>
+            norm(node.location?.name) === norm(cityMeta.name) ||
+            norm(node.location?.region).includes(norm(cityMeta.name)) ||
+            norm(cityMeta.name).includes(norm(node.location?.region))
+        );
+      });
 
     const promises: [Promise<Trip[]>, Promise<Trip[]> | null] = [
       getAllTrips(),
-      (token && token !== 'null' && token !== 'undefined') ? getMyTrips(token) : null
+      token && token !== 'null' && token !== 'undefined'
+        ? getMyTrips(token)
+        : null,
     ];
 
     Promise.allSettled(promises)
@@ -494,7 +511,7 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
           setMyCityTrips(filterByCity(trips));
         } else {
           if (myRes && myRes.status === 'rejected') {
-             console.error('Error loading own trips:', myRes.reason);
+            console.error('Error loading own trips:', myRes.reason);
           }
           setMyCityTrips([]);
         }
@@ -877,14 +894,16 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
                   </button>
 
                   {token && (
-                    <div style={{
-                      display: 'flex',
-                      background: '#f0f0f0',
-                      borderRadius: '8px',
-                      padding: '4px',
-                      marginBottom: '20px',
-                      gap: '4px'
-                    }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        background: '#f0f0f0',
+                        borderRadius: '8px',
+                        padding: '4px',
+                        marginBottom: '20px',
+                        gap: '4px',
+                      }}
+                    >
                       <button
                         onClick={() => setRouteSource('provided')}
                         style={{
@@ -895,10 +914,15 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
                           fontSize: '12px',
                           fontWeight: 700,
                           cursor: 'pointer',
-                          backgroundColor: routeSource === 'provided' ? '#fff' : 'transparent',
-                          color: routeSource === 'provided' ? '#3b5bdb' : '#666',
-                          boxShadow: routeSource === 'provided' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
-                          transition: 'all 0.2s'
+                          backgroundColor:
+                            routeSource === 'provided' ? '#fff' : 'transparent',
+                          color:
+                            routeSource === 'provided' ? '#3b5bdb' : '#666',
+                          boxShadow:
+                            routeSource === 'provided'
+                              ? '0 2px 4px rgba(0,0,0,0.05)'
+                              : 'none',
+                          transition: 'all 0.2s',
                         }}
                       >
                         Надані
@@ -913,10 +937,14 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
                           fontSize: '12px',
                           fontWeight: 700,
                           cursor: 'pointer',
-                          backgroundColor: routeSource === 'my' ? '#fff' : 'transparent',
+                          backgroundColor:
+                            routeSource === 'my' ? '#fff' : 'transparent',
                           color: routeSource === 'my' ? '#3b5bdb' : '#666',
-                          boxShadow: routeSource === 'my' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
-                          transition: 'all 0.2s'
+                          boxShadow:
+                            routeSource === 'my'
+                              ? '0 2px 4px rgba(0,0,0,0.05)'
+                              : 'none',
+                          transition: 'all 0.2s',
                         }}
                       >
                         Мої
@@ -947,7 +975,8 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
                     >
                       Завантаження...
                     </div>
-                  ) : (routeSource === 'my' ? myCityTrips : cityTrips).length === 0 ? (
+                  ) : (routeSource === 'my' ? myCityTrips : cityTrips)
+                      .length === 0 ? (
                     <div
                       style={{
                         fontSize: '13px',
@@ -955,7 +984,9 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
                         padding: '8px 0',
                       }}
                     >
-                      {routeSource === 'my' ? 'Ви ще не створили маршрутів у цьому регіоні.' : 'Маршрутів для цього міста не знайдено.'}
+                      {routeSource === 'my'
+                        ? 'Ви ще не створили маршрутів у цьому регіоні.'
+                        : 'Маршрутів для цього міста не знайдено.'}
                     </div>
                   ) : (
                     <div
@@ -966,44 +997,46 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
                         marginBottom: '20px',
                       }}
                     >
-                      {(routeSource === 'my' ? myCityTrips : cityTrips).map((trip) => (
-                        <div
-                          key={trip.id}
-                          onClick={() =>
-                            setSelectedCityTrip((prev) =>
-                              prev?.id === trip.id ? null : trip
-                            )
-                          }
-                          style={{
-                            padding: '10px 12px',
-                            borderRadius: '8px',
-                            background:
-                              selectedCityTrip?.id === trip.id
-                                ? '#3b5bdb'
-                                : '#f8f8f8',
-                            color:
-                              selectedCityTrip?.id === trip.id
-                                ? 'white'
-                                : '#222',
-                            cursor: 'pointer',
-                            border: `1px solid ${selectedCityTrip?.id === trip.id ? '#3b5bdb' : '#ebebeb'}`,
-                            transition: 'all 0.15s',
-                          }}
-                        >
+                      {(routeSource === 'my' ? myCityTrips : cityTrips).map(
+                        (trip) => (
                           <div
+                            key={trip.id}
+                            onClick={() =>
+                              setSelectedCityTrip((prev) =>
+                                prev?.id === trip.id ? null : trip
+                              )
+                            }
                             style={{
-                              fontWeight: 600,
-                              fontSize: '13px',
-                              marginBottom: '2px',
+                              padding: '10px 12px',
+                              borderRadius: '8px',
+                              background:
+                                selectedCityTrip?.id === trip.id
+                                  ? '#3b5bdb'
+                                  : '#f8f8f8',
+                              color:
+                                selectedCityTrip?.id === trip.id
+                                  ? 'white'
+                                  : '#222',
+                              cursor: 'pointer',
+                              border: `1px solid ${selectedCityTrip?.id === trip.id ? '#3b5bdb' : '#ebebeb'}`,
+                              transition: 'all 0.15s',
                             }}
                           >
-                            {trip.title}
+                            <div
+                              style={{
+                                fontWeight: 600,
+                                fontSize: '13px',
+                                marginBottom: '2px',
+                              }}
+                            >
+                              {trip.title}
+                            </div>
+                            <div style={{ fontSize: '12px', opacity: 0.7 }}>
+                              {pointsLabel(trip.trip_nodes.length)}
+                            </div>
                           </div>
-                          <div style={{ fontSize: '12px', opacity: 0.7 }}>
-                            {pointsLabel(trip.trip_nodes.length)}
-                          </div>
-                        </div>
-                      ))}
+                        )
+                      )}
                     </div>
                   )}
 
@@ -1068,19 +1101,30 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
                         gap: '8px',
                         padding: '8px 10px',
                         borderRadius: '8px',
-                        borderTop: mapDragOverIdx === i && mapDraggingIdx !== i ? '2px solid #3b5bdb' : '2px solid transparent',
-                        background: mapDragOverIdx === i && mapDraggingIdx !== i
-                          ? '#e8f0fe'
-                          : i === 0 ? '#f0f7f4'
-                          : i === selectedRoutePoints.length - 1 ? '#f7f0f0'
-                          : 'transparent',
+                        borderTop:
+                          mapDragOverIdx === i && mapDraggingIdx !== i
+                            ? '2px solid #3b5bdb'
+                            : '2px solid transparent',
+                        background:
+                          mapDragOverIdx === i && mapDraggingIdx !== i
+                            ? '#e8f0fe'
+                            : i === 0
+                              ? '#f0f7f4'
+                              : i === selectedRoutePoints.length - 1
+                                ? '#f7f0f0'
+                                : 'transparent',
                         opacity: mapDraggingIdx === i ? 0.35 : 1,
                         cursor: 'grab',
                         touchAction: 'none',
                         transition: 'opacity 0.15s, background 0.1s',
                       }}
                     >
-                      <svg width="10" height="14" viewBox="0 0 10 14" style={{ flexShrink: 0 }}>
+                      <svg
+                        width="10"
+                        height="14"
+                        viewBox="0 0 10 14"
+                        style={{ flexShrink: 0 }}
+                      >
                         <circle cx="3" cy="3" r="1.3" fill="#ccc" />
                         <circle cx="7" cy="3" r="1.3" fill="#ccc" />
                         <circle cx="3" cy="7" r="1.3" fill="#ccc" />
@@ -1094,10 +1138,15 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
                           height: '22px',
                           borderRadius: '50%',
                           background:
-                            i === 0 ? '#2e7d5a'
-                            : i === selectedRoutePoints.length - 1 ? '#c0392b'
-                            : '#e8e8e8',
-                          color: i === 0 || i === selectedRoutePoints.length - 1 ? '#fff' : '#555',
+                            i === 0
+                              ? '#2e7d5a'
+                              : i === selectedRoutePoints.length - 1
+                                ? '#c0392b'
+                                : '#e8e8e8',
+                          color:
+                            i === 0 || i === selectedRoutePoints.length - 1
+                              ? '#fff'
+                              : '#555',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -1108,7 +1157,14 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
                       >
                         {i + 1}
                       </span>
-                      <span style={{ fontSize: '13px', color: '#222', fontWeight: 500, flex: 1 }}>
+                      <span
+                        style={{
+                          fontSize: '13px',
+                          color: '#222',
+                          fontWeight: 500,
+                          flex: 1,
+                        }}
+                      >
                         {p.name}
                       </span>
                       <button
@@ -1196,10 +1252,14 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
                     padding: '12px',
                     borderRadius: '8px',
                     border: 'none',
-                    backgroundColor: selectedRoutePoints.length > 0 ? '#3b5bdb' : '#ccc',
+                    backgroundColor:
+                      selectedRoutePoints.length > 0 ? '#3b5bdb' : '#ccc',
                     color: 'white',
                     fontWeight: 700,
-                    cursor: selectedRoutePoints.length > 0 ? 'pointer' : 'not-allowed',
+                    cursor:
+                      selectedRoutePoints.length > 0
+                        ? 'pointer'
+                        : 'not-allowed',
                     fontSize: '14px',
                     letterSpacing: '0.5px',
                     marginBottom: '10px',
@@ -1284,19 +1344,30 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
                       gap: '8px',
                       padding: '8px 10px',
                       borderRadius: '8px',
-                      borderTop: mapDragOverIdx === i && mapDraggingIdx !== i ? '2px solid #3b5bdb' : '2px solid transparent',
-                      background: mapDragOverIdx === i && mapDraggingIdx !== i
-                        ? '#e8f0fe'
-                        : i === 0 ? '#f0f7f4'
-                        : i === selectedRoutePoints.length - 1 ? '#f7f0f0'
-                        : 'transparent',
+                      borderTop:
+                        mapDragOverIdx === i && mapDraggingIdx !== i
+                          ? '2px solid #3b5bdb'
+                          : '2px solid transparent',
+                      background:
+                        mapDragOverIdx === i && mapDraggingIdx !== i
+                          ? '#e8f0fe'
+                          : i === 0
+                            ? '#f0f7f4'
+                            : i === selectedRoutePoints.length - 1
+                              ? '#f7f0f0'
+                              : 'transparent',
                       opacity: mapDraggingIdx === i ? 0.35 : 1,
                       cursor: 'grab',
                       touchAction: 'none',
                       transition: 'opacity 0.15s, background 0.1s',
                     }}
                   >
-                    <svg width="10" height="14" viewBox="0 0 10 14" style={{ flexShrink: 0 }}>
+                    <svg
+                      width="10"
+                      height="14"
+                      viewBox="0 0 10 14"
+                      style={{ flexShrink: 0 }}
+                    >
                       <circle cx="3" cy="3" r="1.3" fill="#ccc" />
                       <circle cx="7" cy="3" r="1.3" fill="#ccc" />
                       <circle cx="3" cy="7" r="1.3" fill="#ccc" />
@@ -1310,10 +1381,15 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
                         height: '22px',
                         borderRadius: '50%',
                         background:
-                          i === 0 ? '#2e7d5a'
-                          : i === selectedRoutePoints.length - 1 ? '#c0392b'
-                          : '#e8e8e8',
-                        color: i === 0 || i === selectedRoutePoints.length - 1 ? '#fff' : '#555',
+                          i === 0
+                            ? '#2e7d5a'
+                            : i === selectedRoutePoints.length - 1
+                              ? '#c0392b'
+                              : '#e8e8e8',
+                        color:
+                          i === 0 || i === selectedRoutePoints.length - 1
+                            ? '#fff'
+                            : '#555',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -1324,7 +1400,14 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
                     >
                       {i + 1}
                     </span>
-                    <span style={{ fontSize: '13px', color: '#222', fontWeight: 500, flex: 1 }}>
+                    <span
+                      style={{
+                        fontSize: '13px',
+                        color: '#222',
+                        fontWeight: 500,
+                        flex: 1,
+                      }}
+                    >
                       {p.name}
                     </span>
                     <button
@@ -1364,10 +1447,14 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
                       padding: '12px',
                       borderRadius: '8px',
                       border: 'none',
-                      backgroundColor: selectedRoutePoints.length > 0 ? '#3b5bdb' : '#ccc',
+                      backgroundColor:
+                        selectedRoutePoints.length > 0 ? '#3b5bdb' : '#ccc',
                       color: 'white',
                       fontWeight: 700,
-                      cursor: selectedRoutePoints.length > 0 ? 'pointer' : 'not-allowed',
+                      cursor:
+                        selectedRoutePoints.length > 0
+                          ? 'pointer'
+                          : 'not-allowed',
                       fontSize: '14px',
                       letterSpacing: '0.5px',
                       marginBottom: '8px',
@@ -1711,7 +1798,10 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
             title="Базові шари"
             style={{
               position: 'absolute',
-              top: selectedRoutePoints.length > 2 ? CTRL_TOP + 162 +56 : CTRL_TOP + 162,
+              top:
+                selectedRoutePoints.length > 2
+                  ? CTRL_TOP + 162 + 56
+                  : CTRL_TOP + 162,
               right: '16px',
               zIndex: 999,
               backgroundColor: 'white',
@@ -1748,7 +1838,10 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
             <div
               style={{
                 position: 'absolute',
-                top: selectedRoutePoints.length > 2 ? CTRL_TOP + 162 + 56 : CTRL_TOP + 162,
+                top:
+                  selectedRoutePoints.length > 2
+                    ? CTRL_TOP + 162 + 56
+                    : CTRL_TOP + 162,
                 right: '68px',
                 zIndex: 999,
                 backgroundColor: 'white',
@@ -2185,7 +2278,13 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
             )}
             <ZoomHandler setZoom={setZoom} />
             <MapController center={urlCenter} zoom={urlZoom} />
-            <UserLocation ctrlTop={selectedRoutePoints.length > 2 ? CTRL_TOP + 162 + 56 + 56 : CTRL_TOP + 162 + 56} />
+            <UserLocation
+              ctrlTop={
+                selectedRoutePoints.length > 2
+                  ? CTRL_TOP + 162 + 56 + 56
+                  : CTRL_TOP + 162 + 56
+              }
+            />
 
             {pointsForRouting.length > 1 && (
               <Routing
@@ -2203,7 +2302,10 @@ const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
                 <Marker
                   key={point.id}
                   position={[point.lat, point.lng]}
-                  icon={createCustomIcon(point.category, isPointSelected(point))}
+                  icon={createCustomIcon(
+                    point.category,
+                    isPointSelected(point)
+                  )}
                 >
                   <MarkerPopup
                     point={point}

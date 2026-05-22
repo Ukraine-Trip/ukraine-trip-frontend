@@ -17,19 +17,19 @@ export const MapController: React.FC<MapControllerProps> = ({
   zoom,
 }) => {
   const map = useMap();
-  const prevCenter = useRef<string | null>(null);
+  const prevCenterRef = useRef<string | null>(null);
 
   useEffect(() => {
     map.setMaxBounds(L.latLngBounds(ukraineBounds));
+    map.setMinZoom(6);
   }, [map]);
 
   useEffect(() => {
-    if (center) {
+    if (center && zoom) {
       const centerStr = center.join(',');
-      // Якщо центр змінився, робимо flyTo для плавного зуму на обране місце
-      if (centerStr !== prevCenter.current) {
-        map.flyTo(center, zoom || 12, { animate: true, duration: 1.5 });
-        prevCenter.current = centerStr;
+      if (centerStr !== prevCenterRef.current) {
+        map.flyTo(center, zoom, { animate: true, duration: 1.5 });
+        prevCenterRef.current = centerStr;
       }
     }
   }, [map, center, zoom]);

@@ -25,7 +25,8 @@ import regionsData from '../../../librarian/cities.json';
 import { getAllTrips, getMyTrips, createTrip } from '../../../api/trips.ts';
 
 const HEADER_H = 80;
-//const CTRL_TOP = HEADER_H + 12;
+const UKRAINE_CENTER: [number, number] = [48.3794, 31.1656];
+const DEFAULT_ZOOM = 6;
 
 interface TripMeta {
   title: string;
@@ -105,7 +106,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   const isMobile = window.innerWidth <= 768;
   const CTRL_TOP = isMobile ? 16 : HEADER_H + 12;
   const { token } = useContext(AuthContext);
-  const [zoom, setZoom] = useState(6);
+  const [zoom, setZoom] = useState(DEFAULT_ZOOM);
   const [isOptimized, setIsOptimized] = useState(false);
   const originalRoutePointsRef = useRef<ItineraryPoint[]>([]);
   const [activeLayer, setActiveLayer] = useState<LayerType>('grey');
@@ -126,7 +127,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   const [routeSource, setRouteSource] = useState<'provided' | 'my'>('provided');
   const [cityTripsLoading, setCityTripsLoading] = useState(false);
   const [selectedCityTrip, setSelectedCityTrip] = useState<Trip | null>(null);
-  const [isRouteDetailView, setIsRouteDetailView] = useState(false);
   const [routeBuildingMode, setRouteBuildingMode] = useState(false);
   const [saveMode, setSaveMode] = useState(false);
   const [tripTitle, setTripTitle] = useState('');
@@ -140,6 +140,20 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   const [mapDraggingIdx, setMapDraggingIdx] = useState<number | null>(null);
   const [mapDragOverIdx, setMapDragOverIdx] = useState<number | null>(null);
   const mapDragNodeRef = useRef<number | null>(null);
+
+  const urlView = useMemo(() => {
+    const latParam = searchParams.get('lat');
+    const lngParam = searchParams.get('lng');
+    const zoomParam = searchParams.get('zoom');
+
+    const center: [number, number] | null =
+      latParam && lngParam
+        ? [parseFloat(latParam), parseFloat(lngParam)]
+        : null;
+    const zoom = zoomParam ? parseInt(zoomParam) : undefined;
+
+    return { center, zoom };
+  }, [searchParams]);
 
   const handleMapDragStart = (idx: number) => {
     mapDragNodeRef.current = idx;
@@ -352,14 +366,15 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     setSaveLoading(true);
     setSaveError(null);
     try {
-await createTrip(
-        {
-          title: tripTitle.trim(),
-          location_ids: selectedRoutePoints.map((p) => p.id),
-          optimize: false,
-        },
-        token
+      await createTrip(
+        {
+          title: tripTitle.trim(),
+          location_ids: selectedRoutePoints.map((p) => p.id),
+          optimize: false,
+        },
+        token
       );
+
       navigate('/my-trips');
     } catch (err: any) {
       setSaveError(
@@ -378,12 +393,15 @@ await createTrip(
     const fetchLocations = async () => {
       try {
         const publicReq = api.get('/locations/');
-        const myReq = (token && token !== 'null' && token !== 'undefined')
-          ? api.get('/locations/', {
-              params: { filter_type: 'my' },
-              headers: { Authorization: `Bearer ${token.replace(/["']/g, '')}` },
-            })
-          : Promise.resolve(null);
+        const myReq =
+          token && token !== 'null' && token !== 'undefined'
+            ? api.get('/locations/', {
+                params: { filter_type: 'my' },
+                headers: {
+                  Authorization: `Bearer ${token.replace(/["']/g, '')}`,
+                },
+              })
+            : Promise.resolve(null);
 
         const [publicResult, myResult] = await Promise.allSettled([
           publicReq,
@@ -440,14 +458,6 @@ await createTrip(
     const interval = setInterval(fetchLocations, 120000);
     return () => clearInterval(interval);
   }, [token]);
-
-  const latParam = searchParams.get('lat');
-  const lngParam = searchParams.get('lng');
-  const zoomParam = searchParams.get('zoom');
-
-  const urlCenter: [number, number] | null =
-    latParam && lngParam ? [parseFloat(latParam), parseFloat(lngParam)] : null;
-  const urlZoom = zoomParam ? parseInt(zoomParam) : undefined;
 
   const activeData = itinerary.length > 0 ? itinerary : apiLocations;
 
@@ -810,9 +820,12 @@ await createTrip(
                     DANGEROUS_REGIONS.includes(
                       getRegionForCity(activePointDetails.name) || ''
                     ) && (
-                      <Alert severity="warning" style={{ marginBottom: '16px' }}>
-                        Warning: This route point is located in a high-risk area due
-                        to the ongoing war.
+                      <Alert
+                        severity="warning"
+                        style={{ marginBottom: '16px' }}
+                      >
+                        Warning: This route point is located in a high-risk area
+                        due to the ongoing war.
                       </Alert>
                     )}
                   {activePointDetails.imageUrl && (
@@ -856,152 +869,6 @@ await createTrip(
                       ? 'Видалити з маршруту'
                       : 'Додати до маршруту'}
                   </button>
-                </div>
-              ) : isRouteDetailView && selectedCityTrip ? (
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                  <button
-                    onClick={() => setIsRouteDetailView(false)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      color: '#3b5bdb',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      padding: '0 0 16px',
-                      letterSpacing: '0.3px',
-                    }}
-                  >
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <polyline points="15 18 9 12 15 6" />
-                    </svg>
-                    Назад до списку
-                  </button>
-
-                  <h2
-                    style={{
-                      fontSize: '18px',
-                      fontWeight: 700,
-                      color: '#1a1a2e',
-                      margin: '0 0 8px',
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {selectedCityTrip.title}
-                  </h2>
-                  
-                  {selectedCityTrip.description && (
-                    <p
-                      style={{
-                        fontSize: '14px',
-                        color: '#555',
-                        lineHeight: 1.6,
-                        margin: '0 0 20px',
-                      }}
-                    >
-                      {selectedCityTrip.description}
-                    </p>
-                  )}
-
-                  <div
-                    style={{
-                      height: '1px',
-                      background: '#ebebeb',
-                      margin: '0 0 16px',
-                    }}
-                  />
-                  
-                  <div
-                    style={{
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      color: '#999',
-                      letterSpacing: '1px',
-                      textTransform: 'uppercase',
-                      marginBottom: '12px',
-                    }}
-                  >
-                    МАРШРУТ · {selectedCityTrip.trip_nodes.length} ТОЧОК
-                  </div>
-
-                  <ol
-                    style={{
-                      listStyle: 'none',
-                      margin: 0,
-                      padding: 0,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '4px',
-                    }}
-                  >
-                    {[...selectedCityTrip.trip_nodes]
-                      .sort((a, b) => a.order_index - b.order_index)
-                      .map((node, i) => (
-                        <li
-                          key={node.id}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '10px',
-                            padding: '8px 10px',
-                            borderRadius: '8px',
-                            background:
-                              i === 0
-                                ? '#f0f7f4'
-                                : i === selectedCityTrip.trip_nodes.length - 1
-                                  ? '#f7f0f0'
-                                  : 'transparent',
-                          }}
-                        >
-                          <span
-                            style={{
-                              width: '22px',
-                              height: '22px',
-                              borderRadius: '50%',
-                              background:
-                                i === 0
-                                  ? '#2e7d5a'
-                                  : i === selectedCityTrip.trip_nodes.length - 1
-                                    ? '#c0392b'
-                                    : '#e8e8e8',
-                              color:
-                                i === 0 || i === selectedCityTrip.trip_nodes.length - 1
-                                  ? '#fff'
-                                  : '#555',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '11px',
-                              fontWeight: 700,
-                              flexShrink: 0,
-                            }}
-                          >
-                            {i + 1}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: '13px',
-                              color: '#222',
-                              fontWeight: 500,
-                            }}
-                          >
-                            {node.location.name}
-                          </span>
-                        </li>
-                      ))}
-                  </ol>
                 </div>
               ) : (
                 <>
@@ -1143,29 +1010,8 @@ await createTrip(
                         marginBottom: '20px',
                       }}
                     >
-{(routeSource === 'my' ? myCityTrips : cityTrips).map((trip) => (
-                        <div
-                          key={trip.id}
-                          onClick={() => {
-                            setSelectedCityTrip(trip);
-                            setIsRouteDetailView(true);
-                          }}
-                          style={{
-                            padding: '10px 12px',
-                            borderRadius: '8px',
-                            background:
-                              selectedCityTrip?.id === trip.id
-                                ? '#3b5bdb'
-                                : '#f8f8f8',
-                            color:
-                              selectedCityTrip?.id === trip.id
-                                ? 'white'
-                                : '#222',
-                            cursor: 'pointer',
-                            border: `1px solid ${selectedCityTrip?.id === trip.id ? '#3b5bdb' : '#ebebeb'}`,
-                            transition: 'all 0.15s',
-                          }}
-                        >
+                      {(routeSource === 'my' ? myCityTrips : cityTrips).map(
+                        (trip) => (
                           <div
                             key={trip.id}
                             onClick={() =>
@@ -1382,8 +1228,8 @@ await createTrip(
                         severity="warning"
                         style={{ marginBottom: '12px', fontSize: '12px' }}
                       >
-                        Warning: This route point is located in a high-risk area due
-                        to the ongoing war.
+                        Warning: This route point is located in a high-risk area
+                        due to the ongoing war.
                       </Alert>
                     )}
                   <button
@@ -1754,8 +1600,8 @@ await createTrip(
                   getRegionForCity(activePointDetails.name) || ''
                 ) && (
                   <Alert severity="warning" style={{ marginBottom: '16px' }}>
-                    Warning: This route point is located in a high-risk area due to
-                    the ongoing war.
+                    Warning: This route point is located in a high-risk area due
+                    to the ongoing war.
                   </Alert>
                 )}
               {getRegionForCity(activePointDetails.name) && (
@@ -2421,8 +2267,8 @@ await createTrip(
           </div>
 
           <MapContainer
-            center={[48.3794, 31.1656]}
-            zoom={6}
+            center={urlView.center || UKRAINE_CENTER}
+            zoom={urlView.zoom || DEFAULT_ZOOM}
             zoomControl={false}
             scrollWheelZoom={true}
             style={{ height: '100%', width: '100%' }}
@@ -2444,7 +2290,7 @@ await createTrip(
               />
             )}
             <ZoomHandler setZoom={setZoom} />
-            <MapController center={urlCenter} zoom={urlZoom} />
+            <MapController center={urlView.center} zoom={urlView.zoom} />
             <UserLocation
               ctrlTop={
                 selectedRoutePoints.length > 2

@@ -32,7 +32,7 @@ export const AccountPage: React.FC = () => {
       try {
         const response = await api.get('/users/me', {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${token.replace(/["']/g, '')}`,
           },
         });
         setUser(response.data);
@@ -49,6 +49,61 @@ export const AccountPage: React.FC = () => {
     }
   }, [token]);
 
+useEffect(() => {
+    const fetchMyLocations = async () => {
+      setLocationsError(null);
+      setLocationsLoading(true);
+
+      try {
+        const response = await api.get<UserLocation[]>('/locations/my', {
+          headers: {
+            Authorization: `Bearer ${token.replace(/["']/g, '')}`,
+          },
+        });
+        setMyLocations(response.data);
+      } catch (error: any) {
+        console.error('Помилка завантаження власних локацій:', error);
+        setLocationsError(error.response?.data?.detail || 'Не вдалося завантажити ваші точки');
+      } finally {
+        setLocationsLoading(false);
+      }
+    };
+
+    if (token) {
+      fetchMyLocations();
+    } else {
+      setLocationsLoading(false);
+      setMyLocations([]);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) return;
+    const fetchMyTrips = async () => {
+      setTripsError(null);
+      setTripsLoading(true);
+      try {
+        const trips = await getMyTrips(token);
+        setMyTrips(trips);
+      } catch (error: any) {
+        console.error('Помилка завантаження маршрутів:', error);
+        setTripsError('Не вдалося завантажити ваші маршрути');
+      } finally {
+        setTripsLoading(false);
+      }
+    };
+    fetchMyTrips();
+  }, [token]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('showLocations') === '1') {
+      setShowLocations(true);
+    }
+    if (params.get('showItinerary') === '1') {
+      setShowItinerary(true);
+    }
+  }, [location.search]);
   const handleSave = async () => {
     setMessage(null);
     try {
@@ -61,7 +116,7 @@ export const AccountPage: React.FC = () => {
       }
 
       const response = await api.put('/users/me', payload, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token.replace(/["']/g, '')}` },
       });
       setAuthUser(response.data);
       setMessage({ text: 'Профіль успішно оновлено!', type: 'success' });

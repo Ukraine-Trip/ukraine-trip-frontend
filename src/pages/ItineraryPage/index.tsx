@@ -108,7 +108,7 @@ export const ItineraryPage: React.FC = () => {
         const myReq = (token && token !== 'null' && token !== 'undefined')
           ? api.get('/locations/', {
               params: { filter_type: 'my' },
-              headers: { Authorization: `Bearer ${token}` },
+              headers: { Authorization: `Bearer ${token.replace(/["']/g, '')}` },
             })
           : Promise.resolve(null);
 

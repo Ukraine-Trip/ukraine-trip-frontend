@@ -1,10 +1,16 @@
 import { useEffect, useRef } from 'react';
 import { useMap } from 'react-leaflet';
+import L from 'leaflet';
 
 interface MapControllerProps {
   center?: [number, number] | null;
   zoom?: number;
 }
+
+const ukraineBounds: L.LatLngBoundsLiteral = [
+  [44.3863, 22.1372], // Southwest
+  [52.3791, 40.2277], // Northeast
+];
 
 export const MapController: React.FC<MapControllerProps> = ({
   center,
@@ -12,6 +18,10 @@ export const MapController: React.FC<MapControllerProps> = ({
 }) => {
   const map = useMap();
   const prevCenter = useRef<string | null>(null);
+
+  useEffect(() => {
+    map.setMaxBounds(L.latLngBounds(ukraineBounds));
+  }, [map]);
 
   useEffect(() => {
     if (center) {

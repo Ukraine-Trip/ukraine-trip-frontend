@@ -127,6 +127,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   const [routeSource, setRouteSource] = useState<'provided' | 'my'>('provided');
   const [cityTripsLoading, setCityTripsLoading] = useState(false);
   const [selectedCityTrip, setSelectedCityTrip] = useState<Trip | null>(null);
+  const [isRouteDetailView, setIsRouteDetailView] = useState(false);
   const [routeBuildingMode, setRouteBuildingMode] = useState(false);
   const [saveMode, setSaveMode] = useState(false);
   const [tripTitle, setTripTitle] = useState('');
@@ -366,15 +367,14 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     setSaveLoading(true);
     setSaveError(null);
     try {
-      await createTrip(
-        {
-          title: tripTitle.trim(),
-          location_ids: selectedRoutePoints.map((p) => p.id),
-          optimize: false,
-        },
-        token
+await createTrip(
+        {
+          title: tripTitle.trim(),
+          location_ids: selectedRoutePoints.map((p) => p.id),
+          optimize: false,
+        },
+        token
       );
-
       navigate('/my-trips');
     } catch (err: any) {
       setSaveError(
@@ -870,6 +870,152 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                       : 'Додати до маршруту'}
                   </button>
                 </div>
+              ) : isRouteDetailView && selectedCityTrip ? (
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <button
+                    onClick={() => setIsRouteDetailView(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#3b5bdb',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      padding: '0 0 16px',
+                      letterSpacing: '0.3px',
+                    }}
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                    Назад до списку
+                  </button>
+
+                  <h2
+                    style={{
+                      fontSize: '18px',
+                      fontWeight: 700,
+                      color: '#1a1a2e',
+                      margin: '0 0 8px',
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {selectedCityTrip.title}
+                  </h2>
+                  
+                  {selectedCityTrip.description && (
+                    <p
+                      style={{
+                        fontSize: '14px',
+                        color: '#555',
+                        lineHeight: 1.6,
+                        margin: '0 0 20px',
+                      }}
+                    >
+                      {selectedCityTrip.description}
+                    </p>
+                  )}
+
+                  <div
+                    style={{
+                      height: '1px',
+                      background: '#ebebeb',
+                      margin: '0 0 16px',
+                    }}
+                  />
+                  
+                  <div
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      color: '#999',
+                      letterSpacing: '1px',
+                      textTransform: 'uppercase',
+                      marginBottom: '12px',
+                    }}
+                  >
+                    МАРШРУТ · {selectedCityTrip.trip_nodes.length} ТОЧОК
+                  </div>
+
+                  <ol
+                    style={{
+                      listStyle: 'none',
+                      margin: 0,
+                      padding: 0,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                    }}
+                  >
+                    {[...selectedCityTrip.trip_nodes]
+                      .sort((a, b) => a.order_index - b.order_index)
+                      .map((node, i) => (
+                        <li
+                          key={node.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            padding: '8px 10px',
+                            borderRadius: '8px',
+                            background:
+                              i === 0
+                                ? '#f0f7f4'
+                                : i === selectedCityTrip.trip_nodes.length - 1
+                                  ? '#f7f0f0'
+                                  : 'transparent',
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: '22px',
+                              height: '22px',
+                              borderRadius: '50%',
+                              background:
+                                i === 0
+                                  ? '#2e7d5a'
+                                  : i === selectedCityTrip.trip_nodes.length - 1
+                                    ? '#c0392b'
+                                    : '#e8e8e8',
+                              color:
+                                i === 0 || i === selectedCityTrip.trip_nodes.length - 1
+                                  ? '#fff'
+                                  : '#555',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              flexShrink: 0,
+                            }}
+                          >
+                            {i + 1}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: '13px',
+                              color: '#222',
+                              fontWeight: 500,
+                            }}
+                          >
+                            {node.location.name}
+                          </span>
+                        </li>
+                      ))}
+                  </ol>
+                </div>
               ) : (
                 <>
                   <div
@@ -1010,8 +1156,29 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                         marginBottom: '20px',
                       }}
                     >
-                      {(routeSource === 'my' ? myCityTrips : cityTrips).map(
-                        (trip) => (
+{(routeSource === 'my' ? myCityTrips : cityTrips).map((trip) => (
+                        <div
+                          key={trip.id}
+                          onClick={() => {
+                            setSelectedCityTrip(trip);
+                            setIsRouteDetailView(true);
+                          }}
+                          style={{
+                            padding: '10px 12px',
+                            borderRadius: '8px',
+                            background:
+                              selectedCityTrip?.id === trip.id
+                                ? '#3b5bdb'
+                                : '#f8f8f8',
+                            color:
+                              selectedCityTrip?.id === trip.id
+                                ? 'white'
+                                : '#222',
+                            cursor: 'pointer',
+                            border: `1px solid ${selectedCityTrip?.id === trip.id ? '#3b5bdb' : '#ebebeb'}`,
+                            transition: 'all 0.15s',
+                          }}
+                        >
                           <div
                             key={trip.id}
                             onClick={() =>

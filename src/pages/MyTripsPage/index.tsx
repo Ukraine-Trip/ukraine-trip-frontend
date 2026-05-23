@@ -1,194 +1,55 @@
-import React, { useEffect, useState, useContext } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Box, 
-  Container, 
-  Card, 
-  CardContent, 
-  Typography, 
-  CircularProgress,
-  IconButton
-} from '@mui/material';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
-
-import { PageWrapper, PageTitle, SubTitle, SecondaryButton } from '../../style/common.tsx';
-import { getMyTrips, getLikedTrips, toggleTripLike } from '../../api/trips.ts';
+import { Box, Typography, CircularProgress, List, ListItem, ListItemText, Chip } from '@mui/material';
+import {
+  PageWrapper,
+  PageTitle,
+  SubTitle,
+  SecondaryButton,
+  PrimaryButton,
+} from '../../style/common.tsx';
+import { getMyTrips } from '../../api/trips.ts';
 import { AuthContext } from '../../context/AuthContext';
 import type { Trip } from '../../types/types.ts';
+
+const formatTripDate = (start: string | null, end: string | null): string => {
+  if (!start) return '';
+  const fmt = (d: Date) =>
+    d.toLocaleString('uk-UA', { day: 'numeric', month: 'short', year: 'numeric' });
+  const s = new Date(start);
+  if (!end || start === end) return fmt(s);
+  return `${fmt(s)} — ${fmt(new Date(end))}`;
+};
 
 export const MyTripsPage: React.FC = () => {
   const { token } = useContext(AuthContext);
   const navigate = useNavigate();
-  
-  const [createdTrips, setCreatedTrips] = useState<Trip[]>([]);
-  const [likedTrips, setLikedTrips] = useState<Trip[]>([]);
-  const [likedTripIds, setLikedTripIds] = useState<string[]>([]); 
+  const [myTrips, setMyTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  const [activeTab, setActiveTab] = useState<'created' | 'liked'>('created');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) {
-      navigate('/');
+      setLoading(false);
       return;
     }
 
-    const fetchData = async () => {
+    const fetchMyTrips = async () => {
+      setError(null);
+      setLoading(true);
       try {
-        setLoading(true);
-        const [myRes, likedRes] = await Promise.all([
-          getMyTrips(token),
-          getLikedTrips(token)
-        ]);
-        
-        setCreatedTrips(myRes);
-        setLikedTrips(likedRes);
-        setLikedTripIds(likedRes.map((t: Trip) => t.id));
-      } catch (error) {
-        console.error('Failed to fetch my trips data:', error);
+        const trips = await getMyTrips(token);
+        setMyTrips(trips);
+      } catch (error: any) {
+        console.error('Помилка завантаження маршрутів:', error);
+        setError('Не вдалося завантажити ваші маршрути');
       } finally {
         setLoading(false);
       }
     };
-    
-    fetchData();
-  }, [token, navigate]);
 
-  const handleLikeClick = async (tripId: string) => {
-    if (!token) return;
-
-    const isLiked = likedTripIds.includes(tripId);
-    
-    if (isLiked) {
-      setLikedTripIds((prev) => prev.filter((id) => id !== tripId));
-    } else {
-      setLikedTripIds((prev) => [...prev, tripId]);
-    }
-
-    try {
-      await toggleTripLike(tripId, token);
-    } catch (err) {
-      console.error('Like error:', err);
-      if (isLiked) {
-        setLikedTripIds((prev) => [...prev, tripId]);
-      } else {
-        setLikedTripIds((prev) => prev.filter((id) => id !== tripId));
-      }
-    }
-  };
-
-  const handleShowOnMap = (trip: Trip) => {
-    const firstNodeWithCoords = trip.trip_nodes?.find(
-      (n) => n.location && n.location.lat != null && n.location.lon != null
-    );
-    
-    let zoomParams = '';
-    if (firstNodeWithCoords?.location) {
-      const { lat, lon } = firstNodeWithCoords.location;
-      zoomParams = `?lat=${lat}&lng=${lon}&zoom=13`; 
-    }
-
-    navigate(`/map-page${zoomParams}`, {
-      state: {
-        tripId: trip.id,
-        tripMeta: {
-          title: trip.title,
-          description: trip.description,
-          start_date: trip.start_date,
-          end_date: trip.end_date,
-          waypoints: trip.trip_nodes?.map((n) => ({
-            name: n.location?.name || 'Unknown location',
-            order_index: n.order_index,
-          })) || [],
-        },
-      },
-    });
-  };
-
-  // Додали параметр hideHeart, щоб ховати сердечко
-  const renderTripCard = (trip: Trip, hideHeart: boolean) => {
-    const isLiked = likedTripIds.includes(trip.id);
-    return (
-      <Card 
-        key={trip.id}
-        sx={{ 
-          width: '100%', 
-          borderRadius: 2,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-          transition: 'box-shadow 0.2s',
-          '&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }
-        }}
-      >
-        <CardContent sx={{ p: 3, pb: "24px !important" }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '1.25rem' }}>
-              {trip.title}
-            </Typography>
-            
-            {/* Малюємо сердечко тільки якщо hideHeart === false */}
-            {!hideHeart && (
-              <IconButton 
-                onClick={() => handleLikeClick(trip.id)} 
-                size="small" 
-                sx={{ p: 0, ml: 2, color: isLiked ? 'error.main' : 'text.disabled' }}
-              >
-                {isLiked ? <FavoriteIcon /> : <FavoriteBorderIcon />}
-              </IconButton>
-            )}
-          </Box>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            {trip.description || 'No description available'}
-          </Typography>
-          <SecondaryButton 
-            variant="outlined" 
-            size="medium" 
-            fullWidth
-            onClick={() => handleShowOnMap(trip)}
-          >
-            Show on Map
-          </SecondaryButton>
-        </CardContent>
-      </Card>
-    );
-  };
-
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'created':
-        return createdTrips.length === 0 ? (
-          <Box sx={{ textAlign: 'center', mt: 4 }}>
-            <Typography sx={{ color: 'text.secondary', mb: 2 }}>
-              You haven't created any trips yet.
-            </Typography>
-            <SecondaryButton onClick={() => navigate('/itinerary')}>
-              Create your first trip
-            </SecondaryButton>
-          </Box>
-        ) : (
-          // Передаємо true, щоб сховати сердечка
-          createdTrips.map((trip) => renderTripCard(trip, true))
-        );
-        
-      case 'liked':
-        return likedTrips.length === 0 ? (
-          <Box sx={{ textAlign: 'center', mt: 4 }}>
-            <Typography sx={{ color: 'text.secondary', mb: 2 }}>
-              You haven't saved any trips yet. Find inspiration in the All Trips section!
-            </Typography>
-            <SecondaryButton onClick={() => navigate('/trips')}>
-              Browse all trips
-            </SecondaryButton>
-          </Box>
-        ) : (
-          // Передаємо false, щоб сердечка були
-          likedTrips.map((trip) => renderTripCard(trip, false))
-        );
-
-      default:
-        return null;
-    }
-  };
+    fetchMyTrips();
+  }, [token]);
 
   if (loading) {
     return (
@@ -198,60 +59,88 @@ export const MyTripsPage: React.FC = () => {
     );
   }
 
+  if (!token) {
+    return (
+      <PageWrapper>
+        <Typography sx={{ pt: 20, textAlign: 'center' }}>
+          Будь ласка, увійдіть в систему
+        </Typography>
+      </PageWrapper>
+    );
+  }
+
   return (
     <PageWrapper>
-      <Container maxWidth="md" sx={{ pt: 4, pb: 8 }}>
+      <Box sx={{ maxWidth: '900px', margin: '0 auto', px: 3 }}>
         <SubTitle>My Account</SubTitle>
-        <PageTitle>My Trips</PageTitle>
+        <PageTitle>My Itineraries</PageTitle>
 
-        <Box sx={{ 
-          display: 'flex', 
-          background: '#f0f0f0', 
-          borderRadius: '12px', 
-          p: 0.5, 
-          mb: 4, 
-          width: 'fit-content' 
-        }}>
-          <button
-            onClick={() => setActiveTab('created')}
-            style={{
-              padding: '10px 24px',
-              borderRadius: '8px',
-              border: 'none',
-              fontSize: '14px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              backgroundColor: activeTab === 'created' ? '#fff' : 'transparent',
-              color: activeTab === 'created' ? '#1a1a2e' : '#666',
-              boxShadow: activeTab === 'created' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
-              transition: 'all 0.2s ease-in-out'
-            }}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2, mb: 2 }}>
+          <Box>
+            <Typography sx={{ fontSize: '0.95rem', color: '#666', maxWidth: 680 }}>
+              Тут відображаються маршрути, які ви створили. Ви можете переглянути їх або побудувати новий маршрут.
+            </Typography>
+          </Box>
+          <SecondaryButton
+            variant="outlined"
+            onClick={() => navigate('/itinerary')}
+            sx={{ alignSelf: 'center' }}
           >
-            Created
-          </button>
-          <button
-            onClick={() => setActiveTab('liked')}
-            style={{
-              padding: '10px 24px',
-              borderRadius: '8px',
-              border: 'none',
-              fontSize: '14px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              backgroundColor: activeTab === 'liked' ? '#fff' : 'transparent',
-              color: activeTab === 'liked' ? '#1a1a2e' : '#666',
-              boxShadow: activeTab === 'liked' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
-              transition: 'all 0.2s ease-in-out'
-            }}
-          >
-            Saved
-          </button>
+            Create New Itinerary
+          </SecondaryButton>
         </Box>
-        
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {renderTabContent()}
-        </Box>
-      </Container>
+
+        {error ? (
+          <Typography sx={{ color: 'error.main' }}>{error}</Typography>
+        ) : myTrips.length === 0 ? (
+          <Box sx={{ py: 4, textAlign: 'center' }}>
+            <Typography sx={{ color: 'text.secondary', mb: 2 }}>
+              Ви ще не створили жодного маршруту.
+            </Typography>
+            <PrimaryButton onClick={() => navigate('/itinerary')}>
+              Build Your First Itinerary
+            </PrimaryButton>
+          </Box>
+        ) : (
+          <List sx={{ width: '100%', bgcolor: 'background.paper' }}>
+            {myTrips.map((trip) => (
+              <ListItem
+                key={trip.id}
+                sx={{ flexDirection: 'column', alignItems: 'flex-start', py: 2, borderBottom: '1px solid #eee' }}
+              >
+                <Box sx={{ width: '100%', display: 'flex', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <ListItemText
+                    primary={trip.title}
+                    secondary={formatTripDate(trip.start_date, trip.end_date)}
+                    secondaryTypographyProps={{ sx: { color: 'text.secondary' } }}
+                  />
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <Chip
+                      label={`${trip.trip_nodes.length} ${trip.trip_nodes.length === 1 ? 'point' : 'points'}`}
+                      size="small"
+                    />
+                    <SecondaryButton
+                      variant="outlined"
+                      size="small"
+                      sx={{ fontSize: '0.65rem', py: '6px', px: '14px' }}
+                      onClick={() =>
+                        navigate(`/trip/${trip.id}`)
+                      }
+                    >
+                      View on Map
+                    </SecondaryButton>
+                  </Box>
+                </Box>
+                {trip.description && (
+                  <Typography sx={{ mt: 1, color: 'text.secondary', fontSize: '0.9rem' }}>
+                    {trip.description}
+                  </Typography>
+                )}
+              </ListItem>
+            ))}
+          </List>
+        )}
+      </Box>
     </PageWrapper>
   );
 };

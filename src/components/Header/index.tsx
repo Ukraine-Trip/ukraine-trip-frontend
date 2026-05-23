@@ -34,12 +34,10 @@ export const Header: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const navigate = useNavigate();
 
-  // ОНОВЛЕНИЙ МАСИВ КНОПОК
   const navItems = [
     { label: 'Regions', path: '/create-route' },
-    { label: 'Trips', path: '/trips' }, // Публічна кнопка для всіх маршрутів
     { label: 'Itinerary', path: '/itinerary', private: true },
-    { label: 'My Trips', path: '/my-trips', private: true }, // Тільки для своїх
+    { label: 'My Trips', path: '/my-trips', private: true },
   ];
 
   const isAuthenticated = Boolean(token);

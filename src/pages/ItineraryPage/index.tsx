@@ -15,10 +15,9 @@ import {
   Stack,
   ToggleButtonGroup,
   ToggleButton,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
+  Autocomplete,
+  Button,
+  alpha,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
@@ -27,9 +26,16 @@ import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import DirectionsWalkIcon from '@mui/icons-material/DirectionsWalk';
 import DirectionsBikeIcon from '@mui/icons-material/DirectionsBike';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
+import LocationCityIcon from '@mui/icons-material/LocationCity';
+import TuneIcon from '@mui/icons-material/Tune';
+import CloseIcon from '@mui/icons-material/Close';
+import PublicIcon from '@mui/icons-material/Public';
+import PersonPinIcon from '@mui/icons-material/PersonPin';
 import { PageWrapper, PageTitle, SubTitle, PrimaryButton, SecondaryButton } from '../../style/common.tsx';
 import { api } from '../../api/auth.ts';
 import { AuthContext } from '../../context/AuthContext';
+import { getCities } from '../../api/cities.ts';
+import type { City } from '../../api/cities.ts';
 
 interface LocationItem {
   id: string;
@@ -39,33 +45,57 @@ interface LocationItem {
   lat: number;
   lng: number;
   description?: string;
-  isOwn?: boolean;
+  ownerId: number | null;
+  isOwn: boolean;
 }
 
 type TransportType = 'car' | 'foot' | 'bike';
 
+// ── helpers ─────────────────────────────────────────────────────────────────
+
+const TYPE_LABELS: Record<string, string> = {
+  landmark: 'Landmark',
+  cafe: 'Café',
+  park: 'Park',
+  culture: 'Culture',
+  stop: 'Stop',
+  city: 'City',
+};
+
+const typeLabel = (t: string) => TYPE_LABELS[t] ?? t.charAt(0).toUpperCase() + t.slice(1);
+
+// ── component ────────────────────────────────────────────────────────────────
+
 export const ItineraryPage: React.FC = () => {
-  const { token } = useContext(AuthContext);
+  const { token, user } = useContext(AuthContext);
   const navigate = useNavigate();
 
+  // locations
   const [locations, setLocations] = useState<LocationItem[]>([]);
   const [locationsLoading, setLocationsLoading] = useState(true);
   const [locationsError, setLocationsError] = useState<string | null>(null);
 
-  const [selectedPoints, setSelectedPoints] = useState<LocationItem[]>([]);
-  const [search, setSearch] = useState('');
-  const [transport, setTransport] = useState<TransportType>('car');
-  const [filterRegion, setFilterRegion] = useState<string>('');
-  const [filterType, setFilterType] = useState<string>('');
-  const [filterOwner, setFilterOwner] = useState<'all' | 'my' | 'public'>('all');
+  // cities from DB
+  const [cities, setCities] = useState<City[]>([]);
 
+  // route builder
+  const [selectedPoints, setSelectedPoints] = useState<LocationItem[]>([]);
+  const [transport, setTransport] = useState<TransportType>('car');
+
+  // filters
+  const [search, setSearch] = useState('');
+  const [filterCity, setFilterCity] = useState<City | null>(null);
+  const [filterType, setFilterType] = useState<string>('');
+  const [filterOwner, setFilterOwner] = useState<'all' | 'my' | 'existing'>('all');
+
+  // drag-and-drop
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
   const dragNode = useRef<number | null>(null);
   const routeListRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
 
-  // Non-passive touchmove so we can preventDefault and block page scroll during drag
+  // block scroll during touch-drag
   useEffect(() => {
     const el = routeListRef.current;
     if (!el) return;
@@ -74,12 +104,12 @@ export const ItineraryPage: React.FC = () => {
     return () => el.removeEventListener('touchmove', block);
   }, []);
 
+  // restore state from navigation
   const location = useLocation();
-
   useEffect(() => {
     const state = location.state as any;
     if (Array.isArray(state?.selectedRoutePoints) && state.selectedRoutePoints.length > 0) {
-      const normalizedPoints = state.selectedRoutePoints.map((point: any) => ({
+      setSelectedPoints(state.selectedRoutePoints.map((point: any) => ({
         id: String(point.id),
         name: point.name || '',
         region: point.region || point.city || '',
@@ -87,36 +117,37 @@ export const ItineraryPage: React.FC = () => {
         lat: point.lat ?? point.latitude ?? 0,
         lng: point.lng ?? point.longitude ?? 0,
         description: point.description || '',
-        isOwn: point.isOwn || false,
-      }));
-      setSelectedPoints(normalizedPoints);
+        ownerId: point.owner_id ?? point.ownerId ?? null,
+        isOwn: point.isOwn ?? false,
+      })));
     }
-    if (state?.filterRegion) {
-      setFilterRegion(String(state.filterRegion));
-    }
-    if (state?.transport) {
-      setTransport(state.transport as TransportType);
-    }
+    if (state?.transport) setTransport(state.transport as TransportType);
   }, [location.state]);
 
+  // fetch cities from DB
+  useEffect(() => {
+    getCities()
+      .then(setCities)
+      .catch((err) => console.error('Failed to load cities:', err));
+  }, []);
+
+  // fetch locations — single request, use owner_id to classify
   useEffect(() => {
     const fetchLocations = async () => {
       setLocationsLoading(true);
       setLocationsError(null);
       try {
-        const publicReq = api.get('/locations/');
-        const myReq = (token && token !== 'null' && token !== 'undefined')
-          ? api.get('/locations/', {
-              params: { filter_type: 'my' },
-              headers: { Authorization: `Bearer ${token.replace(/["']/g, '')}` },
-            })
-          : Promise.resolve(null);
+        const isAuthed = token && token !== 'null' && token !== 'undefined';
+        const headers = isAuthed
+          ? { Authorization: `Bearer ${token!.replace(/["']/g, '')}` }
+          : {};
 
-        const [publicResult, myResult] = await Promise.allSettled([publicReq, myReq]);
+        const res = await api.get('/locations/', { headers });
+        const currentUserId: number | null = user?.id ?? null;
 
-        let publicLocs: LocationItem[] = [];
-        if (publicResult.status === 'fulfilled' && publicResult.value) {
-          publicLocs = publicResult.value.data.map((loc: any) => ({
+        const locs: LocationItem[] = res.data.map((loc: any) => {
+          const ownerId: number | null = loc.owner_id ?? null;
+          return {
             id: String(loc.id),
             name: loc.name,
             region: loc.region ?? '',
@@ -124,53 +155,51 @@ export const ItineraryPage: React.FC = () => {
             lat: loc.lat,
             lng: loc.lon,
             description: loc.description ?? '',
-          }));
-        }
+            ownerId,
+            // isOwn: true only when this location belongs to the logged-in user
+            isOwn: currentUserId !== null && ownerId === currentUserId,
+          };
+        });
 
-        let myLocs: LocationItem[] = [];
-        if (myResult.status === 'fulfilled' && myResult.value) {
-          myLocs = myResult.value.data.map((loc: any) => ({
-            id: String(loc.id),
-            name: loc.name,
-            region: loc.region ?? '',
-            type: loc.type ?? 'landmark',
-            lat: loc.lat,
-            lng: loc.lon,
-            description: loc.description ?? '',
-            isOwn: true,
-          }));
-        }
-
-        const publicIds = new Set(publicLocs.map((l) => l.id));
-        const uniqueMyLocs = myLocs.filter((l) => !publicIds.has(l.id));
-        setLocations([...publicLocs, ...uniqueMyLocs]);
+        setLocations(locs);
       } catch (err) {
-        console.error('Помилка завантаження локацій:', err);
-        setLocationsError('Не вдалося завантажити точки');
+        console.error('Failed to load locations:', err);
+        setLocationsError('Failed to load locations. Please try again.');
       } finally {
         setLocationsLoading(false);
       }
     };
     fetchLocations();
-  }, [token]);
+  }, [token, user]);
 
-  const allRegions = useMemo(
-    () => [...new Set(locations.map((l) => l.region).filter(Boolean))].sort(),
-    [locations],
-  );
-
+  // derived filter data
   const allTypes = useMemo(
     () => [...new Set(locations.map((l) => l.type).filter(Boolean))].sort(),
     [locations],
   );
 
+  const hasActiveFilters = Boolean(filterCity || filterType || filterOwner !== 'all' || search);
+
+  const clearFilters = () => {
+    setFilterCity(null);
+    setFilterType('');
+    setFilterOwner('all');
+    setSearch('');
+  };
+
   const filteredLocations = useMemo(() => {
     let result = locations;
 
-    if (filterRegion) result = result.filter((l) => l.region === filterRegion);
+    if (filterCity) {
+      const cityName = filterCity.name.toLowerCase();
+      result = result.filter((l) => l.region.toLowerCase().includes(cityName));
+    }
+
     if (filterType) result = result.filter((l) => l.type === filterType);
+
     if (filterOwner === 'my') result = result.filter((l) => l.isOwn);
-    else if (filterOwner === 'public') result = result.filter((l) => !l.isOwn);
+    // "existing" = developer-seeded locations with no user link (owner_id IS NULL)
+    else if (filterOwner === 'existing') result = result.filter((l) => l.ownerId === null);
 
     const q = search.toLowerCase().trim();
     if (q) {
@@ -182,65 +211,46 @@ export const ItineraryPage: React.FC = () => {
       );
     }
     return result;
-  }, [locations, search, filterRegion, filterType, filterOwner]);
+  }, [locations, search, filterCity, filterType, filterOwner]);
+
+  // ── route helpers ──────────────────────────────────────────────────────────
 
   const isSelected = (id: string) => selectedPoints.some((p) => p.id === id);
 
   const togglePoint = (loc: LocationItem) => {
-    if (isSelected(loc.id)) {
-      setSelectedPoints((prev) => prev.filter((p) => p.id !== loc.id));
-    } else {
-      setSelectedPoints((prev) => [...prev, loc]);
-    }
+    setSelectedPoints((prev) =>
+      isSelected(loc.id) ? prev.filter((p) => p.id !== loc.id) : [...prev, loc],
+    );
   };
 
-  const removePoint = (id: string) => {
+  const removePoint = (id: string) =>
     setSelectedPoints((prev) => prev.filter((p) => p.id !== id));
-  };
 
-  const handleDragStart = (idx: number) => {
-    dragNode.current = idx;
-    setDraggingIdx(idx);
-  };
+  // ── drag handlers ──────────────────────────────────────────────────────────
+
+  const handleDragStart = (idx: number) => { dragNode.current = idx; setDraggingIdx(idx); };
 
   const handleDragOver = (e: React.DragEvent, idx: number) => {
     e.preventDefault();
-    if (dragNode.current !== null && dragNode.current !== idx) {
-      setDragOverIdx(idx);
-    }
+    if (dragNode.current !== null && dragNode.current !== idx) setDragOverIdx(idx);
   };
 
   const handleDrop = (e: React.DragEvent, toIdx: number) => {
     e.preventDefault();
     const fromIdx = dragNode.current;
-    if (fromIdx === null || fromIdx === toIdx) {
-      setDraggingIdx(null);
-      setDragOverIdx(null);
-      dragNode.current = null;
-      return;
-    }
+    if (fromIdx === null || fromIdx === toIdx) { setDraggingIdx(null); setDragOverIdx(null); dragNode.current = null; return; }
     setSelectedPoints((prev) => {
       const updated = [...prev];
       const [moved] = updated.splice(fromIdx, 1);
       updated.splice(toIdx, 0, moved);
       return updated;
     });
-    dragNode.current = null;
-    setDraggingIdx(null);
-    setDragOverIdx(null);
+    dragNode.current = null; setDraggingIdx(null); setDragOverIdx(null);
   };
 
-  const handleDragEnd = () => {
-    dragNode.current = null;
-    setDraggingIdx(null);
-    setDragOverIdx(null);
-  };
+  const handleDragEnd = () => { dragNode.current = null; setDraggingIdx(null); setDragOverIdx(null); };
 
-  const handleTouchStart = (idx: number) => {
-    isDraggingRef.current = true;
-    dragNode.current = idx;
-    setDraggingIdx(idx);
-  };
+  const handleTouchStart = (idx: number) => { isDraggingRef.current = true; dragNode.current = idx; setDraggingIdx(idx); };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     const touch = e.touches[0];
@@ -261,31 +271,28 @@ export const ItineraryPage: React.FC = () => {
       updated.splice(dragOverIdx, 0, moved);
       return updated;
     });
-    dragNode.current = null;
-    setDraggingIdx(null);
-    setDragOverIdx(null);
+    dragNode.current = null; setDraggingIdx(null); setDragOverIdx(null);
   };
 
   const handleViewOnMap = () => {
     if (selectedPoints.length === 0) return;
-
-    const routePoints = selectedPoints.map((loc) => ({
-      id: loc.id,
-      name: loc.name,
-      category: (loc.type ?? 'landmark') as any,
-      priority: 3 as const,
-      description: loc.description ?? '',
-      lat: loc.lat,
-      lng: loc.lng,
-    }));
-
     navigate('/map-page', {
       state: {
-        initialRoutePoints: routePoints,
+        initialRoutePoints: selectedPoints.map((loc) => ({
+          id: loc.id,
+          name: loc.name,
+          category: (loc.type ?? 'landmark') as any,
+          priority: 3 as const,
+          description: loc.description ?? '',
+          lat: loc.lat,
+          lng: loc.lng,
+        })),
         transport,
       },
     });
   };
+
+  // ── render ─────────────────────────────────────────────────────────────────
 
   return (
     <PageWrapper>
@@ -293,102 +300,238 @@ export const ItineraryPage: React.FC = () => {
         <SubTitle>Plan Your Journey</SubTitle>
         <PageTitle sx={{ mb: 1 }}>Build Itinerary</PageTitle>
         <Typography sx={{ color: '#666', mb: 4, fontSize: '0.95rem' }}>
-          Оберіть точки зі списку та побудуйте свій маршрут. Натисніть «View on Map», щоб побачити маршрут на карті.
+          Select points from the list and build your route. Click "Show Trip" to see it on the map.
         </Typography>
 
-        <Box
-          sx={{
-            display: 'flex',
-            gap: 4,
-            flexDirection: { xs: 'column', md: 'row' },
-            alignItems: 'flex-start',
-          }}
-        >
-          {/* Left: Locations list */}
+        <Box sx={{ display: 'flex', gap: 4, flexDirection: { xs: 'column', md: 'row' }, alignItems: 'flex-start' }}>
+          {/* ── Left: Locations ──────────────────────────────────────────────── */}
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <SubTitle>Available Locations</SubTitle>
 
-            {/* Filters */}
-            <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexWrap: 'wrap' }}>
-              <FormControl size="small" sx={{ minWidth: 140 }}>
-                <InputLabel sx={{ fontSize: '0.8rem' }}>City</InputLabel>
-                <Select
-                  value={filterRegion}
-                  label="City"
-                  onChange={(e) => setFilterRegion(e.target.value)}
-                  sx={{ borderRadius: 0, fontSize: '0.8rem' }}
-                >
-                  <MenuItem value="">All cities</MenuItem>
-                  {allRegions.map((r) => (
-                    <MenuItem key={r} value={r} sx={{ fontSize: '0.8rem' }}>{r}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <FormControl size="small" sx={{ minWidth: 150 }}>
-                <InputLabel sx={{ fontSize: '0.8rem' }}>Type</InputLabel>
-                <Select
-                  value={filterType}
-                  label="Type"
-                  onChange={(e) => setFilterType(e.target.value)}
-                  sx={{ borderRadius: 0, fontSize: '0.8rem' }}
-                >
-                  <MenuItem value="">All types</MenuItem>
-                  {allTypes.map((t) => (
-                    <MenuItem key={t} value={t} sx={{ fontSize: '0.8rem', textTransform: 'capitalize' }}>{t}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
-                {(['all', 'public', 'my'] as const).map((v) => (
-                  <Chip
-                    key={v}
-                    label={v === 'all' ? 'All' : v === 'my' ? 'My locations' : 'Existing'}
+            {/* ── Filter Panel ─────────────────────────────────────────────── */}
+            <Box
+              sx={{
+                bgcolor: '#f8f8f8',
+                border: '1px solid #ebebeb',
+                borderRadius: '12px',
+                p: { xs: 2, sm: 2.5 },
+                mb: 2.5,
+              }}
+            >
+              {/* Panel header */}
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <TuneIcon sx={{ fontSize: 16, color: '#666' }} />
+                  <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: '#666' }}>
+                    Filters
+                  </Typography>
+                </Box>
+                {hasActiveFilters && (
+                  <Button
                     size="small"
-                    onClick={() => setFilterOwner(v)}
-                    variant={filterOwner === v ? 'filled' : 'outlined'}
+                    onClick={clearFilters}
+                    startIcon={<CloseIcon sx={{ fontSize: '14px !important' }} />}
                     sx={{
-                      borderRadius: 0,
                       fontSize: '0.72rem',
-                      fontWeight: filterOwner === v ? 700 : 400,
-                      bgcolor: filterOwner === v ? '#000' : 'transparent',
-                      color: filterOwner === v ? '#fff' : '#000',
-                      borderColor: '#000',
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '1px',
+                      color: '#888',
+                      p: '2px 8px',
+                      minWidth: 0,
+                      borderRadius: '6px',
+                      '&:hover': { bgcolor: '#ebebeb', color: '#333' },
+                    }}
+                  >
+                    Reset
+                  </Button>
+                )}
+              </Box>
+
+              {/* Search */}
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Search by name, region or type…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                sx={{
+                  mb: 2,
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '8px',
+                    bgcolor: '#fff',
+                    '& fieldset': { borderColor: '#e0e0e0' },
+                    '&:hover fieldset': { borderColor: '#aaa' },
+                    '&.Mui-focused fieldset': { borderColor: '#000', borderWidth: '1.5px' },
+                  },
+                }}
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon sx={{ fontSize: 18, color: '#bbb' }} />
+                      </InputAdornment>
+                    ),
+                  },
+                }}
+              />
+
+              {/* City + Type row */}
+              <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexWrap: 'wrap' }}>
+                {/* City Autocomplete from DB */}
+                <Autocomplete<City>
+                  options={cities}
+                  getOptionLabel={(option) => option.name}
+                  value={filterCity}
+                  onChange={(_, newValue) => setFilterCity(newValue)}
+                  size="small"
+                  sx={{ flex: '1 1 160px', minWidth: 140 }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="City"
+                      placeholder="All cities"
+                      slotProps={{
+                        input: {
+                          ...params.InputProps,
+                          startAdornment: (
+                            <>
+                              <InputAdornment position="start">
+                                <LocationCityIcon sx={{ fontSize: 16, color: '#bbb' }} />
+                              </InputAdornment>
+                              {params.InputProps.startAdornment}
+                            </>
+                          ),
+                        },
+                      }}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: '8px',
+                          bgcolor: '#fff',
+                          '& fieldset': { borderColor: '#e0e0e0' },
+                          '&:hover fieldset': { borderColor: '#aaa' },
+                          '&.Mui-focused fieldset': { borderColor: '#000', borderWidth: '1.5px' },
+                        },
+                        '& .MuiInputLabel-root.Mui-focused': { color: '#000' },
+                      }}
+                    />
+                  )}
+                  renderOption={(props, option) => (
+                    <Box component="li" {...props} sx={{ fontSize: '0.83rem', py: '6px !important' }}>
+                      <Box>
+                        <Typography sx={{ fontSize: '0.83rem', fontWeight: 600, lineHeight: 1.2 }}>
+                          {option.name}
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.7rem', color: '#999' }}>
+                          {option.region}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  )}
+                  noOptionsText="No cities found"
+                  loadingText="Loading…"
+                />
+
+                {/* Type chips row */}
+                <Box
+                  sx={{
+                    flex: '2 1 220px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.75,
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <Chip
+                    label="All types"
+                    size="small"
+                    onClick={() => setFilterType('')}
+                    sx={{
+                      borderRadius: '6px',
+                      fontSize: '0.72rem',
+                      fontWeight: filterType === '' ? 700 : 500,
+                      bgcolor: filterType === '' ? '#000' : '#fff',
+                      color: filterType === '' ? '#fff' : '#555',
+                      border: '1px solid',
+                      borderColor: filterType === '' ? '#000' : '#ddd',
                       cursor: 'pointer',
-                      '&:hover': { bgcolor: filterOwner === v ? '#333' : '#f5f5f5' },
+                      transition: 'all 0.15s',
+                      '&:hover': { bgcolor: filterType === '' ? '#333' : '#f0f0f0' },
                     }}
                   />
+                  {allTypes.map((t) => (
+                    <Chip
+                      key={t}
+                      label={typeLabel(t)}
+                      size="small"
+                      onClick={() => setFilterType(filterType === t ? '' : t)}
+                      sx={{
+                        borderRadius: '6px',
+                        fontSize: '0.72rem',
+                        fontWeight: filterType === t ? 700 : 500,
+                        bgcolor: filterType === t ? '#000' : '#fff',
+                        color: filterType === t ? '#fff' : '#555',
+                        border: '1px solid',
+                        borderColor: filterType === t ? '#000' : '#ddd',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s',
+                        '&:hover': { bgcolor: filterType === t ? '#333' : '#f0f0f0' },
+                      }}
+                    />
+                  ))}
+                </Box>
+              </Box>
+
+              {/* Owner toggle */}
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                {([
+                  { value: 'all', label: 'All locations', Icon: null },
+                  { value: 'existing', label: 'Existing', Icon: PublicIcon },
+                  { value: 'my', label: 'My locations', Icon: PersonPinIcon },
+                ] as const).map(({ value, label, Icon }) => (
+                  <Box
+                    key={value}
+                    onClick={() => setFilterOwner(value)}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.5,
+                      px: 1.5,
+                      py: 0.75,
+                      borderRadius: '8px',
+                      border: '1.5px solid',
+                      borderColor: filterOwner === value ? '#000' : '#ddd',
+                      bgcolor: filterOwner === value ? '#000' : '#fff',
+                      color: filterOwner === value ? '#fff' : '#555',
+                      cursor: 'pointer',
+                      fontSize: '0.72rem',
+                      fontWeight: filterOwner === value ? 700 : 500,
+                      letterSpacing: '0.5px',
+                      transition: 'all 0.15s',
+                      userSelect: 'none',
+                      '&:hover': {
+                        borderColor: filterOwner === value ? '#333' : '#999',
+                        bgcolor: filterOwner === value ? '#333' : (theme: any) => alpha('#000', 0.04),
+                      },
+                    }}
+                  >
+                    {Icon && <Icon sx={{ fontSize: 14 }} />}
+                    {label}
+                  </Box>
                 ))}
               </Box>
+
+              {/* Active filter count badge */}
+              {hasActiveFilters && (
+                <Box sx={{ mt: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography sx={{ fontSize: '0.72rem', color: '#999' }}>
+                    Showing <strong style={{ color: '#000' }}>{filteredLocations.length}</strong> of {locations.length} locations
+                  </Typography>
+                </Box>
+              )}
             </Box>
 
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="Search by name, region or type..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              sx={{
-                mb: 2,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 0,
-                  '& fieldset': { borderColor: '#e0e0e0' },
-                  '&:hover fieldset': { borderColor: '#000' },
-                  '&.Mui-focused fieldset': { borderColor: '#000' },
-                },
-              }}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ fontSize: 18, color: '#999' }} />
-                    </InputAdornment>
-                  ),
-                },
-              }}
-            />
-
+            {/* ── Locations list ────────────────────────────────────────────── */}
             {locationsLoading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
                 <CircularProgress size={28} />
@@ -396,14 +539,23 @@ export const ItineraryPage: React.FC = () => {
             ) : locationsError ? (
               <Typography sx={{ color: 'error.main' }}>{locationsError}</Typography>
             ) : filteredLocations.length === 0 ? (
-              <Typography sx={{ color: 'text.secondary' }}>Нічого не знайдено.</Typography>
+              <Box sx={{ textAlign: 'center', py: 6, color: 'text.secondary' }}>
+                <SearchIcon sx={{ fontSize: 40, color: '#ddd', mb: 1 }} />
+                <Typography sx={{ fontSize: '0.9rem' }}>No results found.</Typography>
+                {hasActiveFilters && (
+                  <Button size="small" onClick={clearFilters} sx={{ mt: 1, fontSize: '0.78rem', color: '#888', textTransform: 'none' }}>
+                    Clear filters
+                  </Button>
+                )}
+              </Box>
             ) : (
               <Box
                 sx={{
                   maxHeight: '520px',
                   overflowY: 'auto',
-                  border: '1px solid #eee',
-                  borderRadius: 0,
+                  border: '1px solid #ebebeb',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
                 }}
               >
                 <List disablePadding>
@@ -411,11 +563,12 @@ export const ItineraryPage: React.FC = () => {
                     <ListItem
                       key={loc.id}
                       sx={{
-                        borderBottom: idx < filteredLocations.length - 1 ? '1px solid #f0f0f0' : 'none',
-                        bgcolor: isSelected(loc.id) ? '#f8f8f8' : 'transparent',
+                        borderBottom: idx < filteredLocations.length - 1 ? '1px solid #f4f4f4' : 'none',
+                        bgcolor: isSelected(loc.id) ? '#f6f6f6' : 'transparent',
                         transition: 'background 0.15s',
                         py: 1.5,
                         pr: 1,
+                        '&:hover': { bgcolor: isSelected(loc.id) ? '#f0f0f0' : '#fafafa' },
                       }}
                       secondaryAction={
                         <IconButton
@@ -423,19 +576,23 @@ export const ItineraryPage: React.FC = () => {
                           size="small"
                           onClick={() => togglePoint(loc)}
                           sx={{
-                            border: '1px solid',
-                            borderColor: isSelected(loc.id) ? '#000' : '#ccc',
-                            borderRadius: 0,
-                            color: isSelected(loc.id) ? '#fff' : '#000',
+                            width: 32,
+                            height: 32,
+                            border: '1.5px solid',
+                            borderColor: isSelected(loc.id) ? '#000' : '#d0d0d0',
+                            borderRadius: '8px',
+                            color: isSelected(loc.id) ? '#fff' : '#555',
                             bgcolor: isSelected(loc.id) ? '#000' : 'transparent',
+                            transition: 'all 0.15s',
                             '&:hover': {
-                              bgcolor: isSelected(loc.id) ? '#333' : '#f5f5f5',
+                              bgcolor: isSelected(loc.id) ? '#333' : '#f0f0f0',
+                              borderColor: isSelected(loc.id) ? '#333' : '#999',
                             },
-                            width: 30,
-                            height: 30,
                           }}
                         >
-                          {isSelected(loc.id) ? <RemoveIcon sx={{ fontSize: 16 }} /> : <AddIcon sx={{ fontSize: 16 }} />}
+                          {isSelected(loc.id)
+                            ? <RemoveIcon sx={{ fontSize: 16 }} />
+                            : <AddIcon sx={{ fontSize: 16 }} />}
                         </IconButton>
                       }
                     >
@@ -446,14 +603,29 @@ export const ItineraryPage: React.FC = () => {
                               {loc.name}
                             </Typography>
                             {loc.isOwn && (
-                              <Chip label="My location" size="small" variant="outlined" sx={{ fontSize: '0.65rem', height: 18 }} />
+                              <Chip
+                                label="My"
+                                size="small"
+                                icon={<PersonPinIcon sx={{ fontSize: '11px !important' }} />}
+                                variant="outlined"
+                                sx={{ fontSize: '0.62rem', height: 18, borderRadius: '4px', borderColor: '#bbb', color: '#888' }}
+                              />
                             )}
                           </Box>
                         }
                         secondary={
                           <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
-                            <Chip label={loc.region} size="small" sx={{ fontSize: '0.65rem', height: 18 }} />
-                            <Chip label={loc.type} size="small" variant="outlined" sx={{ fontSize: '0.65rem', height: 18 }} />
+                            <Chip
+                              label={loc.region}
+                              size="small"
+                              sx={{ fontSize: '0.65rem', height: 18, borderRadius: '4px', bgcolor: '#f0f0f0', color: '#555' }}
+                            />
+                            <Chip
+                              label={typeLabel(loc.type)}
+                              size="small"
+                              variant="outlined"
+                              sx={{ fontSize: '0.65rem', height: 18, borderRadius: '4px', borderColor: '#ddd', color: '#777' }}
+                            />
                           </Box>
                         }
                       />
@@ -464,7 +636,7 @@ export const ItineraryPage: React.FC = () => {
             )}
           </Box>
 
-          {/* Right: Route builder */}
+          {/* ── Right: Route builder ──────────────────────────────────────── */}
           <Box
             sx={{
               width: { xs: '100%', md: '340px' },
@@ -479,7 +651,7 @@ export const ItineraryPage: React.FC = () => {
               <Box
                 sx={{
                   border: '2px dashed #e0e0e0',
-                  borderRadius: 0,
+                  borderRadius: '12px',
                   py: 5,
                   px: 3,
                   textAlign: 'center',
@@ -493,18 +665,18 @@ export const ItineraryPage: React.FC = () => {
               >
                 <DragIndicatorIcon sx={{ fontSize: 32, color: '#ccc' }} />
                 <Typography sx={{ fontSize: '0.85rem', color: '#999' }}>
-                  Оберіть точки зі списку зліва,
+                  Select points from the list on the left
                 </Typography>
                 <Typography sx={{ fontSize: '0.85rem', color: '#999' }}>
-                  щоб додати їх до маршруту.
+                  to add them to your route.
                 </Typography>
               </Box>
             ) : (
               <Box
                 ref={routeListRef}
                 sx={{
-                  border: '1px solid #eee',
-                  borderRadius: 0,
+                  border: '1px solid #ebebeb',
+                  borderRadius: '12px',
                   mb: 3,
                   maxHeight: '400px',
                   overflowY: 'auto',
@@ -525,7 +697,7 @@ export const ItineraryPage: React.FC = () => {
                       onTouchMove={handleTouchMove}
                       onTouchEnd={handleTouchEnd}
                       sx={{
-                        borderBottom: idx < selectedPoints.length - 1 ? '1px solid #f0f0f0' : 'none',
+                        borderBottom: idx < selectedPoints.length - 1 ? '1px solid #f4f4f4' : 'none',
                         borderTop: dragOverIdx === idx && draggingIdx !== idx ? '2px solid #000' : '2px solid transparent',
                         py: 1.5,
                         pr: 1,
@@ -542,22 +714,14 @@ export const ItineraryPage: React.FC = () => {
                           size="small"
                           onMouseDown={(e) => e.stopPropagation()}
                           onClick={() => removePoint(point.id)}
-                          sx={{ color: '#bbb', '&:hover': { color: '#e53935' }, cursor: 'pointer' }}
+                          sx={{ color: '#ccc', '&:hover': { color: '#e53935' }, cursor: 'pointer' }}
                         >
                           <RemoveIcon sx={{ fontSize: 16 }} />
                         </IconButton>
                       }
                     >
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mr: 1 }}>
-                        <Typography
-                          sx={{
-                            fontSize: '0.72rem',
-                            fontWeight: 700,
-                            color: '#bbb',
-                            minWidth: 18,
-                            textAlign: 'center',
-                          }}
-                        >
+                        <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#bbb', minWidth: 18, textAlign: 'center' }}>
                           {idx + 1}
                         </Typography>
                         <DragIndicatorIcon sx={{ fontSize: 18, color: '#ccc' }} />
@@ -588,7 +752,22 @@ export const ItineraryPage: React.FC = () => {
               exclusive
               onChange={(_, val) => val && setTransport(val)}
               size="small"
-              sx={{ mb: 3, '& .MuiToggleButton-root': { borderRadius: 0, px: 2, py: 1 } }}
+              sx={{
+                mb: 3,
+                '& .MuiToggleButton-root': {
+                  borderRadius: '8px !important',
+                  px: 2,
+                  py: 1,
+                  border: '1.5px solid #e0e0e0 !important',
+                  mx: 0.5,
+                  '&.Mui-selected': {
+                    bgcolor: '#000',
+                    color: '#fff',
+                    borderColor: '#000 !important',
+                    '&:hover': { bgcolor: '#333' },
+                  },
+                },
+              }}
             >
               <ToggleButton value="car">
                 <DirectionsCarIcon sx={{ fontSize: 18, mr: 0.5 }} />

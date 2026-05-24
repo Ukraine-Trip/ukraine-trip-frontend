@@ -38,6 +38,7 @@ export const Header: React.FC = () => {
     { label: 'Regions', path: '/create-route' },
     { label: 'Itinerary', path: '/itinerary', private: true },
     { label: 'My Trips', path: '/my-trips', private: true },
+    { label: 'My Locations', path: '/my-locations', private: true },
   ];
 
   const isAuthenticated = Boolean(token);

@@ -113,6 +113,11 @@ export const TripDetailsPage: React.FC = () => {
 
         <Paper elevation={0} sx={{ p: 4, backgroundColor: '#f9f9f9' }}>
           <PageTitle sx={{ mb: 1 }}>{trip.title}</PageTitle>
+          {trip.description && (
+            <Typography sx={{ mb: 3, color: 'text.secondary', fontSize: '1rem' }}>
+              {trip.description}
+            </Typography>
+          )}
 
           <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', alignItems: 'center' }}>
             <Chip
@@ -128,16 +133,10 @@ export const TripDetailsPage: React.FC = () => {
             )}
           </Box>
 
-          {trip.description && (
-            <Typography sx={{ mt: 2, mb: 3, color: 'text.secondary', fontSize: '1rem', lineHeight: 1.6 }}>
-              {trip.description}
-            </Typography>
-          )}
-
           <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
-            <SecondaryButton variant="outlined" onClick={handleViewOnMap}>
+            <PrimaryButton onClick={handleViewOnMap}>
               View on Map
-            </SecondaryButton>
+            </PrimaryButton>
             <SecondaryButton variant="outlined" onClick={() => navigate(`/trip/${trip.id}/edit`)}>
               Edit Itinerary
             </SecondaryButton>

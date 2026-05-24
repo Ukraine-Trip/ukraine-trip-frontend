@@ -8,10 +8,10 @@ const userIcon = L.divIcon({
   html: `
     <div style="
       width: 18px; height: 18px;
-      background: #000;
+      background: #3b5bdb;
       border: 3px solid white;
       border-radius: 50%;
-      box-shadow: 0 0 0 2px #000;
+      box-shadow: 0 0 0 2px #3b5bdb;
     "></div>
   `,
   iconSize: [18, 18],
@@ -102,7 +102,7 @@ export const UserLocation: React.FC<UserLocationProps> = ({ ctrlTop }) => {
           <Circle
             center={position}
             radius={accuracy}
-            pathOptions={{ color: '#000', fillColor: '#000', fillOpacity: 0.1, weight: 1 }}
+            pathOptions={{ color: '#3b5bdb', fillColor: '#3b5bdb', fillOpacity: 0.1, weight: 1 }}
           />
           {/* Синій маркер позиції користувача */}
           <Marker position={position} icon={userIcon} />
@@ -132,13 +132,13 @@ export const UserLocation: React.FC<UserLocationProps> = ({ ctrlTop }) => {
             alignItems: 'center',
             justifyContent: 'center',
             cursor: loading ? 'wait' : 'pointer',
-            border: position ? '1.5px solid #000' : '1px solid #e8e8e8',
+            border: position ? '1.5px solid #3b5bdb' : '1px solid #e8e8e8',
             transition: 'border 0.2s',
           }}
         >
           {loading ? (
             // Спінер поки чекаємо відповідь браузера
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2.5" strokeLinecap="round">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3b5bdb" strokeWidth="2.5" strokeLinecap="round">
               <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83">
                 <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="0.8s" repeatCount="indefinite"/>
               </path>
@@ -146,7 +146,7 @@ export const UserLocation: React.FC<UserLocationProps> = ({ ctrlTop }) => {
           ) : (
             // Іконка геолокації — синя якщо активна, сіра якщо ні
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                 stroke={position ? '#000' : '#555'}
+                 stroke={position ? '#3b5bdb' : '#555'}
                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
             >
               <circle cx="12" cy="12" r="3"/>

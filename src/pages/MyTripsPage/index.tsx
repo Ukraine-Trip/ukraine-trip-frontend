@@ -7,7 +7,8 @@ import {
   CardContent, 
   Typography, 
   CircularProgress,
-  IconButton
+  IconButton,
+  Chip
 } from '@mui/material';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
@@ -16,6 +17,16 @@ import { PageWrapper, PageTitle, SubTitle, SecondaryButton } from '../../style/c
 import { getMyTrips, getLikedTrips, toggleTripLike } from '../../api/trips.ts';
 import { AuthContext } from '../../context/AuthContext';
 import type { Trip } from '../../types/types.ts';
+
+// Додали твою функцію форматування дат (трохи адаптували під англійську для консистентності)
+const formatTripDate = (start: string | null, end: string | null): string => {
+  if (!start) return '';
+  const fmt = (d: Date) =>
+    d.toLocaleString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+  const s = new Date(start);
+  if (!end || start === end) return fmt(s);
+  return `${fmt(s)} — ${fmt(new Date(end))}`;
+};
 
 export const MyTripsPage: React.FC = () => {
   const { token } = useContext(AuthContext);
@@ -78,37 +89,10 @@ export const MyTripsPage: React.FC = () => {
     }
   };
 
-  const handleShowOnMap = (trip: Trip) => {
-    const firstNodeWithCoords = trip.trip_nodes?.find(
-      (n) => n.location && n.location.lat != null && n.location.lon != null
-    );
-    
-    let zoomParams = '';
-    if (firstNodeWithCoords?.location) {
-      const { lat, lon } = firstNodeWithCoords.location;
-      zoomParams = `?lat=${lat}&lng=${lon}&zoom=13`; 
-    }
-
-    navigate(`/map-page${zoomParams}`, {
-      state: {
-        tripId: trip.id,
-        tripMeta: {
-          title: trip.title,
-          description: trip.description,
-          start_date: trip.start_date,
-          end_date: trip.end_date,
-          waypoints: trip.trip_nodes?.map((n) => ({
-            name: n.location?.name || 'Unknown location',
-            order_index: n.order_index,
-          })) || [],
-        },
-      },
-    });
-  };
-
-  // Додали параметр hideHeart, щоб ховати сердечко
   const renderTripCard = (trip: Trip, hideHeart: boolean) => {
     const isLiked = likedTripIds.includes(trip.id);
+    const nodesCount = trip.trip_nodes?.length || 0;
+
     return (
       <Card 
         key={trip.id}
@@ -122,31 +106,44 @@ export const MyTripsPage: React.FC = () => {
       >
         <CardContent sx={{ p: 3, pb: "24px !important" }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-            <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '1.25rem' }}>
-              {trip.title}
-            </Typography>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '1.25rem' }}>
+                {trip.title}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                {formatTripDate(trip.start_date, trip.end_date)}
+              </Typography>
+            </Box>
             
-            {/* Малюємо сердечко тільки якщо hideHeart === false */}
-            {!hideHeart && (
-              <IconButton 
-                onClick={() => handleLikeClick(trip.id)} 
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Chip 
+                label={`${nodesCount} ${nodesCount === 1 ? 'point' : 'points'}`} 
                 size="small" 
-                sx={{ p: 0, ml: 2, color: isLiked ? 'error.main' : 'text.disabled' }}
-              >
-                {isLiked ? <FavoriteIcon /> : <FavoriteBorderIcon />}
-              </IconButton>
-            )}
+                sx={{ mr: hideHeart ? 0 : 2 }}
+              />
+              {!hideHeart && (
+                <IconButton 
+                  onClick={() => handleLikeClick(trip.id)} 
+                  size="small" 
+                  sx={{ p: 0, color: isLiked ? 'error.main' : 'text.disabled' }}
+                >
+                  {isLiked ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+                </IconButton>
+              )}
+            </Box>
           </Box>
+
           <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
             {trip.description || 'No description available'}
           </Typography>
+          
           <SecondaryButton 
             variant="outlined" 
             size="medium" 
             fullWidth
-            onClick={() => handleShowOnMap(trip)}
+            onClick={() => navigate(`/trip/${trip.id}`)} // 👈 ТУТ МИ ЗМІНИЛИ НАВІГАЦІЮ
           >
-            Show on Map
+            View Details
           </SecondaryButton>
         </CardContent>
       </Card>
@@ -166,7 +163,6 @@ export const MyTripsPage: React.FC = () => {
             </SecondaryButton>
           </Box>
         ) : (
-          // Передаємо true, щоб сховати сердечка
           createdTrips.map((trip) => renderTripCard(trip, true))
         );
         
@@ -181,7 +177,6 @@ export const MyTripsPage: React.FC = () => {
             </SecondaryButton>
           </Box>
         ) : (
-          // Передаємо false, щоб сердечка були
           likedTrips.map((trip) => renderTripCard(trip, false))
         );
 

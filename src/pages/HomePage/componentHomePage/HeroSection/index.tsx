@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { AppBar, Toolbar, Typography, Box, TextField, InputAdornment } from '@mui/material';
-import { Link } from 'react-router-dom';
 import { HeroSection as StyledHeroSection } from '../../style.tsx';
 import { PrimaryButton } from '../../../../style/common.tsx';
-import  AutoAwesomeIcon  from '@mui/icons-material/AutoAwesome';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+
 export const HeroSection: React.FC = () => {
   const [prompt, setPrompt] = useState('');
   const isWaitingForAI = true;
@@ -51,53 +51,67 @@ export const HeroSection: React.FC = () => {
             maxWidth: '560px',
           }}
         >
-          <PrimaryButton
-            component={Link}
-            to="/create-route"
-            sx={{ width: '100%' }}
-          >
-            Explore trip
-          </PrimaryButton>
-
-          <TextField
-            value={prompt}
-            onChange={(event) => setPrompt(event.target.value)}
-            placeholder="Напиши запит для ШІ, щоб створити точки маршруту"
-            fullWidth
-            variant="outlined"
-            multiline
-            minRows={8}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start" sx={{ color: '#fff' }}>
-                  <AutoAwesomeIcon />
-                </InputAdornment>
-              ),
-            }}
-            sx={{
-              backgroundColor: 'rgba(255, 255, 255, 0.08)',
-              borderRadius: '16px',
-              width: '100%',
-              '& .MuiOutlinedInput-root': {
-                minHeight: '200px',
-                alignItems: 'flex-start',
-                color: '#fff',
-                '& fieldset': {
-                  borderColor: 'rgba(255,255,255,0.55)',
-                  borderWidth: '1px',
+          <Box sx={{ position: 'relative', width: '100%' }}>
+            <TextField
+              value={prompt}
+              onChange={(event) => {
+                if (event.target.value.length <= 100) {
+                  setPrompt(event.target.value);
+                }
+              }}
+              placeholder="Напиши запит для ШІ, щоб створити точки маршруту"
+              fullWidth
+              variant="outlined"
+              multiline
+              minRows={8}
+              slotProps={{
+                htmlInput: { maxLength: 100 },
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start" sx={{ color: '#fff' }}>
+                      <AutoAwesomeIcon />
+                    </InputAdornment>
+                  ),
                 },
-                '&:hover fieldset': {
-                  borderColor: 'rgba(255,255,255,0.8)',
+              }}
+              sx={{
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                borderRadius: '16px',
+                width: '100%',
+                '& .MuiOutlinedInput-root': {
+                  minHeight: '200px',
+                  alignItems: 'flex-start',
+                  color: '#fff',
+                  '& fieldset': {
+                    borderColor: 'rgba(255,255,255,0.55)',
+                    borderWidth: '1px',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: 'rgba(255,255,255,0.8)',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#fff',
+                  },
                 },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#fff',
+                '& .MuiInputBase-input': {
+                  color: '#fff',
                 },
-              },
-              '& .MuiInputBase-input': {
-                color: '#fff',
-              },
-            }}
-          />
+              }}
+            />
+            <Typography
+              sx={{
+                position: 'absolute',
+                bottom: 10,
+                right: 14,
+                fontSize: '0.75rem',
+                color: prompt.length >= 100 ? '#ff6b6b' : 'rgba(255,255,255,0.5)',
+                pointerEvents: 'none',
+                userSelect: 'none',
+              }}
+            >
+              {prompt.length}/100
+            </Typography>
+          </Box>
 
           <PrimaryButton
             disabled

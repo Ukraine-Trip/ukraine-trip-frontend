@@ -894,14 +894,21 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                       padding: '12px',
                       borderRadius: '8px',
                       border: 'none',
-                      backgroundColor: '#3b5bdb',
+                      backgroundColor: '#000',
                       color: 'white',
                       fontWeight: 700,
                       cursor: 'pointer',
                       fontSize: '14px',
                       letterSpacing: '0.3px',
                       marginBottom: '24px',
+                      transition: 'background-color 0.2s',
                     }}
+                    onMouseOver={(e) =>
+                      (e.currentTarget.style.backgroundColor = '#333')
+                    }
+                    onMouseOut={(e) =>
+                      (e.currentTarget.style.backgroundColor = '#000')
+                    }
                   >
                     Create Route
                   </button>
@@ -917,51 +924,51 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                         gap: '4px',
                       }}
                     >
-                      <button
-                        onClick={() => setRouteSource('provided')}
-                        style={{
-                          flex: 1,
-                          padding: '8px',
-                          borderRadius: '6px',
-                          border: 'none',
-                          fontSize: '12px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          backgroundColor:
-                            routeSource === 'provided' ? '#fff' : 'transparent',
-                          color:
-                            routeSource === 'provided' ? '#3b5bdb' : '#666',
-                          boxShadow:
-                            routeSource === 'provided'
-                              ? '0 2px 4px rgba(0,0,0,0.05)'
-                              : 'none',
-                          transition: 'all 0.2s',
-                        }}
-                      >
-                        Надані
-                      </button>
-                      <button
-                        onClick={() => setRouteSource('my')}
-                        style={{
-                          flex: 1,
-                          padding: '8px',
-                          borderRadius: '6px',
-                          border: 'none',
-                          fontSize: '12px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          backgroundColor:
-                            routeSource === 'my' ? '#fff' : 'transparent',
-                          color: routeSource === 'my' ? '#3b5bdb' : '#666',
-                          boxShadow:
-                            routeSource === 'my'
-                              ? '0 2px 4px rgba(0,0,0,0.05)'
-                              : 'none',
-                          transition: 'all 0.2s',
-                        }}
-                      >
-                        Мої
-                      </button>
+                          <button
+                            onClick={() => setRouteSource('provided')}
+                            style={{
+                              flex: 1,
+                              padding: '8px',
+                              borderRadius: '6px',
+                              border: 'none',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              backgroundColor:
+                                routeSource === 'provided' ? '#fff' : 'transparent',
+                              color:
+                                routeSource === 'provided' ? '#000' : '#666',
+                              boxShadow:
+                                routeSource === 'provided'
+                                  ? '0 2px 4px rgba(0,0,0,0.05)'
+                                  : 'none',
+                              transition: 'all 0.2s',
+                            }}
+                          >
+                            Надані
+                          </button>
+                          <button
+                            onClick={() => setRouteSource('my')}
+                            style={{
+                              flex: 1,
+                              padding: '8px',
+                              borderRadius: '6px',
+                              border: 'none',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              backgroundColor:
+                                routeSource === 'my' ? '#fff' : 'transparent',
+                              color: routeSource === 'my' ? '#000' : '#666',
+                              boxShadow:
+                                routeSource === 'my'
+                                  ? '0 2px 4px rgba(0,0,0,0.05)'
+                                  : 'none',
+                              transition: 'all 0.2s',
+                            }}
+                          >
+                            Мої
+                          </button>
                     </div>
                   )}
 
@@ -1024,29 +1031,55 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                               borderRadius: '8px',
                               background:
                                 selectedCityTrip?.id === trip.id
-                                  ? '#3b5bdb'
+                                  ? '#000'
                                   : '#f8f8f8',
                               color:
                                 selectedCityTrip?.id === trip.id
                                   ? 'white'
                                   : '#222',
                               cursor: 'pointer',
-                              border: `1px solid ${selectedCityTrip?.id === trip.id ? '#3b5bdb' : '#ebebeb'}`,
+                              border: `1px solid ${selectedCityTrip?.id === trip.id ? '#000' : '#ebebeb'}`,
                               transition: 'all 0.15s',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
                             }}
                           >
-                            <div
-                              style={{
-                                fontWeight: 600,
-                                fontSize: '13px',
-                                marginBottom: '2px',
-                              }}
-                            >
-                              {trip.title}
+                            <div>
+                              <div
+                                style={{
+                                  fontWeight: 600,
+                                  fontSize: '13px',
+                                  marginBottom: '2px',
+                                }}
+                              >
+                                {trip.title}
+                              </div>
+                              <div style={{ fontSize: '12px', opacity: 0.7 }}>
+                                {pointsLabel(trip.trip_nodes.length)}
+                              </div>
                             </div>
-                            <div style={{ fontSize: '12px', opacity: 0.7 }}>
-                              {pointsLabel(trip.trip_nodes.length)}
-                            </div>
+                            {selectedCityTrip?.id === trip.id && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/trip/${trip.id}`);
+                                }}
+                                style={{
+                                  backgroundColor: 'white',
+                                  color: 'black',
+                                  border: '1px solid black',
+                                  padding: '4px 8px',
+                                  borderRadius: '4px',
+                                  fontSize: '10px',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  textTransform: 'uppercase',
+                                }}
+                              >
+                                DETAILS
+                              </button>
+                            )}
                           </div>
                         )
                       )}
@@ -2171,7 +2204,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                   }
                   style={{
                     background:
-                      transportType === type ? '#3b5bdb' : 'transparent',
+                      transportType === type ? '#000' : 'transparent',
                     color: transportType === type ? 'white' : '#666',
                     border: 'none',
                     padding: '9px 0 7px',

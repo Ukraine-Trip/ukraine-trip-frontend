@@ -105,7 +105,7 @@ export const MarkerPopup: React.FC<MarkerPopupProps> = ({
             padding: '8px',
             borderRadius: '6px',
             border: 'none',
-            backgroundColor: isSelected ? '#ff4d4f' : '#3b5bdb',
+            backgroundColor: isSelected ? '#ff4d4f' : '#000',
             color: 'white',
             fontWeight: 600,
             cursor: 'pointer',

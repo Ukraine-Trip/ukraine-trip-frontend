@@ -9,6 +9,8 @@ import { api } from '../../../api/auth.ts';
 import { AuthContext } from '../../../context/AuthContext.tsx';
 import axios from 'axios';
 import { Alert } from '@mui/material';
+import FavoriteIcon from '@mui/icons-material/Favorite'; // 👈 ДОДАЛИ
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 
 type LayerType = 'grey' | 'satellite' | 'none';
 
@@ -22,7 +24,7 @@ import Routing from './component/Routing.tsx';
 import { UserLocation } from './component/UserLocation.tsx';
 import type { ItineraryPoint, Trip } from '../../../types/types.ts';
 import regionsData from '../../../librarian/cities.json';
-import { getAllTrips, getMyTrips, createTrip } from '../../../api/trips.ts';
+import { getAllTrips, getMyTrips, createTrip, getLikedTrips, toggleTripLike } from '../../../api/trips.ts';
 
 const HEADER_H = 80;
 const UKRAINE_CENTER: [number, number] = [48.3794, 31.1656];
@@ -120,6 +122,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     ItineraryPoint[]
   >([]);
   const [transportType, setTransportType] = useState<TransportType>('car');
+  const [likedTripIds, setLikedTripIds] = useState<string[]>([]);
   const [activePointDetails, setActivePointDetails] =
     useState<ItineraryPoint | null>(null);
   const [cityTrips, setCityTrips] = useState<Trip[]>([]);
@@ -521,7 +524,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   useEffect(() => {
     if (!cityMeta) return;
     setCityTripsLoading(true);
-    const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
+        const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
 
     const filterByCity = (trips: Trip[]) =>
       trips.filter((trip) => {
@@ -534,15 +537,18 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
         );
       });
 
-    const promises: [Promise<Trip[]>, Promise<Trip[]> | null] = [
+    // 👈 МИ ДОДАЛИ ТРЕТІЙ ПРОМІС ДЛЯ ЛАЙКІВ
+    const promises: [Promise<Trip[]>, Promise<Trip[]> | null, Promise<any> | null] = [
       getAllTrips(),
       token && token !== 'null' && token !== 'undefined'
         ? getMyTrips(token)
-        : null,
+        : null,,
+      (token && token !== 'null' && token !== 'undefined') ? getLikedTrips(token) : null 
     ];
 
     Promise.allSettled(promises)
-      .then(([allRes, myRes]) => {
+      .then(([allRes, myRes, likedRes]) => {
+        // Обробка всіх маршрутів
         if (allRes.status === 'fulfilled') {
           const trips = Array.isArray(allRes.value) ? allRes.value : [];
           setCityTrips(filterByCity(trips));
@@ -551,6 +557,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
           setCityTrips([]);
         }
 
+        // Обробка моїх маршрутів
         if (myRes && myRes.status === 'fulfilled') {
           const trips = Array.isArray(myRes.value) ? myRes.value : [];
           setMyCityTrips(filterByCity(trips));
@@ -560,9 +567,41 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
           }
           setMyCityTrips([]);
         }
+
+        // 👈 ОБРОБКА ЛАЙКІВ (записуємо їх у стейт)
+        if (likedRes && likedRes.status === 'fulfilled') {
+          const likedData = Array.isArray(likedRes.value) ? likedRes.value : [];
+          setLikedTripIds(likedData.map((t: Trip) => t.id));
+        }
       })
       .finally(() => setCityTripsLoading(false));
   }, [cityMeta, token]);
+
+  // 👈 КРОК 4: Функція для обробки лайків
+  const handleLikeClick = async (e: React.MouseEvent, tripId: string) => {
+    e.stopPropagation(); // 👈 ВАЖЛИВО: щоб при кліку на лайк не вибиралась картка і мапа не зумилась!
+    if (!token) return;
+
+    const isLiked = likedTripIds.includes(tripId);
+    
+    if (isLiked) {
+      setLikedTripIds((prev) => prev.filter((id) => id !== tripId));
+    } else {
+      setLikedTripIds((prev) => [...prev, tripId]);
+    }
+
+    try {
+      await toggleTripLike(tripId, token);
+    } catch (err) {
+      console.error('Like error:', err);
+      // Відкат при помилці
+      if (isLiked) {
+        setLikedTripIds((prev) => [...prev, tripId]);
+      } else {
+        setLikedTripIds((prev) => prev.filter((id) => id !== tripId));
+      }
+    }
+  };
 
   const cityLocation = useMemo(
     () =>
@@ -1201,8 +1240,10 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                         marginBottom: '16px',
                       }}
                     >
-                      {(routeSource === 'my' ? myCityTrips : cityTrips).map(
-                        (trip) => (
+                      {(routeSource === 'my' ? myCityTrips : cityTrips).map((trip) => {
+                        const isLiked = likedTripIds.includes(trip.id); // 👈 Перевіряємо чи лайкнуто
+                        
+                        return (
                           <div
                             key={trip.id}
                             onClick={() =>
@@ -1215,18 +1256,18 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                               borderRadius: '8px',
                               background:
                                 selectedCityTrip?.id === trip.id
-                                  ? '#000'
+                                  ? '#3b5bdb'
                                   : '#f8f8f8',
                               color:
                                 selectedCityTrip?.id === trip.id
                                   ? 'white'
                                   : '#222',
                               cursor: 'pointer',
-                              border: `1px solid ${selectedCityTrip?.id === trip.id ? '#000' : '#ebebeb'}`,
+                              border: `1px solid ${selectedCityTrip?.id === trip.id ? '#3b5bdb' : '#ebebeb'}`,
                               transition: 'all 0.15s',
-                              display: 'flex',
+                              display: 'flex', // 👈 Додали Flex
                               justifyContent: 'space-between',
-                              alignItems: 'center',
+                              alignItems: 'flex-start',
                             }}
                           >
                             <div>
@@ -1243,34 +1284,31 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                                 {pointsLabel(trip.trip_nodes.length)}
                               </div>
                             </div>
-                            {selectedCityTrip?.id === trip.id && (
+
+                            {/* 👈 Малюємо сердечко */}
+                            {token && routeSource !== 'my' && (
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(`/trip/${trip.id}`);
-                                }}
+                                onClick={(e) => handleLikeClick(e, trip.id)}
                                 style={{
-                                  backgroundColor: 'white',
-                                  color: 'black',
-                                  border: '1px solid black',
-                                  padding: '4px 8px',
-                                  borderRadius: '4px',
-                                  fontSize: '10px',
-                                  fontWeight: 700,
+                                  background: 'none',
+                                  border: 'none',
                                   cursor: 'pointer',
-                                  textTransform: 'uppercase',
+                                  padding: '0 0 0 8px',
+                                  color: selectedCityTrip?.id === trip.id 
+                                    ? (isLiked ? '#ff4d4f' : 'rgba(255,255,255,0.7)') 
+                                    : (isLiked ? '#ff4d4f' : '#bbb'), 
+                                  display: 'flex',
+                                  alignItems: 'center',
                                 }}
                               >
-                                DETAILS
+                                {isLiked ? <FavoriteIcon sx={{ fontSize: 20 }} /> : <FavoriteBorderIcon sx={{ fontSize: 20 }} />}
                               </button>
                             )}
                           </div>
-                        )
-                      )}
+                        );
+                      })}
                     </div>
                   )}
-                </>
-              )}
 
               <div style={{ flex: 1 }} />
 

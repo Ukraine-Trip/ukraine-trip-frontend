@@ -23,6 +23,7 @@ import { UserLocation } from './component/UserLocation.tsx';
 import type { ItineraryPoint, Trip } from '../../../types/types.ts';
 import regionsData from '../../../librarian/cities.json';
 import { getAllTrips, getMyTrips, createTrip } from '../../../api/trips.ts';
+import { SecondaryButton } from '../../../style/common.tsx';
 
 const HEADER_H = 80;
 const UKRAINE_CENTER: [number, number] = [48.3794, 31.1656];
@@ -621,12 +622,12 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '6px',
-                    background: '#f0f4ff',
-                    border: '1px solid #d0daff',
+                    background: '#f5f5f5',
+                    border: '1px solid #ddd',
                     borderRadius: '20px',
                     padding: '4px 10px',
                     fontSize: '12px',
-                    color: '#3b5bdb',
+                    color: '#000',
                     fontWeight: 600,
                     marginBottom: '16px',
                   }}
@@ -798,7 +799,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                       background: 'none',
                       border: 'none',
                       cursor: 'pointer',
-                      color: '#3b5bdb',
+                      color: '#000',
                       fontSize: '12px',
                       fontWeight: 600,
                       padding: '0 0 12px',
@@ -858,7 +859,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                       border: 'none',
                       backgroundColor: isPointSelected(activePointDetails)
                         ? '#ff4d4f'
-                        : '#3b5bdb',
+                        : '#000',
                       color: 'white',
                       fontWeight: 600,
                       cursor: 'pointer',
@@ -894,14 +895,17 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                       padding: '12px',
                       borderRadius: '8px',
                       border: 'none',
-                      backgroundColor: '#3b5bdb',
+                      backgroundColor: '#000',
                       color: 'white',
                       fontWeight: 700,
                       cursor: 'pointer',
                       fontSize: '14px',
                       letterSpacing: '0.3px',
                       marginBottom: '24px',
+                      transition: 'background 0.2s',
                     }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#333')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#000')}
                   >
                     Create Route
                   </button>
@@ -930,7 +934,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                           backgroundColor:
                             routeSource === 'provided' ? '#fff' : 'transparent',
                           color:
-                            routeSource === 'provided' ? '#3b5bdb' : '#666',
+                            routeSource === 'provided' ? '#000' : '#666',
                           boxShadow:
                             routeSource === 'provided'
                               ? '0 2px 4px rgba(0,0,0,0.05)'
@@ -952,7 +956,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                           cursor: 'pointer',
                           backgroundColor:
                             routeSource === 'my' ? '#fff' : 'transparent',
-                          color: routeSource === 'my' ? '#3b5bdb' : '#666',
+                          color: routeSource === 'my' ? '#000' : '#666',
                           boxShadow:
                             routeSource === 'my'
                               ? '0 2px 4px rgba(0,0,0,0.05)'
@@ -1024,29 +1028,60 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                               borderRadius: '8px',
                               background:
                                 selectedCityTrip?.id === trip.id
-                                  ? '#3b5bdb'
+                                  ? '#000'
                                   : '#f8f8f8',
                               color:
                                 selectedCityTrip?.id === trip.id
                                   ? 'white'
                                   : '#222',
                               cursor: 'pointer',
-                              border: `1px solid ${selectedCityTrip?.id === trip.id ? '#3b5bdb' : '#ebebeb'}`,
+                              border: `1px solid ${selectedCityTrip?.id === trip.id ? '#000' : '#ebebeb'}`,
                               transition: 'all 0.15s',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
                             }}
                           >
-                            <div
-                              style={{
-                                fontWeight: 600,
-                                fontSize: '13px',
-                                marginBottom: '2px',
-                              }}
-                            >
-                              {trip.title}
+                            <div style={{ flex: 1 }}>
+                              <div
+                                style={{
+                                  fontWeight: 600,
+                                  fontSize: '13px',
+                                  marginBottom: '2px',
+                                }}
+                              >
+                                {trip.title}
+                              </div>
+                              <div style={{ fontSize: '12px', opacity: 0.7 }}>
+                                {pointsLabel(trip.trip_nodes.length)}
+                              </div>
                             </div>
-                            <div style={{ fontSize: '12px', opacity: 0.7 }}>
-                              {pointsLabel(trip.trip_nodes.length)}
-                            </div>
+
+                            {selectedCityTrip?.id === trip.id && (
+                              <SecondaryButton
+                                size="small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/trip/${trip.id}`);
+                                }}
+                                sx={{
+                                  backgroundColor: 'white',
+                                  color: 'black',
+                                  border: '1px solid black',
+                                  padding: '4px 12px',
+                                  fontSize: '10px',
+                                  height: '28px',
+                                  minWidth: 'auto',
+                                  borderRadius: '4px',
+                                  '&:hover': {
+                                    backgroundColor: '#eee',
+                                    border: '1px solid black',
+                                  },
+                                }}
+                              >
+                                DETAILS
+                              </SecondaryButton>
+                            )}
                           </div>
                         )
                       )}
@@ -1116,11 +1151,11 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                         borderRadius: '8px',
                         borderTop:
                           mapDragOverIdx === i && mapDraggingIdx !== i
-                            ? '2px solid #3b5bdb'
+                            ? '2px solid #000'
                             : '2px solid transparent',
                         background:
                           mapDragOverIdx === i && mapDraggingIdx !== i
-                            ? '#e8f0fe'
+                            ? '#f5f5f5'
                             : i === 0
                               ? '#f0f7f4'
                               : i === selectedRoutePoints.length - 1
@@ -1241,7 +1276,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                       border: 'none',
                       backgroundColor: isPointSelected(activePointDetails)
                         ? '#ff4d4f'
-                        : '#3b5bdb',
+                        : '#000',
                       color: 'white',
                       fontWeight: 600,
                       cursor: 'pointer',
@@ -1266,7 +1301,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                     borderRadius: '8px',
                     border: 'none',
                     backgroundColor:
-                      selectedRoutePoints.length > 0 ? '#3b5bdb' : '#ccc',
+                      selectedRoutePoints.length > 0 ? '#000' : '#ccc',
                     color: 'white',
                     fontWeight: 700,
                     cursor:
@@ -1359,11 +1394,11 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                       borderRadius: '8px',
                       borderTop:
                         mapDragOverIdx === i && mapDraggingIdx !== i
-                          ? '2px solid #3b5bdb'
+                          ? '2px solid #000'
                           : '2px solid transparent',
                       background:
                         mapDragOverIdx === i && mapDraggingIdx !== i
-                          ? '#e8f0fe'
+                          ? '#f5f5f5'
                           : i === 0
                             ? '#f0f7f4'
                             : i === selectedRoutePoints.length - 1
@@ -1461,7 +1496,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                       borderRadius: '8px',
                       border: 'none',
                       backgroundColor:
-                        selectedRoutePoints.length > 0 ? '#3b5bdb' : '#ccc',
+                        selectedRoutePoints.length > 0 ? '#000' : '#ccc',
                       color: 'white',
                       fontWeight: 700,
                       cursor:
@@ -1513,7 +1548,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                     style={{
                       padding: '10px 12px',
                       borderRadius: '8px',
-                      border: '1.5px solid #3b5bdb',
+                      border: '1.5px solid #000',
                       fontSize: '14px',
                       outline: 'none',
                       fontFamily: 'inherit',
@@ -1648,7 +1683,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                   border: 'none',
                   backgroundColor: isPointSelected(activePointDetails)
                     ? '#ff4d4f'
-                    : '#3b5bdb',
+                    : '#000',
                   color: 'white',
                   fontWeight: 600,
                   cursor: 'pointer',
@@ -1769,7 +1804,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                 top: CTRL_TOP,
                 right: '16px',
                 zIndex: 999,
-                backgroundColor: isOptimized ? '#f0f4ff' : 'white',
+                backgroundColor: isOptimized ? '#000' : 'white',
                 padding: '10px 16px',
                 borderRadius: '30px',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
@@ -1777,7 +1812,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                 alignItems: 'center',
                 gap: '12px',
                 cursor: 'pointer',
-                border: isOptimized ? '1px solid #3b5bdb' : '1px solid #eee',
+                border: isOptimized ? '1px solid #000' : '1px solid #eee',
                 transition: 'all 0.2s',
               }}
             >
@@ -1789,14 +1824,14 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                   cursor: 'pointer',
                   transform: 'scale(1.2)',
                   margin: 0,
-                  accentColor: '#3b5bdb',
+                  accentColor: '#000',
                 }}
               />
               <span
                 style={{
                   fontWeight: 800,
                   fontSize: '12px',
-                  color: isOptimized ? '#3b5bdb' : '#111',
+                  color: isOptimized ? 'white' : '#111',
                 }}
               >
                 {isOptimized ? 'SMART ROUTE' : 'MY ORDER'}
@@ -1827,7 +1862,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
               justifyContent: 'center',
               cursor: 'pointer',
               border: layerPanelOpen
-                ? '1.5px solid #3b5bdb'
+                ? '1.5px solid #000'
                 : '1px solid #e8e8e8',
             }}
           >
@@ -1925,10 +1960,10 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                   cursor: 'pointer',
                   marginBottom: '8px',
                   backgroundColor:
-                    activeLayer === 'grey' ? '#e8f0fe' : 'transparent',
+                    activeLayer === 'grey' ? '#f5f5f5' : 'transparent',
                   border:
                     activeLayer === 'grey'
-                      ? '1.5px solid #3b5bdb'
+                      ? '1.5px solid #000'
                       : '1.5px solid transparent',
                   transition: 'background 0.15s',
                 }}
@@ -1991,7 +2026,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                   style={{
                     fontSize: '14px',
                     fontWeight: 500,
-                    color: activeLayer === 'grey' ? '#3b5bdb' : '#222',
+                    color: activeLayer === 'grey' ? '#000' : '#222',
                   }}
                 >
                   Сіра карта
@@ -2012,10 +2047,10 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                   cursor: 'pointer',
                   marginBottom: '4px',
                   backgroundColor:
-                    activeLayer === 'satellite' ? '#e8f0fe' : 'transparent',
+                    activeLayer === 'satellite' ? '#f5f5f5' : 'transparent',
                   border:
                     activeLayer === 'satellite'
-                      ? '1.5px solid #3b5bdb'
+                      ? '1.5px solid #000'
                       : '1.5px solid transparent',
                   transition: 'background 0.15s',
                 }}
@@ -2081,7 +2116,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                   style={{
                     fontSize: '14px',
                     fontWeight: 500,
-                    color: activeLayer === 'satellite' ? '#3b5bdb' : '#222',
+                    color: activeLayer === 'satellite' ? '#000' : '#222',
                   }}
                 >
                   Ortophoto 1:10K
@@ -2109,7 +2144,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                   borderRadius: '10px',
                   cursor: 'pointer',
                   backgroundColor:
-                    activeLayer === 'none' ? '#e8f0fe' : 'transparent',
+                    activeLayer === 'none' ? '#f5f5f5' : 'transparent',
                   transition: 'background 0.15s',
                 }}
               >
@@ -2131,7 +2166,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                   style={{
                     fontSize: '14px',
                     fontWeight: 500,
-                    color: activeLayer === 'none' ? '#3b5bdb' : '#555',
+                    color: activeLayer === 'none' ? '#000' : '#555',
                   }}
                 >
                   Приховати шар
@@ -2171,7 +2206,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                   }
                   style={{
                     background:
-                      transportType === type ? '#3b5bdb' : 'transparent',
+                      transportType === type ? '#000' : 'transparent',
                     color: transportType === type ? 'white' : '#666',
                     border: 'none',
                     padding: '9px 0 7px',

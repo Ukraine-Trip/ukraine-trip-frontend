@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -16,86 +16,66 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 
 import { HeroSection as StyledHeroSection } from '../../style.tsx';
-import { AuthContext } from '../../../../context/AuthContext.tsx';
-import { getLocations } from '../../../../api/locations.ts';
-import { createTrip } from '../../../../api/trips.ts';
+import { searchOsmPOIs } from '../../../../services/overpassService.ts';
 import { parseTripQuery } from '../../../../utils/tripQueryParser.ts';
 
 export const HeroSection: React.FC = () => {
   const navigate = useNavigate();
-  const { token } = useContext(AuthContext);
 
   const [prompt, setPrompt] = useState('');
   const [isBuilding, setIsBuilding] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hint, setHint] = useState('Натисни Enter або → щоб знайти місця через OpenStreetMap');
 
   const canSubmit = prompt.trim().length >= 3 && !isBuilding;
 
   const handleBuild = async () => {
     if (!canSubmit) return;
 
-    if (!token) {
-      navigate('/register');
-      return;
-    }
-
     setIsBuilding(true);
     setError(null);
+    setHint('🌍 Шукаю місця через OpenStreetMap…');
 
     try {
-      // 1. Парсимо текст → регіон, тип, назва
-      const { region, type, min_rating, title } = parseTripQuery(prompt);
+      // 1. Парсимо текст → регіони, тип, назва
+      const { regions, type } = parseTripQuery(prompt);
 
-      // 2. Отримуємо локації з API (з фільтрами якщо є)
-      const locations = await getLocations({
-        ...(region ? { region } : {}),
-        ...(type ? { type } : {}),
-        ...(min_rating ? { min_rating } : {}),
-      });
+      // 2. Рівень A — Overpass з фільтрами регіону + типу
+      let points = await searchOsmPOIs(regions, type, 8);
 
-      if (!locations || locations.length === 0) {
-        setError('За вашим запитом не знайдено жодних локацій. Спробуйте уточнити запит.');
+      // 3. Рівень B — якщо мало: тільки тип, без регіону
+      if (points.length < 2 && type) {
+        setHint('🔍 Розширюю пошук по всій Україні…');
+        points = await searchOsmPOIs([], type, 8);
+      }
+
+      // 4. Рівень C — fallback: популярні туристичні місця без фільтрів
+      if (points.length < 2) {
+        setHint('📍 Підбираю найпопулярніші місця…');
+        points = await searchOsmPOIs([], undefined, 8);
+      }
+
+      if (points.length < 2) {
+        setError(
+          'OpenStreetMap не повернув результатів. Перевірте інтернет або спробуйте інший запит.',
+        );
         return;
       }
 
-      if (locations.length < 2) {
-        setError('Знайдено менше 2 локацій — недостатньо для маршруту. Спробуйте ширший запит.');
-        return;
-      }
-
-      // 3. Беремо топ-8 локацій за рейтингом
-      const topLocations = [...locations]
-        .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
-        .slice(0, 8);
-
-      // 4. Будуємо маршрут через OSRM з оптимізацією
-      const trip = await createTrip(
-        {
-          title,
-          location_ids: topLocations.map((l) => l.id),
-          optimize: true,
+      // 5. Передаємо точки на MapPage — маршрут будується через OSRM автоматично
+      navigate('/map-page', {
+        state: {
+          initialRoutePoints: points,
+          transport: 'car',
         },
-        token,
-      );
-
-      // 5. Переходимо на сторінку маршруту
-      navigate(`/trip/${trip.id}`);
+      });
     } catch (err: unknown) {
-      // 401 — токен протухлий або відсутній → реєстрація
-      const status =
-        err != null &&
-        typeof err === 'object' &&
-        'response' in err &&
-        (err as { response?: { status?: number } }).response?.status;
-      if (status === 401) {
-        navigate('/register');
-        return;
-      }
       const message =
-        err instanceof Error ? err.message : 'Помилка створення маршруту. Спробуйте ще раз.';
+        err instanceof Error ? err.message : 'Помилка пошуку локацій. Спробуйте ще раз.';
       setError(message);
     } finally {
       setIsBuilding(false);
+      setHint('Натисни Enter або → щоб знайти місця через OpenStreetMap');
     }
   };
 
@@ -116,11 +96,7 @@ export const HeroSection: React.FC = () => {
         <Typography
           variant="h2"
           component="h1"
-          sx={{
-            fontWeight: 'bold',
-            mb: 1,
-            fontSize: 'clamp(2.5rem, 5vw, 4.5rem)',
-          }}
+          sx={{ fontWeight: 'bold', mb: 1, fontSize: 'clamp(2.5rem, 5vw, 4.5rem)' }}
         >
           Discover Ukraine with us
         </Typography>
@@ -133,22 +109,15 @@ export const HeroSection: React.FC = () => {
           Country research site
         </Typography>
 
-        {/* ── AI Input ── */}
-        <Box
-          sx={{
-            mt: 5,
-            width: '100%',
-            maxWidth: '620px',
-            px: { xs: 2, sm: 0 },
-          }}
-        >
+        {/* ── AI / OSM Input ── */}
+        <Box sx={{ mt: 5, width: '100%', maxWidth: '620px', px: { xs: 2, sm: 0 } }}>
           <TextField
             value={prompt}
             onChange={(e) => {
               if (e.target.value.length <= 150) setPrompt(e.target.value);
             }}
             onKeyDown={handleKeyDown}
-            placeholder="Куди хочеш поїхати? Напр.: замки Львівщини…"
+            placeholder="Напр.: замки Харківщини, музеї Львова…"
             fullWidth
             variant="outlined"
             disabled={isBuilding}
@@ -171,7 +140,7 @@ export const HeroSection: React.FC = () => {
                     <IconButton
                       onClick={handleBuild}
                       disabled={!canSubmit}
-                      aria-label="Створити маршрут"
+                      aria-label="Знайти маршрут"
                       sx={{
                         width: 38,
                         height: 38,
@@ -187,9 +156,7 @@ export const HeroSection: React.FC = () => {
                             : 'rgba(255,255,255,0.06)',
                           transform: canSubmit ? 'translateX(2px)' : 'none',
                         },
-                        '&.Mui-disabled': {
-                          color: 'rgba(255,255,255,0.25)',
-                        },
+                        '&.Mui-disabled': { color: 'rgba(255,255,255,0.25)' },
                       }}
                     >
                       {isBuilding ? (
@@ -211,34 +178,21 @@ export const HeroSection: React.FC = () => {
                 color: '#fff',
                 paddingRight: '10px',
                 transition: 'background-color 0.2s',
-                '& fieldset': {
-                  borderColor: 'rgba(255,255,255,0.40)',
-                  borderWidth: '1.5px',
-                },
-                '&:hover fieldset': {
-                  borderColor: 'rgba(255,255,255,0.70)',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#fff',
-                  borderWidth: '1.5px',
-                },
-                '&.Mui-disabled': {
-                  backgroundColor: 'rgba(255,255,255,0.06)',
-                },
+                '& fieldset': { borderColor: 'rgba(255,255,255,0.40)', borderWidth: '1.5px' },
+                '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.70)' },
+                '&.Mui-focused fieldset': { borderColor: '#fff', borderWidth: '1.5px' },
+                '&.Mui-disabled': { backgroundColor: 'rgba(255,255,255,0.06)' },
               },
               '& .MuiInputBase-input': {
                 color: '#fff',
                 py: '14px',
                 fontSize: '0.97rem',
-                '&::placeholder': {
-                  color: 'rgba(255,255,255,0.50)',
-                  opacity: 1,
-                },
+                '&::placeholder': { color: 'rgba(255,255,255,0.50)', opacity: 1 },
               },
             }}
           />
 
-          {/* Підказка */}
+          {/* Динамічна підказка */}
           <Typography
             sx={{
               mt: 1.5,
@@ -246,11 +200,11 @@ export const HeroSection: React.FC = () => {
               color: 'rgba(255,255,255,0.45)',
               textAlign: 'center',
               letterSpacing: '0.01em',
+              minHeight: '1.2em',
+              transition: 'opacity 0.3s',
             }}
           >
-            {isBuilding
-              ? '🤖 Підбираю локації та будую оптимальний маршрут…'
-              : 'Натисни Enter або → щоб згенерувати маршрут з ШІ-оптимізацією'}
+            {hint}
           </Typography>
         </Box>
       </StyledHeroSection>
@@ -258,16 +212,11 @@ export const HeroSection: React.FC = () => {
       {/* Error Snackbar */}
       <Snackbar
         open={!!error}
-        autoHideDuration={5000}
+        autoHideDuration={6000}
         onClose={() => setError(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert
-          onClose={() => setError(null)}
-          severity="error"
-          variant="filled"
-          sx={{ width: '100%' }}
-        >
+        <Alert onClose={() => setError(null)} severity="error" variant="filled" sx={{ width: '100%' }}>
           {error}
         </Alert>
       </Snackbar>

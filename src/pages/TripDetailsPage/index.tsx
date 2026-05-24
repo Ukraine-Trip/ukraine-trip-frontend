@@ -185,14 +185,27 @@ export const TripDetailsPage: React.FC = () => {
                     </Box>
                     <ListItemText
                       primary={node.location?.name || 'Без назви'}
+                      // secondaryTypographyProps → component="div" щоб уникнути
+                      // вкладеного <p> всередині <p> (MUI default = <p>)
+                      secondaryTypographyProps={{ component: 'div' }}
                       secondary={
                         <>
                           {node.location?.region && (
-                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                            <Typography
+                              variant="body2"
+                              component="span"
+                              display="block"
+                              sx={{ color: 'text.secondary' }}
+                            >
                               {node.location.region}
                             </Typography>
                           )}
-                          <Typography variant="caption" sx={{ color: '#999' }}>
+                          <Typography
+                            variant="caption"
+                            component="span"
+                            display="block"
+                            sx={{ color: '#999' }}
+                          >
                             Координати: {node.location?.lat.toFixed(4)}, {node.location?.lon.toFixed(4)}
                           </Typography>
                         </>

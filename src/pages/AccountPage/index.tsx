@@ -169,18 +169,6 @@ useEffect(() => {
             >
               {user.full_name ? user.full_name[0].toUpperCase() : 'U'}
             </Avatar>
-            <Typography
-              variant="body2"
-              sx={{
-                mb: 2,
-                color: 'text.secondary',
-                textTransform: 'uppercase',
-                fontSize: '0.7rem',
-                fontWeight: 700,
-              }}
-            >
-              Status: Active Explorer
-            </Typography>
             <SecondaryButton
               variant="outlined"
               size="small"
@@ -254,24 +242,6 @@ useEffect(() => {
           </Box>
         </Box>
 
-        <Divider sx={{ my: 5 }} />
-
-        <Box>
-          <SubTitle sx={{ mb: 3 }}>My Content</SubTitle>
-          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <PrimaryButton
-              onClick={() => navigate('/my-trips')}
-            >
-              View My Itineraries
-            </PrimaryButton>
-            <SecondaryButton
-              variant="outlined"
-              onClick={() => navigate('/my-locations')}
-            >
-              View My Locations
-            </SecondaryButton>
-          </Box>
-        </Box>
       </Box>
     </PageWrapper>
   );

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, CircularProgress, Typography } from '@mui/material';
 import { PageTitle } from '../../../../style/common.tsx';
@@ -68,22 +68,18 @@ export const CarouselSection: React.FC = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  const featuredTrips = useMemo(() => {
+    return [...trips]
+      .sort((a, b) => {
+        const scoreA = a.trip_nodes.length * 10 + (a.description?.length ?? 0);
+        const scoreB = b.trip_nodes.length * 10 + (b.description?.length ?? 0);
+        return scoreB - scoreA;
+      })
+      .slice(0, 7);
+  }, [trips]);
+
   const handleCardClick = (trip: Trip) => {
-    navigate('/map-page', {
-      state: {
-        tripId: trip.id, // Передаємо ID готового маршруту
-        tripMeta: {
-          title: trip.title,
-          description: trip.description,
-          start_date: trip.start_date,
-          end_date: trip.end_date,
-          waypoints: trip.trip_nodes.sort((a, b) => a.order_index - b.order_index).map((node) => ({
-            name: node.location.name ?? `Point ${node.order_index + 1}`,
-            order_index: node.order_index,
-          })),
-        },
-      },
-    });
+    navigate(`/trip/${trip.id}`);
   };
 
   return (
@@ -110,7 +106,7 @@ export const CarouselSection: React.FC = () => {
 
         {!loading && !error && (
           <CarouselContainer>
-            {trips.map((trip, index) => {
+            {featuredTrips.map((trip, index) => {
               const gradient = CARD_GRADIENTS[index % CARD_GRADIENTS.length];
               const dateLabel = formatDateRange(trip.start_date, trip.end_date);
 

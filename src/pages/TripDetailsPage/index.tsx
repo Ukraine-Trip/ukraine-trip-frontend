@@ -107,7 +107,7 @@ export const TripDetailsPage: React.FC = () => {
             onClick={() => navigate('/my-trips')}
             sx={{ mb: 2 }}
           >
-            ← Back to my routes
+            ← Назад до моїх маршрутів
           </SecondaryButton>
         </Box>
 
@@ -222,7 +222,7 @@ export const TripDetailsPage: React.FC = () => {
             variant="outlined"
             onClick={() => navigate('/my-trips')}
           >
-            Back to my routes
+            Назад до моїх маршрутів
           </SecondaryButton>
         </Box>
       </Container>

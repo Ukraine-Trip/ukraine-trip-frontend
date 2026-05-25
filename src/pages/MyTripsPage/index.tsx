@@ -1,28 +1,21 @@
 import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Box, 
-  Container, 
-  Card, 
-  CardContent, 
-  Typography, 
-  CircularProgress,
-  IconButton,
-  Chip
-} from '@mui/material';
-import FavoriteIcon from '@mui/icons-material/Favorite';
-import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
-
-import { PageWrapper, PageTitle, SubTitle, SecondaryButton } from '../../style/common.tsx';
-import { getMyTrips, getLikedTrips, toggleTripLike } from '../../api/trips.ts';
+import { Box, Typography, CircularProgress, List, ListItem, ListItemText, Chip } from '@mui/material';
+import {
+  PageWrapper,
+  PageTitle,
+  SubTitle,
+  SecondaryButton,
+  PrimaryButton,
+} from '../../style/common.tsx';
+import { getMyTrips } from '../../api/trips.ts';
 import { AuthContext } from '../../context/AuthContext';
 import type { Trip } from '../../types/types.ts';
 
-// Додали твою функцію форматування дат (трохи адаптували під англійську для консистентності)
 const formatTripDate = (start: string | null, end: string | null): string => {
   if (!start) return '';
   const fmt = (d: Date) =>
-    d.toLocaleString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+    d.toLocaleString('uk-UA', { day: 'numeric', month: 'short', year: 'numeric' });
   const s = new Date(start);
   if (!end || start === end) return fmt(s);
   return `${fmt(s)} — ${fmt(new Date(end))}`;
@@ -54,123 +47,6 @@ export const MyTripsPage: React.FC = () => {
         setLoading(false);
       }
     };
-    
-    fetchData();
-  }, [token, navigate]);
-
-  const handleLikeClick = async (tripId: string) => {
-    if (!token) return;
-
-    const isLiked = likedTripIds.includes(tripId);
-    
-    if (isLiked) {
-      setLikedTripIds((prev) => prev.filter((id) => id !== tripId));
-    } else {
-      setLikedTripIds((prev) => [...prev, tripId]);
-    }
-
-    try {
-      await toggleTripLike(tripId, token);
-    } catch (err) {
-      console.error('Like error:', err);
-      if (isLiked) {
-        setLikedTripIds((prev) => [...prev, tripId]);
-      } else {
-        setLikedTripIds((prev) => prev.filter((id) => id !== tripId));
-      }
-    }
-  };
-
-  const renderTripCard = (trip: Trip, hideHeart: boolean) => {
-    const isLiked = likedTripIds.includes(trip.id);
-    const nodesCount = trip.trip_nodes?.length || 0;
-
-    return (
-      <Card 
-        key={trip.id}
-        sx={{ 
-          width: '100%', 
-          borderRadius: 2,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-          transition: 'box-shadow 0.2s',
-          '&:hover': { boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }
-        }}
-      >
-        <CardContent sx={{ p: 3, pb: "24px !important" }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '1.25rem' }}>
-                {trip.title}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                {formatTripDate(trip.start_date, trip.end_date)}
-              </Typography>
-            </Box>
-            
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Chip 
-                label={`${nodesCount} ${nodesCount === 1 ? 'point' : 'points'}`} 
-                size="small" 
-                sx={{ mr: hideHeart ? 0 : 2 }}
-              />
-              {!hideHeart && (
-                <IconButton 
-                  onClick={() => handleLikeClick(trip.id)} 
-                  size="small" 
-                  sx={{ p: 0, color: isLiked ? 'error.main' : 'text.disabled' }}
-                >
-                  {isLiked ? <FavoriteIcon /> : <FavoriteBorderIcon />}
-                </IconButton>
-              )}
-            </Box>
-          </Box>
-
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            {trip.description || 'No description available'}
-          </Typography>
-          
-          <SecondaryButton 
-            variant="outlined" 
-            size="medium" 
-            fullWidth
-            onClick={() => navigate(`/trip/${trip.id}`)} // 👈 ТУТ МИ ЗМІНИЛИ НАВІГАЦІЮ
-          >
-            View Details
-          </SecondaryButton>
-        </CardContent>
-      </Card>
-    );
-  };
-
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'created':
-        return createdTrips.length === 0 ? (
-          <Box sx={{ textAlign: 'center', mt: 4 }}>
-            <Typography sx={{ color: 'text.secondary', mb: 2 }}>
-              You haven't created any trips yet.
-            </Typography>
-            <SecondaryButton onClick={() => navigate('/itinerary')}>
-              Create your first trip
-            </SecondaryButton>
-          </Box>
-        ) : (
-          createdTrips.map((trip) => renderTripCard(trip, true))
-        );
-        
-      case 'liked':
-        return likedTrips.length === 0 ? (
-          <Box sx={{ textAlign: 'center', mt: 4 }}>
-            <Typography sx={{ color: 'text.secondary', mb: 2 }}>
-              You haven't saved any trips yet. Find inspiration in the All Trips section!
-            </Typography>
-            <SecondaryButton onClick={() => navigate('/trips')}>
-              Browse all trips
-            </SecondaryButton>
-          </Box>
-        ) : (
-          likedTrips.map((trip) => renderTripCard(trip, false))
-        );
 
     fetchMyTrips();
   }, [token]);

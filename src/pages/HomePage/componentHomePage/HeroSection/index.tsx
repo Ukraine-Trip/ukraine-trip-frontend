@@ -1,20 +1,94 @@
 import React, { useState } from 'react';
-import { AppBar, Toolbar, Typography, Box, TextField, InputAdornment } from '@mui/material';
-import { Link } from 'react-router-dom';
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Box,
+  TextField,
+  InputAdornment,
+  IconButton,
+  CircularProgress,
+  Snackbar,
+  Alert,
+} from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
+
 import { HeroSection as StyledHeroSection } from '../../style.tsx';
-import { PrimaryButton } from '../../../../style/common.tsx';
-import  AutoAwesomeIcon  from '@mui/icons-material/AutoAwesome';
+import { searchOsmPOIs } from '../../../../services/overpassService.ts';
+import { parseTripQuery } from '../../../../utils/tripQueryParser.ts';
+
 export const HeroSection: React.FC = () => {
+  const navigate = useNavigate();
+
   const [prompt, setPrompt] = useState('');
-  const isWaitingForAI = true;
+  const [isBuilding, setIsBuilding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hint, setHint] = useState('Натисни Enter або → щоб знайти місця через OpenStreetMap');
+
+  const canSubmit = prompt.trim().length >= 3 && !isBuilding;
+
+  const handleBuild = async () => {
+    if (!canSubmit) return;
+
+    setIsBuilding(true);
+    setError(null);
+    setHint('🌍 Шукаю місця через OpenStreetMap…');
+
+    try {
+      // 1. Парсимо текст → регіони, тип, назва
+      const { regions, type } = parseTripQuery(prompt);
+
+      // 2. Рівень A — Overpass з фільтрами регіону + типу
+      let points = await searchOsmPOIs(regions, type, 8);
+
+      // 3. Рівень B — якщо мало: тільки тип, без регіону
+      if (points.length < 2 && type) {
+        setHint('🔍 Розширюю пошук по всій Україні…');
+        points = await searchOsmPOIs([], type, 8);
+      }
+
+      // 4. Рівень C — fallback: популярні туристичні місця без фільтрів
+      if (points.length < 2) {
+        setHint('📍 Підбираю найпопулярніші місця…');
+        points = await searchOsmPOIs([], undefined, 8);
+      }
+
+      if (points.length < 2) {
+        setError(
+          'OpenStreetMap не повернув результатів. Перевірте інтернет або спробуйте інший запит.',
+        );
+        return;
+      }
+
+      // 5. Передаємо точки на MapPage — маршрут будується через OSRM автоматично
+      navigate('/map-page', {
+        state: {
+          initialRoutePoints: points,
+          transport: 'car',
+        },
+      });
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Помилка пошуку локацій. Спробуйте ще раз.';
+      setError(message);
+    } finally {
+      setIsBuilding(false);
+      setHint('Натисни Enter або → щоб знайти місця через OpenStreetMap');
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleBuild();
+    }
+  };
 
   return (
     <>
-      <AppBar
-        position="absolute"
-        elevation={0}
-        sx={{ background: 'transparent' }}
-      >
+      <AppBar position="absolute" elevation={0} sx={{ background: 'transparent' }}>
         <Toolbar />
       </AppBar>
 
@@ -22,106 +96,130 @@ export const HeroSection: React.FC = () => {
         <Typography
           variant="h2"
           component="h1"
-          sx={{
-            fontWeight: 'bold',
-            mb: 1,
-            fontSize: 'clamp(2.5rem, 5vw, 4.5rem)',
-          }}
+          sx={{ fontWeight: 'bold', mb: 1, fontSize: 'clamp(2.5rem, 5vw, 4.5rem)' }}
         >
           Discover Ukraine with us
         </Typography>
+
         <Typography
           variant="h5"
           component="p"
-          sx={{
-            fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.75rem' },
-          }}
+          sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.75rem' } }}
         >
           Country research site
         </Typography>
 
-        <Box
-          sx={{
-            mt: 4,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 2,
-            width: '100%',
-            maxWidth: '560px',
-          }}
-        >
-          <PrimaryButton
-            component={Link}
-            to="/create-route"
-            sx={{ width: '100%' }}
-          >
-            Explore trip
-          </PrimaryButton>
-
+        {/* ── AI / OSM Input ── */}
+        <Box sx={{ mt: 5, width: '100%', maxWidth: '620px', px: { xs: 2, sm: 0 } }}>
           <TextField
             value={prompt}
-            onChange={(event) => setPrompt(event.target.value)}
-            placeholder="Напиши запит для ШІ, щоб створити точки маршруту"
+            onChange={(e) => {
+              if (e.target.value.length <= 150) setPrompt(e.target.value);
+            }}
+            onKeyDown={handleKeyDown}
+            placeholder="Напр.: замки Харківщини, музеї Львова…"
             fullWidth
             variant="outlined"
-            multiline
-            minRows={8}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start" sx={{ color: '#fff' }}>
-                  <AutoAwesomeIcon />
-                </InputAdornment>
-              ),
+            disabled={isBuilding}
+            slotProps={{
+              htmlInput: { maxLength: 150 },
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <AutoAwesomeIcon
+                      sx={{
+                        color: isBuilding ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.75)',
+                        fontSize: '1.25rem',
+                        transition: 'color 0.2s',
+                      }}
+                    />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={handleBuild}
+                      disabled={!canSubmit}
+                      aria-label="Знайти маршрут"
+                      sx={{
+                        width: 38,
+                        height: 38,
+                        backgroundColor: canSubmit
+                          ? 'rgba(255,255,255,0.18)'
+                          : 'rgba(255,255,255,0.06)',
+                        color: canSubmit ? '#fff' : 'rgba(255,255,255,0.3)',
+                        borderRadius: '10px',
+                        transition: 'background-color 0.2s, transform 0.15s',
+                        '&:hover': {
+                          backgroundColor: canSubmit
+                            ? 'rgba(255,255,255,0.30)'
+                            : 'rgba(255,255,255,0.06)',
+                          transform: canSubmit ? 'translateX(2px)' : 'none',
+                        },
+                        '&.Mui-disabled': { color: 'rgba(255,255,255,0.25)' },
+                      }}
+                    >
+                      {isBuilding ? (
+                        <CircularProgress size={18} sx={{ color: 'rgba(255,255,255,0.6)' }} />
+                      ) : (
+                        <ArrowForwardRoundedIcon sx={{ fontSize: '1.1rem' }} />
+                      )}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
             }}
             sx={{
-              backgroundColor: 'rgba(255, 255, 255, 0.08)',
-              borderRadius: '16px',
-              width: '100%',
+              borderRadius: '14px',
               '& .MuiOutlinedInput-root': {
-                minHeight: '200px',
-                alignItems: 'flex-start',
+                borderRadius: '14px',
+                backgroundColor: 'rgba(255,255,255,0.10)',
+                backdropFilter: 'blur(12px)',
                 color: '#fff',
-                '& fieldset': {
-                  borderColor: 'rgba(255,255,255,0.55)',
-                  borderWidth: '1px',
-                },
-                '&:hover fieldset': {
-                  borderColor: 'rgba(255,255,255,0.8)',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#fff',
-                },
+                paddingRight: '10px',
+                transition: 'background-color 0.2s',
+                '& fieldset': { borderColor: 'rgba(255,255,255,0.40)', borderWidth: '1.5px' },
+                '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.70)' },
+                '&.Mui-focused fieldset': { borderColor: '#fff', borderWidth: '1.5px' },
+                '&.Mui-disabled': { backgroundColor: 'rgba(255,255,255,0.06)' },
               },
               '& .MuiInputBase-input': {
                 color: '#fff',
+                py: '14px',
+                fontSize: '0.97rem',
+                '&::placeholder': { color: 'rgba(255,255,255,0.50)', opacity: 1 },
               },
             }}
           />
 
-          <PrimaryButton
-            disabled
+          {/* Динамічна підказка */}
+          <Typography
             sx={{
-              width: 'auto',
-              minWidth: '220px',
-              px: 3,
-              py: 1.5,
-              opacity: 1,
-              cursor: 'not-allowed',
-              textTransform: 'none',
-              backgroundColor: 'rgba(0,0,0,0.25)',
-              color: '#fff',
-              '&.Mui-disabled': {
-                color: '#fff',
-                opacity: 0.85,
-                backgroundColor: 'rgba(0,0,0,0.25)',
-              },
+              mt: 1.5,
+              fontSize: '0.78rem',
+              color: 'rgba(255,255,255,0.45)',
+              textAlign: 'center',
+              letterSpacing: '0.01em',
+              minHeight: '1.2em',
+              transition: 'opacity 0.3s',
             }}
           >
-            View my trip
-          </PrimaryButton>
+            {hint}
+          </Typography>
         </Box>
       </StyledHeroSection>
+
+      {/* Error Snackbar */}
+      <Snackbar
+        open={!!error}
+        autoHideDuration={6000}
+        onClose={() => setError(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setError(null)} severity="error" variant="filled" sx={{ width: '100%' }}>
+          {error}
+        </Alert>
+      </Snackbar>
     </>
   );
 };

@@ -26,6 +26,7 @@ export interface Trip {
 }
 
 export interface ItineraryPoint {
+  type: "city" | "landmark" | "cafe" | "park" | "culture" | "stop";
   id: string;
   name: string;
   category: 'city' | 'landmark' | 'cafe' | 'park' | 'culture' | 'stop';

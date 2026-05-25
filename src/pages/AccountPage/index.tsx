@@ -25,7 +25,7 @@ export const AccountPage: React.FC = () => {
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [newPassword, setNewPassword] = useState('');
-  const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
+  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -42,6 +42,7 @@ export const AccountPage: React.FC = () => {
         setLoading(false);
       }
     };
+
     if (token) {
       fetchUserData();
     } else {
@@ -49,65 +50,10 @@ export const AccountPage: React.FC = () => {
     }
   }, [token]);
 
-useEffect(() => {
-    const fetchMyLocations = async () => {
-      setLocationsError(null);
-      setLocationsLoading(true);
-
-      try {
-        const response = await api.get<UserLocation[]>('/locations/my', {
-          headers: {
-            Authorization: `Bearer ${token.replace(/["']/g, '')}`,
-          },
-        });
-        setMyLocations(response.data);
-      } catch (error: any) {
-        console.error('Помилка завантаження власних локацій:', error);
-        setLocationsError(error.response?.data?.detail || 'Не вдалося завантажити ваші точки');
-      } finally {
-        setLocationsLoading(false);
-      }
-    };
-
-    if (token) {
-      fetchMyLocations();
-    } else {
-      setLocationsLoading(false);
-      setMyLocations([]);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    if (!token) return;
-    const fetchMyTrips = async () => {
-      setTripsError(null);
-      setTripsLoading(true);
-      try {
-        const trips = await getMyTrips(token);
-        setMyTrips(trips);
-      } catch (error: any) {
-        console.error('Помилка завантаження маршрутів:', error);
-        setTripsError('Не вдалося завантажити ваші маршрути');
-      } finally {
-        setTripsLoading(false);
-      }
-    };
-    fetchMyTrips();
-  }, [token]);
-
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    if (params.get('showLocations') === '1') {
-      setShowLocations(true);
-    }
-    if (params.get('showItinerary') === '1') {
-      setShowItinerary(true);
-    }
-  }, [location.search]);
   const handleSave = async () => {
     setMessage(null);
     try {
-      const payload: any = {
+      const payload: Record<string, unknown> = {
         full_name: user?.full_name,
       };
 
@@ -121,17 +67,35 @@ useEffect(() => {
       setAuthUser(response.data);
       setMessage({ text: 'Профіль успішно оновлено!', type: 'success' });
       setNewPassword('');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Помилка при збереженні:', error);
+      const detail =
+        error != null &&
+        typeof error === 'object' &&
+        'response' in error &&
+        (error as { response?: { data?: { detail?: string } } }).response?.data?.detail;
       setMessage({
-        text: error.response?.data?.detail || 'Помилка при збереженні змін',
-        type: 'error'
+        text: detail || 'Помилка при збереженні змін',
+        type: 'error',
       });
     }
   };
 
-  if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', pt: 20 }}><CircularProgress /></Box>;
-  if (!user) return <Typography sx={{ pt: 20, textAlign: 'center' }}>Будь ласка, увійдіть в систему</Typography>;
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', pt: 20 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Typography sx={{ pt: 20, textAlign: 'center' }}>
+        Будь ласка, увійдіть в систему
+      </Typography>
+    );
+  }
 
   return (
     <PageWrapper>
@@ -169,18 +133,6 @@ useEffect(() => {
             >
               {user.full_name ? user.full_name[0].toUpperCase() : 'U'}
             </Avatar>
-            <Typography
-              variant="body2"
-              sx={{
-                mb: 2,
-                color: 'text.secondary',
-                textTransform: 'uppercase',
-                fontSize: '0.7rem',
-                fontWeight: 700,
-              }}
-            >
-              Status: Active Explorer
-            </Typography>
             <SecondaryButton
               variant="outlined"
               size="small"
@@ -194,9 +146,10 @@ useEffect(() => {
             <Stack spacing={4}>
               <Box>
                 <SubTitle>Full Name</SubTitle>
-                <CommonInput fullWidth
-                             value={user.full_name}
-                             onChange={(e) => setUser({...user, full_name: e.target.value})}
+                <CommonInput
+                  fullWidth
+                  value={user.full_name}
+                  onChange={(e) => setUser({ ...user, full_name: e.target.value })}
                 />
               </Box>
 
@@ -204,17 +157,9 @@ useEffect(() => {
                 <SubTitle>Email Address</SubTitle>
                 <CommonInput
                   fullWidth
-                  slotProps={{
-                    input: {
-                      readOnly: true,
-                    },
-                  }}
+                  slotProps={{ input: { readOnly: true } }}
                   value={user.email}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      backgroundColor: '#f5f5f5',
-                    },
-                  }}
+                  sx={{ '& .MuiOutlinedInput-root': { backgroundColor: '#f5f5f5' } }}
                 />
               </Box>
 
@@ -234,7 +179,7 @@ useEffect(() => {
                   sx={{
                     color: message.type === 'success' ? 'success.main' : 'error.main',
                     fontSize: '0.85rem',
-                    mt: 1
+                    mt: 1,
                   }}
                 >
                   {message.text}
@@ -259,15 +204,10 @@ useEffect(() => {
         <Box>
           <SubTitle sx={{ mb: 3 }}>My Content</SubTitle>
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <PrimaryButton
-              onClick={() => navigate('/my-trips')}
-            >
+            <PrimaryButton onClick={() => navigate('/my-trips')}>
               View My Itineraries
             </PrimaryButton>
-            <SecondaryButton
-              variant="outlined"
-              onClick={() => navigate('/my-locations')}
-            >
+            <SecondaryButton variant="outlined" onClick={() => navigate('/my-locations')}>
               View My Locations
             </SecondaryButton>
           </Box>

@@ -18,7 +18,7 @@ import { getMyTrips, getLikedTrips, toggleTripLike } from '../../api/trips.ts';
 import { AuthContext } from '../../context/AuthContext';
 import type { Trip } from '../../types/types.ts';
 
-// Додали твою функцію форматування дат (трохи адаптували під англійську для консистентності)
+
 const formatTripDate = (start: string | null, end: string | null): string => {
   if (!start) return '';
   const fmt = (d: Date) =>

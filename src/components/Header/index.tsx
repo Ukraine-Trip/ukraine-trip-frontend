@@ -34,25 +34,26 @@ export const Header: React.FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const navigate = useNavigate();
 
-  // ОНОВЛЕНИЙ МАСИВ КНОПОК
   const navItems = [
     { label: 'Regions', path: '/create-route' },
-    { label: 'Trips', path: '/trips' }, // Публічна кнопка для всіх маршрутів
     { label: 'Itinerary', path: '/itinerary', private: true },
-    { label: 'My Trips', path: '/my-trips', private: true }, // Тільки для своїх
+    { label: 'My Trips', path: '/my-trips', private: true },
+    { label: 'My Locations', path: '/my-locations', private: true },
   ];
 
   const isAuthenticated = Boolean(token);
   const displayName = user?.full_name || user?.email || 'User';
-  const initials = displayName
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part: string) => part[0].toUpperCase())
-    .join('') || 'U';
+  const initials =
+    displayName
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part: string) => part[0].toUpperCase())
+      .join('') || 'U';
 
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => setAnchorEl(event.currentTarget);
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) =>
+    setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
   const handleLogout = () => {
     logout();
@@ -105,11 +106,22 @@ export const Header: React.FC = () => {
                 <MenuIcon />
               </BurgerIconButton>
 
-              <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 2, ml: 2, alignItems: 'center' }}>
+              <Box
+                sx={{
+                  display: { xs: 'none', md: 'flex' },
+                  gap: 2,
+                  ml: 2,
+                  alignItems: 'center',
+                }}
+              >
                 {isAuthenticated ? (
                   <>
                     <Tooltip title={displayName}>
-                      <IconButton onClick={handleMenuOpen} size="small" sx={{ p: 0 }}>
+                      <IconButton
+                        onClick={handleMenuOpen}
+                        size="small"
+                        sx={{ p: 0 }}
+                      >
                         <Avatar>{initials}</Avatar>
                       </IconButton>
                     </Tooltip>
@@ -126,10 +138,18 @@ export const Header: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <NavButton component={Link} to="/login" sx={{ fontSize: '0.7rem' }}>
+                    <NavButton
+                      component={Link}
+                      to="/login"
+                      sx={{ fontSize: '0.7rem' }}
+                    >
                       Sign In
                     </NavButton>
-                    <PrimaryButton variant="contained" component={Link} to="/register">
+                    <PrimaryButton
+                      variant="contained"
+                      component={Link}
+                      to="/register"
+                    >
                       Register
                     </PrimaryButton>
                   </>
@@ -181,12 +201,20 @@ export const Header: React.FC = () => {
           ) : (
             <>
               <ListItem disablePadding>
-                <ListItemButton component={Link} to="/login" onClick={handleDrawerToggle}>
+                <ListItemButton
+                  component={Link}
+                  to="/login"
+                  onClick={handleDrawerToggle}
+                >
                   <ListItemText primary="Sign In" />
                 </ListItemButton>
               </ListItem>
               <ListItem disablePadding>
-                <ListItemButton component={Link} to="/register" onClick={handleDrawerToggle}>
+                <ListItemButton
+                  component={Link}
+                  to="/register"
+                  onClick={handleDrawerToggle}
+                >
                   <ListItemText primary="Register" />
                 </ListItemButton>
               </ListItem>

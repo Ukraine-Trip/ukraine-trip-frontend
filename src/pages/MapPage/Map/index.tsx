@@ -27,8 +27,8 @@ import regionsData from '../../../librarian/cities.json';
 import { getAllTrips, getMyTrips, createTrip, getLikedTrips, toggleTripLike } from '../../../api/trips.ts';
 
 const HEADER_H = 80;
-//const CTRL_TOP = HEADER_H + 12;
-
+const UKRAINE_CENTER: [number, number] = [48.3794, 31.1656];
+const DEFAULT_ZOOM = 6;
 
 interface TripMeta {
   title: string;
@@ -43,6 +43,11 @@ interface CityMeta {
   lat: number;
   lng: number;
 }
+
+const ukraineBounds: L.LatLngBoundsLiteral = [
+  [44.3863, 22.1372], // Southwest
+  [52.3791, 40.2277], // Northeast
+];
 
 const createClusterCustomIcon = (cluster: any) => {
   return L.divIcon({
@@ -100,10 +105,10 @@ type TransportType = 'car' | 'foot' | 'bike';
 export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   itinerary = [],
 }) => {
-  const isMobile = window.innerWidth <= 768; 
+  const isMobile = window.innerWidth <= 768;
   const CTRL_TOP = isMobile ? 16 : HEADER_H + 12;
   const { token } = useContext(AuthContext);
-  const [zoom, setZoom] = useState(6);
+  const [zoom, setZoom] = useState(DEFAULT_ZOOM);
   const [isOptimized, setIsOptimized] = useState(false);
   const originalRoutePointsRef = useRef<ItineraryPoint[]>([]);
   const [activeLayer, setActiveLayer] = useState<LayerType>('grey');
@@ -138,6 +143,20 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   const [mapDraggingIdx, setMapDraggingIdx] = useState<number | null>(null);
   const [mapDragOverIdx, setMapDragOverIdx] = useState<number | null>(null);
   const mapDragNodeRef = useRef<number | null>(null);
+
+  const urlView = useMemo(() => {
+    const latParam = searchParams.get('lat');
+    const lngParam = searchParams.get('lng');
+    const zoomParam = searchParams.get('zoom');
+
+    const center: [number, number] | null =
+      latParam && lngParam
+        ? [parseFloat(latParam), parseFloat(lngParam)]
+        : null;
+    const zoom = zoomParam ? parseInt(zoomParam) : undefined;
+
+    return { center, zoom };
+  }, [searchParams]);
 
   const handleMapDragStart = (idx: number) => {
     mapDragNodeRef.current = idx;
@@ -183,7 +202,12 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   const handleMapTouchEnd = () => {
     const fromIdx = mapDragNodeRef.current;
     setSelectedRoutePoints((prev) => {
-      if (fromIdx === null || mapDragOverIdx === null || fromIdx === mapDragOverIdx) return prev;
+      if (
+        fromIdx === null ||
+        mapDragOverIdx === null ||
+        fromIdx === mapDragOverIdx
+      )
+        return prev;
       const u = [...prev];
       const [m] = u.splice(fromIdx, 1);
       u.splice(mapDragOverIdx, 0, m);
@@ -242,6 +266,11 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   }, [navLocation.state]);
 
   const handleSelectPoint = (point: ItineraryPoint) => {
+    const bounds = L.latLngBounds(ukraineBounds);
+    if (!bounds.contains([point.lat, point.lng])) {
+      return;
+    }
+
     if (isOptimized) {
       const base =
         originalRoutePointsRef.current.length > 0
@@ -340,18 +369,54 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     setSaveLoading(true);
     setSaveError(null);
     try {
-await createTrip(
-        {
-          title: tripTitle.trim(),
-          location_ids: selectedRoutePoints.map((p) => p.id),
-          optimize: false,
-        },
-        token
+      await createTrip(
+        {
+          title: tripTitle.trim(),
+          location_ids: selectedRoutePoints.map((p) => p.id),
+          optimize: false,
+        },
+        token
       );
+
       navigate('/my-trips');
     } catch (err: any) {
       setSaveError(
         err.response?.data?.detail || 'Помилка при збереженні маршруту'
+      );
+      setSaveLoading(false);
+    }
+  };
+
+  const handleShowDetails = async () => {
+    if (selectedRoutePoints.length < 2) return;
+
+    const cleanToken =
+      token && token !== 'null' && token !== 'undefined'
+        ? token.replace(/["']/g, '')
+        : null;
+
+    if (!cleanToken) {
+      navigate('/login');
+      return;
+    }
+
+    setSaveLoading(true);
+    setSaveError(null);
+    try {
+      const autoTitle =
+        `${selectedRoutePoints[0].name} → ${selectedRoutePoints[selectedRoutePoints.length - 1].name}`;
+      const trip = await createTrip(
+        {
+          title: autoTitle,
+          location_ids: selectedRoutePoints.map((p) => p.id),
+          optimize: false,
+        },
+        cleanToken
+      );
+      navigate(`/trip/${trip.id}`);
+    } catch (err: any) {
+      setSaveError(
+        err.response?.data?.detail || 'Помилка при створенні маршруту'
       );
       setSaveLoading(false);
     }
@@ -366,12 +431,15 @@ await createTrip(
     const fetchLocations = async () => {
       try {
         const publicReq = api.get('/locations/');
-        const myReq = (token && token !== 'null' && token !== 'undefined')
-          ? api.get('/locations/', {
-              params: { filter_type: 'my' },
-              headers: { Authorization: `Bearer ${token.replace(/["']/g, '')}` },
-            })
-          : Promise.resolve(null);
+        const myReq =
+          token && token !== 'null' && token !== 'undefined'
+            ? api.get('/locations/', {
+                params: { filter_type: 'my' },
+                headers: {
+                  Authorization: `Bearer ${token.replace(/["']/g, '')}`,
+                },
+              })
+            : Promise.resolve(null);
 
         const [publicResult, myResult] = await Promise.allSettled([
           publicReq,
@@ -428,14 +496,6 @@ await createTrip(
     const interval = setInterval(fetchLocations, 120000);
     return () => clearInterval(interval);
   }, [token]);
-
-  const latParam = searchParams.get('lat');
-  const lngParam = searchParams.get('lng');
-  const zoomParam = searchParams.get('zoom');
-
-  const urlCenter: [number, number] | null =
-    latParam && lngParam ? [parseFloat(latParam), parseFloat(lngParam)] : null;
-  const urlZoom = zoomParam ? parseInt(zoomParam) : undefined;
 
   const activeData = itinerary.length > 0 ? itinerary : apiLocations;
 
@@ -500,7 +560,7 @@ await createTrip(
           setMyCityTrips(filterByCity(trips));
         } else {
           if (myRes && myRes.status === 'rejected') {
-             console.error('Error loading own trips:', myRes.reason);
+            console.error('Error loading own trips:', myRes.reason);
           }
           setMyCityTrips([]);
         }
@@ -772,12 +832,13 @@ await createTrip(
                 flexDirection: 'column',
               }}
             >
+              {/* City title */}
               <h1
                 style={{
                   fontSize: '22px',
                   fontWeight: 800,
                   color: '#1a1a2e',
-                  margin: '0 0 8px',
+                  margin: '0 0 4px',
                   lineHeight: 1.2,
                   letterSpacing: '-0.3px',
                 }}
@@ -788,18 +849,167 @@ await createTrip(
               {cityLocation?.description && (
                 <p
                   style={{
-                    fontSize: '14px',
-                    color: '#555',
-                    lineHeight: 1.6,
-                    margin: '0 0 16px',
+                    fontSize: '13px',
+                    color: '#888',
+                    lineHeight: 1.5,
+                    margin: '0 0 12px',
                   }}
                 >
-                  {cityLocation.description}
+                  {cityLocation.description.length > 80
+                    ? cityLocation.description.slice(0, 80) + '…'
+                    : cityLocation.description}
                 </p>
               )}
 
+              {/* ── Selected points list (always visible when any selected) ── */}
+              {selectedRoutePoints.length > 0 && (
+                <>
+                  <div
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      color: '#aaa',
+                      letterSpacing: '1px',
+                      textTransform: 'uppercase',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    Обрані точки · {selectedRoutePoints.length}
+                  </div>
+                  <ol
+                    style={{
+                      listStyle: 'none',
+                      margin: '0 0 10px',
+                      padding: 0,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '3px',
+                      userSelect: 'none',
+                    }}
+                  >
+                    {selectedRoutePoints.map((p, i) => (
+                      <li
+                        key={p.id}
+                        data-map-route-idx={i}
+                        draggable
+                        onDragStart={() => handleMapDragStart(i)}
+                        onDragOver={(e) => handleMapDragOver(e, i)}
+                        onDrop={(e) => handleMapDrop(e, i)}
+                        onDragEnd={handleMapDragEnd}
+                        onTouchStart={() => handleMapTouchStart(i)}
+                        onTouchMove={handleMapTouchMove}
+                        onTouchEnd={handleMapTouchEnd}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '7px',
+                          padding: '7px 8px',
+                          borderRadius: '8px',
+                          borderTop:
+                            mapDragOverIdx === i && mapDraggingIdx !== i
+                              ? '2px solid #000'
+                              : '2px solid transparent',
+                          background:
+                            mapDragOverIdx === i && mapDraggingIdx !== i
+                              ? '#f0f0f0'
+                              : i === 0
+                                ? '#f0f7f4'
+                                : i === selectedRoutePoints.length - 1
+                                  ? '#f7f0f0'
+                                  : '#fafafa',
+                          opacity: mapDraggingIdx === i ? 0.35 : 1,
+                          cursor: 'grab',
+                          touchAction: 'none',
+                          transition: 'opacity 0.15s, background 0.1s',
+                        }}
+                      >
+                        <svg
+                          width="8"
+                          height="12"
+                          viewBox="0 0 10 14"
+                          style={{ flexShrink: 0 }}
+                        >
+                          <circle cx="3" cy="3" r="1.3" fill="#ccc" />
+                          <circle cx="7" cy="3" r="1.3" fill="#ccc" />
+                          <circle cx="3" cy="7" r="1.3" fill="#ccc" />
+                          <circle cx="7" cy="7" r="1.3" fill="#ccc" />
+                          <circle cx="3" cy="11" r="1.3" fill="#ccc" />
+                          <circle cx="7" cy="11" r="1.3" fill="#ccc" />
+                        </svg>
+                        <span
+                          style={{
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '50%',
+                            background:
+                              i === 0
+                                ? '#2e7d5a'
+                                : i === selectedRoutePoints.length - 1
+                                  ? '#c0392b'
+                                  : '#e8e8e8',
+                            color:
+                              i === 0 || i === selectedRoutePoints.length - 1
+                                ? '#fff'
+                                : '#555',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '10px',
+                            fontWeight: 700,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {i + 1}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '12px',
+                            color: '#222',
+                            fontWeight: 500,
+                            flex: 1,
+                          }}
+                        >
+                          {p.name}
+                        </span>
+                        <button
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onClick={() => handleSelectPoint(p)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: '#bbb',
+                            fontSize: '16px',
+                            padding: '0 2px',
+                            lineHeight: 1,
+                          }}
+                        >
+                          ×
+                        </button>
+                      </li>
+                    ))}
+                  </ol>
+                  <div
+                    style={{
+                      height: '1px',
+                      background: '#ebebeb',
+                      margin: '0 0 12px',
+                    }}
+                  />
+                </>
+              )}
+
+              {/* ── Active point detail card ── */}
               {activePointDetails ? (
-                <div>
+                <div
+                  style={{
+                    background: '#f8f9fa',
+                    borderRadius: '10px',
+                    border: '1px solid #ebebeb',
+                    padding: '12px',
+                    marginBottom: '12px',
+                  }}
+                >
                   <button
                     onClick={() => setActivePointDetails(null)}
                     style={{
@@ -809,20 +1019,21 @@ await createTrip(
                       background: 'none',
                       border: 'none',
                       cursor: 'pointer',
-                      color: '#3b5bdb',
-                      fontSize: '12px',
+                      color: '#888',
+                      fontSize: '11px',
                       fontWeight: 600,
-                      padding: '0 0 12px',
+                      padding: '0 0 8px',
+                      letterSpacing: '0.3px',
                     }}
                   >
                     ← Назад до міста
                   </button>
                   <h2
                     style={{
-                      fontSize: '18px',
+                      fontSize: '16px',
                       fontWeight: 700,
                       color: '#1a1a2e',
-                      margin: '0 0 8px',
+                      margin: '0 0 6px',
                     }}
                   >
                     {activePointDetails.name}
@@ -831,9 +1042,11 @@ await createTrip(
                     DANGEROUS_REGIONS.includes(
                       getRegionForCity(activePointDetails.name) || ''
                     ) && (
-                      <Alert severity="warning" style={{ marginBottom: '16px' }}>
-                        Warning: This route point is located in a high-risk area due
-                        to the ongoing war.
+                      <Alert
+                        severity="warning"
+                        style={{ marginBottom: '10px', fontSize: '12px' }}
+                      >
+                        Warning: High-risk area due to the ongoing war.
                       </Alert>
                     )}
                   {activePointDetails.imageUrl && (
@@ -842,35 +1055,42 @@ await createTrip(
                       alt={activePointDetails.name}
                       style={{
                         width: '100%',
-                        borderRadius: '4px',
+                        borderRadius: '6px',
                         marginBottom: '8px',
+                        maxHeight: '130px',
+                        objectFit: 'cover',
                       }}
                     />
                   )}
-                  <p
-                    style={{
-                      fontSize: '14px',
-                      color: '#555',
-                      lineHeight: 1.6,
-                      margin: '0 0 16px',
-                    }}
-                  >
-                    {activePointDetails.description || 'Опис відсутній.'}
-                  </p>
+                  {activePointDetails.description && (
+                    <p
+                      style={{
+                        fontSize: '13px',
+                        color: '#666',
+                        lineHeight: 1.5,
+                        margin: '0 0 10px',
+                      }}
+                    >
+                      {activePointDetails.description.length > 100
+                        ? activePointDetails.description.slice(0, 100) + '…'
+                        : activePointDetails.description}
+                    </p>
+                  )}
                   <button
                     onClick={() => handleSelectPoint(activePointDetails)}
                     style={{
                       width: '100%',
-                      padding: '10px',
-                      borderRadius: '8px',
+                      padding: '9px',
+                      borderRadius: '7px',
                       border: 'none',
                       backgroundColor: isPointSelected(activePointDetails)
                         ? '#ff4d4f'
-                        : '#3b5bdb',
+                        : '#000',
                       color: 'white',
                       fontWeight: 600,
                       cursor: 'pointer',
-                      fontSize: '14px',
+                      fontSize: '13px',
+                      transition: 'background 0.15s',
                     }}
                   >
                     {isPointSelected(activePointDetails)
@@ -884,7 +1104,7 @@ await createTrip(
                     style={{
                       height: '1px',
                       background: '#ebebeb',
-                      margin: '0 0 16px',
+                      margin: '0 0 14px',
                     }}
                   />
 
@@ -902,27 +1122,36 @@ await createTrip(
                       padding: '12px',
                       borderRadius: '8px',
                       border: 'none',
-                      backgroundColor: '#3b5bdb',
+                      backgroundColor: '#000',
                       color: 'white',
                       fontWeight: 700,
                       cursor: 'pointer',
                       fontSize: '14px',
                       letterSpacing: '0.3px',
-                      marginBottom: '24px',
+                      marginBottom: '20px',
+                      transition: 'background-color 0.2s',
                     }}
+                    onMouseOver={(e) =>
+                      (e.currentTarget.style.backgroundColor = '#333')
+                    }
+                    onMouseOut={(e) =>
+                      (e.currentTarget.style.backgroundColor = '#000')
+                    }
                   >
                     Create Route
                   </button>
 
                   {token && (
-                    <div style={{
-                      display: 'flex',
-                      background: '#f0f0f0',
-                      borderRadius: '8px',
-                      padding: '4px',
-                      marginBottom: '20px',
-                      gap: '4px'
-                    }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        background: '#f0f0f0',
+                        borderRadius: '8px',
+                        padding: '4px',
+                        marginBottom: '16px',
+                        gap: '4px',
+                      }}
+                    >
                       <button
                         onClick={() => setRouteSource('provided')}
                         style={{
@@ -933,10 +1162,15 @@ await createTrip(
                           fontSize: '12px',
                           fontWeight: 700,
                           cursor: 'pointer',
-                          backgroundColor: routeSource === 'provided' ? '#fff' : 'transparent',
-                          color: routeSource === 'provided' ? '#3b5bdb' : '#666',
-                          boxShadow: routeSource === 'provided' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
-                          transition: 'all 0.2s'
+                          backgroundColor:
+                            routeSource === 'provided' ? '#fff' : 'transparent',
+                          color:
+                            routeSource === 'provided' ? '#000' : '#666',
+                          boxShadow:
+                            routeSource === 'provided'
+                              ? '0 2px 4px rgba(0,0,0,0.05)'
+                              : 'none',
+                          transition: 'all 0.2s',
                         }}
                       >
                         Надані
@@ -951,10 +1185,14 @@ await createTrip(
                           fontSize: '12px',
                           fontWeight: 700,
                           cursor: 'pointer',
-                          backgroundColor: routeSource === 'my' ? '#fff' : 'transparent',
-                          color: routeSource === 'my' ? '#3b5bdb' : '#666',
-                          boxShadow: routeSource === 'my' ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
-                          transition: 'all 0.2s'
+                          backgroundColor:
+                            routeSource === 'my' ? '#fff' : 'transparent',
+                          color: routeSource === 'my' ? '#000' : '#666',
+                          boxShadow:
+                            routeSource === 'my'
+                              ? '0 2px 4px rgba(0,0,0,0.05)'
+                              : 'none',
+                          transition: 'all 0.2s',
                         }}
                       >
                         Мої
@@ -977,23 +1215,18 @@ await createTrip(
 
                   {cityTripsLoading ? (
                     <div
-                      style={{
-                        fontSize: '13px',
-                        color: '#bbb',
-                        padding: '8px 0',
-                      }}
+                      style={{ fontSize: '13px', color: '#bbb', padding: '8px 0' }}
                     >
                       Завантаження...
                     </div>
-                  ) : (routeSource === 'my' ? myCityTrips : cityTrips).length === 0 ? (
+                  ) : (routeSource === 'my' ? myCityTrips : cityTrips)
+                      .length === 0 ? (
                     <div
-                      style={{
-                        fontSize: '13px',
-                        color: '#bbb',
-                        padding: '8px 0',
-                      }}
+                      style={{ fontSize: '13px', color: '#bbb', padding: '8px 0' }}
                     >
-                      {routeSource === 'my' ? 'Ви ще не створили маршрутів у цьому регіоні.' : 'Маршрутів для цього міста не знайдено.'}
+                      {routeSource === 'my'
+                        ? 'Ви ще не створили маршрутів у цьому регіоні.'
+                        : 'Маршрутів для цього міста не знайдено.'}
                     </div>
                   ) : (
                     <div
@@ -1001,7 +1234,7 @@ await createTrip(
                         display: 'flex',
                         flexDirection: 'column',
                         gap: '6px',
-                        marginBottom: '20px',
+                        marginBottom: '16px',
                       }}
                     >
                       {(routeSource === 'my' ? myCityTrips : cityTrips).map((trip) => {
@@ -1073,9 +1306,94 @@ await createTrip(
                       })}
                     </div>
                   )}
-
-                  <div style={{ flex: 1 }} />
                 </>
+              )}
+
+              <div style={{ flex: 1 }} />
+
+              {/* ── Show Details button (завжди внизу) ── */}
+              {selectedRoutePoints.length > 0 &&
+                selectedRoutePoints.length < 2 && (
+                  <p
+                    style={{
+                      margin: '0 0 8px',
+                      fontSize: '12px',
+                      color: '#aaa',
+                      textAlign: 'center',
+                    }}
+                  >
+                    Оберіть ще{' '}
+                    {2 - selectedRoutePoints.length === 1
+                      ? '1 точку'
+                      : `${2 - selectedRoutePoints.length} точки`}{' '}
+                    для маршруту
+                  </p>
+                )}
+              {saveError && (
+                <p
+                  style={{
+                    margin: '0 0 8px',
+                    fontSize: '12px',
+                    color: '#c0392b',
+                    textAlign: 'center',
+                  }}
+                >
+                  {saveError}
+                </p>
+              )}
+              <button
+                onClick={handleShowDetails}
+                disabled={selectedRoutePoints.length < 2 || saveLoading}
+                title={
+                  selectedRoutePoints.length < 2
+                    ? 'Оберіть щонайменше 2 точки'
+                    : ''
+                }
+                style={{
+                  width: '100%',
+                  padding: '13px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor:
+                    selectedRoutePoints.length >= 2 && !saveLoading
+                      ? '#000'
+                      : '#e8e8e8',
+                  color:
+                    selectedRoutePoints.length >= 2 && !saveLoading
+                      ? '#fff'
+                      : '#aaa',
+                  fontWeight: 700,
+                  cursor:
+                    selectedRoutePoints.length >= 2 && !saveLoading
+                      ? 'pointer'
+                      : 'not-allowed',
+                  fontSize: '14px',
+                  letterSpacing: '0.5px',
+                  transition: 'background-color 0.2s, color 0.2s',
+                }}
+                onMouseOver={(e) => {
+                  if (selectedRoutePoints.length >= 2 && !saveLoading)
+                    e.currentTarget.style.backgroundColor = '#222';
+                }}
+                onMouseOut={(e) => {
+                  if (selectedRoutePoints.length >= 2 && !saveLoading)
+                    e.currentTarget.style.backgroundColor = '#000';
+                }}
+              >
+                {saveLoading ? 'Завантаження...' : 'Show Details'}
+              </button>
+
+              {!token && selectedRoutePoints.length >= 2 && (
+                <p
+                  style={{
+                    margin: '8px 0 0',
+                    fontSize: '12px',
+                    color: '#999',
+                    textAlign: 'center',
+                  }}
+                >
+                  Увійдіть для перегляду деталей маршруту
+                </p>
               )}
             </div>
           ) : routeBuildingMode ? (
@@ -1135,19 +1453,30 @@ await createTrip(
                         gap: '8px',
                         padding: '8px 10px',
                         borderRadius: '8px',
-                        borderTop: mapDragOverIdx === i && mapDraggingIdx !== i ? '2px solid #3b5bdb' : '2px solid transparent',
-                        background: mapDragOverIdx === i && mapDraggingIdx !== i
-                          ? '#e8f0fe'
-                          : i === 0 ? '#f0f7f4'
-                          : i === selectedRoutePoints.length - 1 ? '#f7f0f0'
-                          : 'transparent',
+                        borderTop:
+                          mapDragOverIdx === i && mapDraggingIdx !== i
+                            ? '2px solid #3b5bdb'
+                            : '2px solid transparent',
+                        background:
+                          mapDragOverIdx === i && mapDraggingIdx !== i
+                            ? '#e8f0fe'
+                            : i === 0
+                              ? '#f0f7f4'
+                              : i === selectedRoutePoints.length - 1
+                                ? '#f7f0f0'
+                                : 'transparent',
                         opacity: mapDraggingIdx === i ? 0.35 : 1,
                         cursor: 'grab',
                         touchAction: 'none',
                         transition: 'opacity 0.15s, background 0.1s',
                       }}
                     >
-                      <svg width="10" height="14" viewBox="0 0 10 14" style={{ flexShrink: 0 }}>
+                      <svg
+                        width="10"
+                        height="14"
+                        viewBox="0 0 10 14"
+                        style={{ flexShrink: 0 }}
+                      >
                         <circle cx="3" cy="3" r="1.3" fill="#ccc" />
                         <circle cx="7" cy="3" r="1.3" fill="#ccc" />
                         <circle cx="3" cy="7" r="1.3" fill="#ccc" />
@@ -1161,10 +1490,15 @@ await createTrip(
                           height: '22px',
                           borderRadius: '50%',
                           background:
-                            i === 0 ? '#2e7d5a'
-                            : i === selectedRoutePoints.length - 1 ? '#c0392b'
-                            : '#e8e8e8',
-                          color: i === 0 || i === selectedRoutePoints.length - 1 ? '#fff' : '#555',
+                            i === 0
+                              ? '#2e7d5a'
+                              : i === selectedRoutePoints.length - 1
+                                ? '#c0392b'
+                                : '#e8e8e8',
+                          color:
+                            i === 0 || i === selectedRoutePoints.length - 1
+                              ? '#fff'
+                              : '#555',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -1175,7 +1509,14 @@ await createTrip(
                       >
                         {i + 1}
                       </span>
-                      <span style={{ fontSize: '13px', color: '#222', fontWeight: 500, flex: 1 }}>
+                      <span
+                        style={{
+                          fontSize: '13px',
+                          color: '#222',
+                          fontWeight: 500,
+                          flex: 1,
+                        }}
+                      >
                         {p.name}
                       </span>
                       <button
@@ -1226,8 +1567,8 @@ await createTrip(
                         severity="warning"
                         style={{ marginBottom: '12px', fontSize: '12px' }}
                       >
-                        Warning: This route point is located in a high-risk area due
-                        to the ongoing war.
+                        Warning: This route point is located in a high-risk area
+                        due to the ongoing war.
                       </Alert>
                     )}
                   <button
@@ -1263,10 +1604,14 @@ await createTrip(
                     padding: '12px',
                     borderRadius: '8px',
                     border: 'none',
-                    backgroundColor: selectedRoutePoints.length > 0 ? '#3b5bdb' : '#ccc',
+                    backgroundColor:
+                      selectedRoutePoints.length > 0 ? '#3b5bdb' : '#ccc',
                     color: 'white',
                     fontWeight: 700,
-                    cursor: selectedRoutePoints.length > 0 ? 'pointer' : 'not-allowed',
+                    cursor:
+                      selectedRoutePoints.length > 0
+                        ? 'pointer'
+                        : 'not-allowed',
                     fontSize: '14px',
                     letterSpacing: '0.5px',
                     marginBottom: '10px',
@@ -1299,7 +1644,8 @@ await createTrip(
                 </button>
               )}
             </div>
-          ) : selectedRoutePoints.length > 0 && !cityMeta ? (
+          ) : (
+            /* ── Default panel: selected locations + Show Details ── */
             <div
               style={{
                 padding: '12px 20px 24px',
@@ -1309,6 +1655,7 @@ await createTrip(
                 flexDirection: 'column',
               }}
             >
+              {/* Header label */}
               <div
                 style={{
                   fontSize: '11px',
@@ -1319,224 +1666,353 @@ await createTrip(
                   marginBottom: '12px',
                 }}
               >
-                Route · {selectedRoutePoints.length} stops
+                {selectedRoutePoints.length === 0
+                  ? 'Оберіть точки на карті'
+                  : `Route · ${selectedRoutePoints.length} ${
+                      selectedRoutePoints.length % 10 === 1 &&
+                      selectedRoutePoints.length % 100 !== 11
+                        ? 'зупинка'
+                        : [2, 3, 4].includes(selectedRoutePoints.length % 10) &&
+                            ![12, 13, 14].includes(
+                              selectedRoutePoints.length % 100
+                            )
+                          ? 'зупинки'
+                          : 'зупинок'
+                    }`}
               </div>
 
-              <ol
-                style={{
-                  listStyle: 'none',
-                  margin: '0 0 16px',
-                  padding: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4px',
-                  userSelect: 'none',
-                }}
-              >
-                {selectedRoutePoints.map((p, i) => (
-                  <li
-                    key={p.id}
-                    data-map-route-idx={i}
-                    draggable
-                    onDragStart={() => handleMapDragStart(i)}
-                    onDragOver={(e) => handleMapDragOver(e, i)}
-                    onDrop={(e) => handleMapDrop(e, i)}
-                    onDragEnd={handleMapDragEnd}
-                    onTouchStart={() => handleMapTouchStart(i)}
-                    onTouchMove={handleMapTouchMove}
-                    onTouchEnd={handleMapTouchEnd}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '8px 10px',
-                      borderRadius: '8px',
-                      borderTop: mapDragOverIdx === i && mapDraggingIdx !== i ? '2px solid #3b5bdb' : '2px solid transparent',
-                      background: mapDragOverIdx === i && mapDraggingIdx !== i
-                        ? '#e8f0fe'
-                        : i === 0 ? '#f0f7f4'
-                        : i === selectedRoutePoints.length - 1 ? '#f7f0f0'
-                        : 'transparent',
-                      opacity: mapDraggingIdx === i ? 0.35 : 1,
-                      cursor: 'grab',
-                      touchAction: 'none',
-                      transition: 'opacity 0.15s, background 0.1s',
-                    }}
-                  >
-                    <svg width="10" height="14" viewBox="0 0 10 14" style={{ flexShrink: 0 }}>
-                      <circle cx="3" cy="3" r="1.3" fill="#ccc" />
-                      <circle cx="7" cy="3" r="1.3" fill="#ccc" />
-                      <circle cx="3" cy="7" r="1.3" fill="#ccc" />
-                      <circle cx="7" cy="7" r="1.3" fill="#ccc" />
-                      <circle cx="3" cy="11" r="1.3" fill="#ccc" />
-                      <circle cx="7" cy="11" r="1.3" fill="#ccc" />
-                    </svg>
-                    <span
-                      style={{
-                        width: '22px',
-                        height: '22px',
-                        borderRadius: '50%',
-                        background:
-                          i === 0 ? '#2e7d5a'
-                          : i === selectedRoutePoints.length - 1 ? '#c0392b'
-                          : '#e8e8e8',
-                        color: i === 0 || i === selectedRoutePoints.length - 1 ? '#fff' : '#555',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {i + 1}
-                    </span>
-                    <span style={{ fontSize: '13px', color: '#222', fontWeight: 500, flex: 1 }}>
-                      {p.name}
-                    </span>
-                    <button
-                      onMouseDown={(e) => e.stopPropagation()}
-                      onClick={() => handleSelectPoint(p)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: '#bbb',
-                        fontSize: '18px',
-                        padding: '0 4px',
-                        lineHeight: 1,
-                      }}
-                    >
-                      ×
-                    </button>
-                  </li>
-                ))}
-              </ol>
-
-              <div
-                style={{
-                  height: '1px',
-                  background: '#ebebeb',
-                  margin: '0 0 16px',
-                }}
-              />
-
-              {!saveMode ? (
-                <>
-                  <button
-                    onClick={handleViewItinerary}
-                    disabled={selectedRoutePoints.length === 0}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      border: 'none',
-                      backgroundColor: selectedRoutePoints.length > 0 ? '#3b5bdb' : '#ccc',
-                      color: 'white',
-                      fontWeight: 700,
-                      cursor: selectedRoutePoints.length > 0 ? 'pointer' : 'not-allowed',
-                      fontSize: '14px',
-                      letterSpacing: '0.5px',
-                      marginBottom: '8px',
-                    }}
-                  >
-                    Перейти до Itinerary
-                  </button>
-                  <button
-                    onClick={() => setSaveMode(true)}
-                    disabled={!token}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      border: 'none',
-                      backgroundColor: token ? '#1a1a2e' : '#ccc',
-                      color: 'white',
-                      fontWeight: 700,
-                      cursor: token ? 'pointer' : 'not-allowed',
-                      fontSize: '14px',
-                      letterSpacing: '0.5px',
-                      marginBottom: '8px',
-                    }}
-                    title={!token ? 'Увійдіть, щоб зберегти маршрут' : ''}
-                  >
-                    Зберегти маршрут
-                  </button>
-                </>
-              ) : (
+              {/* Empty-state hint */}
+              {selectedRoutePoints.length === 0 ? (
                 <div
                   style={{
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '8px',
+                    alignItems: 'center',
+                    padding: '24px 0 16px',
+                    textAlign: 'center',
+                    color: '#ccc',
                   }}
                 >
-                  <input
-                    type="text"
-                    placeholder="Назва маршруту..."
-                    value={tripTitle}
-                    onChange={(e) => setTripTitle(e.target.value)}
-                    autoFocus
-                    style={{
-                      padding: '10px 12px',
-                      borderRadius: '8px',
-                      border: '1.5px solid #3b5bdb',
-                      fontSize: '14px',
-                      outline: 'none',
-                      fontFamily: 'inherit',
-                    }}
-                  />
-                  {saveError && (
-                    <p
-                      style={{ margin: 0, fontSize: '12px', color: '#c0392b' }}
+                  <svg
+                    width="40"
+                    height="40"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#ddd"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{ marginBottom: '12px' }}
+                  >
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
+                    <circle cx="12" cy="9" r="2.5" />
+                  </svg>
+                  <p
+                    style={{ margin: 0, fontSize: '13px', lineHeight: 1.6 }}
+                  >
+                    Натискайте на маркери,
+                    <br />
+                    щоб додати точки до маршруту
+                  </p>
+                </div>
+              ) : (
+                /* Selected points list */
+                <ol
+                  style={{
+                    listStyle: 'none',
+                    margin: '0 0 12px',
+                    padding: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px',
+                    userSelect: 'none',
+                  }}
+                >
+                  {selectedRoutePoints.map((p, i) => (
+                    <li
+                      key={p.id}
+                      data-map-route-idx={i}
+                      draggable
+                      onDragStart={() => handleMapDragStart(i)}
+                      onDragOver={(e) => handleMapDragOver(e, i)}
+                      onDrop={(e) => handleMapDrop(e, i)}
+                      onDragEnd={handleMapDragEnd}
+                      onTouchStart={() => handleMapTouchStart(i)}
+                      onTouchMove={handleMapTouchMove}
+                      onTouchEnd={handleMapTouchEnd}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '8px 10px',
+                        borderRadius: '8px',
+                        borderTop:
+                          mapDragOverIdx === i && mapDraggingIdx !== i
+                            ? '2px solid #000'
+                            : '2px solid transparent',
+                        background:
+                          mapDragOverIdx === i && mapDraggingIdx !== i
+                            ? '#f0f0f0'
+                            : i === 0
+                              ? '#f0f7f4'
+                              : i === selectedRoutePoints.length - 1
+                                ? '#f7f0f0'
+                                : 'transparent',
+                        opacity: mapDraggingIdx === i ? 0.35 : 1,
+                        cursor: 'grab',
+                        touchAction: 'none',
+                        transition: 'opacity 0.15s, background 0.1s',
+                      }}
                     >
-                      {saveError}
+                      <svg
+                        width="10"
+                        height="14"
+                        viewBox="0 0 10 14"
+                        style={{ flexShrink: 0 }}
+                      >
+                        <circle cx="3" cy="3" r="1.3" fill="#ccc" />
+                        <circle cx="7" cy="3" r="1.3" fill="#ccc" />
+                        <circle cx="3" cy="7" r="1.3" fill="#ccc" />
+                        <circle cx="7" cy="7" r="1.3" fill="#ccc" />
+                        <circle cx="3" cy="11" r="1.3" fill="#ccc" />
+                        <circle cx="7" cy="11" r="1.3" fill="#ccc" />
+                      </svg>
+                      <span
+                        style={{
+                          width: '22px',
+                          height: '22px',
+                          borderRadius: '50%',
+                          background:
+                            i === 0
+                              ? '#2e7d5a'
+                              : i === selectedRoutePoints.length - 1
+                                ? '#c0392b'
+                                : '#e8e8e8',
+                          color:
+                            i === 0 || i === selectedRoutePoints.length - 1
+                              ? '#fff'
+                              : '#555',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {i + 1}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '13px',
+                          color: '#222',
+                          fontWeight: 500,
+                          flex: 1,
+                        }}
+                      >
+                        {p.name}
+                      </span>
+                      <button
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onClick={() => handleSelectPoint(p)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          color: '#bbb',
+                          fontSize: '18px',
+                          padding: '0 4px',
+                          lineHeight: 1,
+                        }}
+                      >
+                        ×
+                      </button>
+                    </li>
+                  ))}
+                </ol>
+              )}
+
+              {/* Active point detail card */}
+              {activePointDetails && (
+                <div
+                  style={{
+                    padding: '12px',
+                    background: '#f8f9fa',
+                    borderRadius: '10px',
+                    border: '1px solid #ebebeb',
+                    marginBottom: '12px',
+                  }}
+                >
+                  {getRegionForCity(activePointDetails.name) && (
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        fontWeight: 700,
+                        color: '#aaa',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.8px',
+                        display: 'block',
+                        marginBottom: '2px',
+                      }}
+                    >
+                      {getRegionForCity(activePointDetails.name)}
+                    </span>
+                  )}
+                  <h3
+                    style={{
+                      fontSize: '15px',
+                      fontWeight: 700,
+                      margin: '0 0 8px',
+                      color: '#1a1a2e',
+                    }}
+                  >
+                    {activePointDetails.name}
+                  </h3>
+                  {activePointDetails &&
+                    DANGEROUS_REGIONS.includes(
+                      getRegionForCity(activePointDetails.name) || ''
+                    ) && (
+                      <Alert
+                        severity="warning"
+                        style={{ marginBottom: '10px', fontSize: '12px' }}
+                      >
+                        Warning: This route point is located in a high-risk
+                        area due to the ongoing war.
+                      </Alert>
+                    )}
+                  {activePointDetails.imageUrl && (
+                    <img
+                      src={activePointDetails.imageUrl}
+                      alt={activePointDetails.name}
+                      style={{
+                        width: '100%',
+                        borderRadius: '6px',
+                        marginBottom: '8px',
+                        objectFit: 'cover',
+                        maxHeight: '140px',
+                      }}
+                    />
+                  )}
+                  {activePointDetails.description && (
+                    <p
+                      style={{
+                        fontSize: '13px',
+                        color: '#666',
+                        lineHeight: 1.5,
+                        margin: '0 0 10px',
+                      }}
+                    >
+                      {activePointDetails.description.length > 120
+                        ? activePointDetails.description.slice(0, 120) + '…'
+                        : activePointDetails.description}
                     </p>
                   )}
                   <button
-                    onClick={handleSaveTrip}
-                    disabled={saveLoading || !tripTitle.trim()}
+                    onClick={() => handleSelectPoint(activePointDetails)}
                     style={{
                       width: '100%',
-                      padding: '10px',
-                      borderRadius: '8px',
+                      padding: '8px',
+                      borderRadius: '6px',
                       border: 'none',
-                      backgroundColor:
-                        saveLoading || !tripTitle.trim() ? '#aaa' : '#2e7d5a',
+                      backgroundColor: isPointSelected(activePointDetails)
+                        ? '#ff4d4f'
+                        : '#000',
                       color: 'white',
-                      fontWeight: 700,
-                      cursor:
-                        saveLoading || !tripTitle.trim()
-                          ? 'not-allowed'
-                          : 'pointer',
-                      fontSize: '14px',
-                    }}
-                  >
-                    {saveLoading ? 'Збереження...' : 'Зберегти'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSaveMode(false);
-                      setSaveError(null);
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '10px',
-                      borderRadius: '8px',
-                      border: '1px solid #ddd',
-                      backgroundColor: 'transparent',
-                      color: '#555',
                       fontWeight: 600,
                       cursor: 'pointer',
                       fontSize: '13px',
+                      transition: 'background 0.15s',
                     }}
                   >
-                    Скасувати
+                    {isPointSelected(activePointDetails)
+                      ? 'Видалити з маршруту'
+                      : 'Додати до маршруту'}
                   </button>
                 </div>
               )}
 
-              {!token && (
+              <div style={{ flex: 1 }} />
+
+              {/* Hint when < 2 points */}
+              {selectedRoutePoints.length > 0 &&
+                selectedRoutePoints.length < 2 && (
+                  <p
+                    style={{
+                      margin: '0 0 8px',
+                      fontSize: '12px',
+                      color: '#aaa',
+                      textAlign: 'center',
+                    }}
+                  >
+                    Оберіть ще{' '}
+                    {2 - selectedRoutePoints.length === 1
+                      ? '1 точку'
+                      : `${2 - selectedRoutePoints.length} точки`}{' '}
+                    для побудови маршруту
+                  </p>
+                )}
+
+              {/* Error message */}
+              {saveError && (
+                <p
+                  style={{
+                    margin: '0 0 8px',
+                    fontSize: '12px',
+                    color: '#c0392b',
+                    textAlign: 'center',
+                  }}
+                >
+                  {saveError}
+                </p>
+              )}
+
+              {/* Show Details button */}
+              <button
+                onClick={handleShowDetails}
+                disabled={selectedRoutePoints.length < 2 || saveLoading}
+                title={
+                  selectedRoutePoints.length < 2
+                    ? 'Оберіть щонайменше 2 точки для побудови маршруту'
+                    : !token
+                      ? 'Увійдіть, щоб переглянути деталі'
+                      : ''
+                }
+                style={{
+                  width: '100%',
+                  padding: '13px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor:
+                    selectedRoutePoints.length >= 2 && !saveLoading
+                      ? '#000'
+                      : '#e8e8e8',
+                  color:
+                    selectedRoutePoints.length >= 2 && !saveLoading
+                      ? '#fff'
+                      : '#aaa',
+                  fontWeight: 700,
+                  cursor:
+                    selectedRoutePoints.length >= 2 && !saveLoading
+                      ? 'pointer'
+                      : 'not-allowed',
+                  fontSize: '14px',
+                  letterSpacing: '0.5px',
+                  transition: 'background-color 0.2s, color 0.2s',
+                }}
+                onMouseOver={(e) => {
+                  if (selectedRoutePoints.length >= 2 && !saveLoading)
+                    e.currentTarget.style.backgroundColor = '#222';
+                }}
+                onMouseOut={(e) => {
+                  if (selectedRoutePoints.length >= 2 && !saveLoading)
+                    e.currentTarget.style.backgroundColor = '#000';
+                }}
+              >
+                {saveLoading ? 'Завантаження...' : 'Show Details'}
+              </button>
+
+              {/* Login prompt */}
+              {!token && selectedRoutePoints.length >= 2 && (
                 <p
                   style={{
                     margin: '8px 0 0',
@@ -1545,120 +2021,9 @@ await createTrip(
                     textAlign: 'center',
                   }}
                 >
-                  Увійдіть в акаунт, щоб зберегти маршрут
+                  Увійдіть в акаунт для перегляду деталей маршруту
                 </p>
               )}
-            </div>
-          ) : activePointDetails ? (
-            <div style={{ padding: '12px 20px 24px', flex: 1 }}>
-              <h2
-                style={{
-                  fontSize: '18px',
-                  fontWeight: 700,
-                  color: '#1a1a2e',
-                  margin: '0 0 8px',
-                  lineHeight: 1.2,
-                }}
-              >
-                {activePointDetails.name}
-              </h2>
-              {activePointDetails &&
-                DANGEROUS_REGIONS.includes(
-                  getRegionForCity(activePointDetails.name) || ''
-                ) && (
-                  <Alert severity="warning" style={{ marginBottom: '16px' }}>
-                    Warning: This route point is located in a high-risk area due to
-                    the ongoing war.
-                  </Alert>
-                )}
-              {getRegionForCity(activePointDetails.name) && (
-                <span
-                  style={{
-                    fontSize: '0.75rem',
-                    color: '#888',
-                    textTransform: 'uppercase',
-                    display: 'block',
-                    marginBottom: '4px',
-                  }}
-                >
-                  {getRegionForCity(activePointDetails.name)}
-                </span>
-              )}
-              {activePointDetails.imageUrl && (
-                <img
-                  src={activePointDetails.imageUrl}
-                  alt={activePointDetails.name}
-                  style={{
-                    width: '100%',
-                    borderRadius: '4px',
-                    marginTop: '8px',
-                    marginBottom: '8px',
-                  }}
-                />
-              )}
-              <p
-                style={{
-                  fontSize: '14px',
-                  color: '#555',
-                  lineHeight: 1.6,
-                  margin: '0 0 20px',
-                }}
-              >
-                {activePointDetails.description || 'Опис відсутній.'}
-              </p>
-              <button
-                onClick={() => handleSelectPoint(activePointDetails)}
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  backgroundColor: isPointSelected(activePointDetails)
-                    ? '#ff4d4f'
-                    : '#3b5bdb',
-                  color: 'white',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  fontSize: '0.85rem',
-                }}
-              >
-                {isPointSelected(activePointDetails)
-                  ? 'Видалити з маршруту'
-                  : 'Додати до маршруту'}
-              </button>
-            </div>
-          ) : (
-            <div
-              style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '32px 24px',
-                textAlign: 'center',
-                color: '#bbb',
-              }}
-            >
-              <svg
-                width="48"
-                height="48"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#ddd"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ marginBottom: '16px' }}
-              >
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" />
-                <circle cx="12" cy="9" r="2.5" />
-              </svg>
-              <p style={{ margin: 0, fontSize: '14px', lineHeight: 1.5 }}>
-                Select a route from the
-                <br />
-                home page to see details
-              </p>
             </div>
           )}
         </RouteSidebar>
@@ -1778,7 +2143,10 @@ await createTrip(
             title="Базові шари"
             style={{
               position: 'absolute',
-              top: selectedRoutePoints.length > 2 ? CTRL_TOP + 162 +56 : CTRL_TOP + 162,
+              top:
+                selectedRoutePoints.length > 2
+                  ? CTRL_TOP + 162 + 56
+                  : CTRL_TOP + 162,
               right: '16px',
               zIndex: 999,
               backgroundColor: 'white',
@@ -1815,7 +2183,10 @@ await createTrip(
             <div
               style={{
                 position: 'absolute',
-                top: selectedRoutePoints.length > 2 ? CTRL_TOP + 162 + 56 : CTRL_TOP + 162,
+                top:
+                  selectedRoutePoints.length > 2
+                    ? CTRL_TOP + 162 + 56
+                    : CTRL_TOP + 162,
                 right: '68px',
                 zIndex: 999,
                 backgroundColor: 'white',
@@ -2132,7 +2503,7 @@ await createTrip(
                   }
                   style={{
                     background:
-                      transportType === type ? '#3b5bdb' : 'transparent',
+                      transportType === type ? '#000' : 'transparent',
                     color: transportType === type ? 'white' : '#666',
                     border: 'none',
                     padding: '9px 0 7px',
@@ -2228,8 +2599,8 @@ await createTrip(
           </div>
 
           <MapContainer
-            center={[48.3794, 31.1656]}
-            zoom={6}
+            center={urlView.center || UKRAINE_CENTER}
+            zoom={urlView.zoom || DEFAULT_ZOOM}
             zoomControl={false}
             scrollWheelZoom={true}
             style={{ height: '100%', width: '100%' }}
@@ -2251,8 +2622,14 @@ await createTrip(
               />
             )}
             <ZoomHandler setZoom={setZoom} />
-            <MapController center={urlCenter} zoom={urlZoom} />
-            <UserLocation ctrlTop={selectedRoutePoints.length > 2 ? CTRL_TOP + 162 + 56 + 56 : CTRL_TOP + 162 + 56} />
+            <MapController center={urlView.center} zoom={urlView.zoom} />
+            <UserLocation
+              ctrlTop={
+                selectedRoutePoints.length > 2
+                  ? CTRL_TOP + 162 + 56 + 56
+                  : CTRL_TOP + 162 + 56
+              }
+            />
 
             {pointsForRouting.length > 1 && (
               <Routing
@@ -2270,7 +2647,10 @@ await createTrip(
                 <Marker
                   key={point.id}
                   position={[point.lat, point.lng]}
-                  icon={createCustomIcon(point.category, isPointSelected(point))}
+                  icon={createCustomIcon(
+                    point.category,
+                    isPointSelected(point)
+                  )}
                 >
                   <MarkerPopup
                     point={point}

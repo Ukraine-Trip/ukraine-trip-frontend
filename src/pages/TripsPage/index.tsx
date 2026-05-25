@@ -26,22 +26,34 @@ export const TripsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchTrips = async () => {
       try {
         const allTrips = await getAllTrips();
         setTrips(allTrips);
-        
-        if (token) {
-          const likedTrips = await getLikedTrips(token); 
-          setLikedTripIds(likedTrips.map((t: Trip) => t.id));
-        }
       } catch (error) {
-        console.error('Failed to fetch data:', error);
+        console.error('Failed to fetch all trips:', error);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
+    fetchTrips();
+  }, []);
+
+  useEffect(() => {
+    if (!token) {
+      setLikedTripIds([]);
+      return;
+    }
+
+    const fetchLikedTrips = async () => {
+      try {
+        const likedTrips = await getLikedTrips(token);
+        setLikedTripIds(likedTrips.map((t: Trip) => t.id));
+      } catch (error) {
+        console.error('Failed to fetch liked trips:', error);
+      }
+    };
+    fetchLikedTrips();
   }, [token]);
 
   const handleLikeClick = async (tripId: string) => {
@@ -132,38 +144,12 @@ export const TripsPage: React.FC = () => {
                       size="medium" 
                       fullWidth
                       onClick={() => {
-                        // 1. Шукаємо першу точку в маршруті, яка має координати
-                        const firstNodeWithCoords = trip.trip_nodes?.find(
-                          (n) => n.location && n.location.lat != null && n.location.lon != null
-                        );
-                        
-                        // 2. Якщо точку знайшли — створюємо рядок параметрів для зуму
-                        let zoomParams = '';
-                        if (firstNodeWithCoords?.location) {
-                          const { lat, lon } = firstNodeWithCoords.location;
-                          // zoom=13 — це ідеальний масштаб, щоб побачити місто
-                          zoomParams = `?lat=${lat}&lng=${lon}&zoom=13`; 
-                        }
+                      
 
-                        // 3. Переходимо на мапу з параметрами зуму в URL
-                        navigate(`/map-page${zoomParams}`, {
-                          state: {
-                            tripId: trip.id,
-                            tripMeta: {
-                              title: trip.title,
-                              description: trip.description,
-                              start_date: trip.start_date,
-                              end_date: trip.end_date,
-                              waypoints: trip.trip_nodes?.map((n) => ({
-                                name: n.location?.name || 'Невідома локація',
-                                order_index: n.order_index,
-                              })) || [],
-                            },
-                          },
-                        });
+             window.open(`/trip/${trip.id}`, '_blank');
                       }}
                     >
-                      Show on Map
+                      Go to details
                     </SecondaryButton>
                   </CardContent>
                 </Card>

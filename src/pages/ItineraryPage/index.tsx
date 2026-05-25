@@ -298,9 +298,9 @@ export const ItineraryPage: React.FC = () => {
     <PageWrapper>
       <Box sx={{ maxWidth: '1100px', margin: '0 auto', px: 3 }}>
         <SubTitle>Plan Your Journey</SubTitle>
-        <PageTitle sx={{ mb: 1 }}>Build Itinerary</PageTitle>
+        <PageTitle sx={{ mb: 1 }}>Build Trip</PageTitle>
         <Typography sx={{ color: '#666', mb: 4, fontSize: '0.95rem' }}>
-          Select points from the list and build your route. Click "Show Trip" to see it on the map.
+          Select points from the list and build your trip. Click "Show Trip" to see it on the map.
         </Typography>
 
         <Box sx={{ display: 'flex', gap: 4, flexDirection: { xs: 'column', md: 'row' }, alignItems: 'flex-start' }}>
@@ -645,7 +645,7 @@ export const ItineraryPage: React.FC = () => {
               top: '100px',
             }}
           >
-            <SubTitle>Your Route</SubTitle>
+            <SubTitle>Your Trip</SubTitle>
 
             {selectedPoints.length === 0 ? (
               <Box
@@ -668,7 +668,7 @@ export const ItineraryPage: React.FC = () => {
                   Select points from the list on the left
                 </Typography>
                 <Typography sx={{ fontSize: '0.85rem', color: '#999' }}>
-                  to add them to your route.
+                  to add them to your trip.
                 </Typography>
               </Box>
             ) : (
@@ -793,7 +793,7 @@ export const ItineraryPage: React.FC = () => {
               <PrimaryButton
                 onClick={handleViewOnMap}
                 disabled={selectedPoints.length < 2}
-                sx={{ width: '100%' }}
+                sx={{ width: '100%', opacity: selectedPoints.length < 2 ? 0.6 : 1, cursor: selectedPoints.length < 2 ? 'not-allowed' : 'pointer', color: selectedPoints.length < 2 ? '#999' : '#fff', bgcolor: selectedPoints.length < 2 ? '#ccc' : '#000', '&:hover': { bgcolor: selectedPoints.length < 2 ? '#ccc' : '#333' } }} 
               >
                 Show Trip ({selectedPoints.length} points)
               </PrimaryButton>
@@ -807,7 +807,7 @@ export const ItineraryPage: React.FC = () => {
                 onClick={() => navigate('/account?showItinerary=1')}
                 sx={{ width: '100%' }}
               >
-                Back to My Itineraries
+                Back to My Trips
               </SecondaryButton>
             </Stack>
           </Box>

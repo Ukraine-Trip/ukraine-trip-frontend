@@ -757,7 +757,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                       marginBottom: '12px',
                     }}
                   >
-                    Route · {tripMeta.waypoints.length} stops
+                    Trip · {tripMeta.waypoints.length} stops
                   </div>
 
                   <ol
@@ -1143,7 +1143,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                       (e.currentTarget.style.backgroundColor = '#000')
                     }
                   >
-                    Create Route
+                    Create Trip
                   </button>
 
                   {token && (
@@ -1215,7 +1215,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                       marginBottom: '12px',
                     }}
                   >
-                    {routeSource === 'my' ? 'My Routes' : 'Created Routes'}
+                    {routeSource === 'my' ? 'My Trips' : 'Created Trips'}
                   </div>
 
                   {cityTripsLoading ? (
@@ -1258,18 +1258,18 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                               borderRadius: '8px',
                               background:
                                 selectedCityTrip?.id === trip.id
-                                  ? '#3b5bdb'
+                                  ? '#000'
                                   : '#f8f8f8',
                               color:
                                 selectedCityTrip?.id === trip.id
                                   ? 'white'
                                   : '#222',
                               cursor: 'pointer',
-                              border: `1px solid ${selectedCityTrip?.id === trip.id ? '#3b5bdb' : '#ebebeb'}`,
+                              border: `1px solid ${selectedCityTrip?.id === trip.id ? '#000' : '#ebebeb'}`,
                               transition: 'all 0.15s',
                               display: 'flex', // 👈 Додали Flex
                               justifyContent: 'space-between',
-                              alignItems: 'flex-start',
+                              alignItems: 'center',
                             }}
                           >
                             <div>
@@ -1289,6 +1289,28 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
 
                             {/* 👈 Малюємо сердечко */}
                             {token && routeSource !== 'my' && (
+                              <>
+                              {selectedCityTrip?.id === trip.id && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.open(`/trip/${trip.id}`, '_blank');
+                                }}
+                                style={{
+                                  backgroundColor: 'white',
+                                  color: 'black',
+                                  border: '1px solid black',
+                                  padding: '4px 8px',
+                                  borderRadius: '4px',
+                                  fontSize: '10px',
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  textTransform: 'uppercase',
+                                }}
+                              >
+                                DETAILS
+                              </button>
+                            )}
                               <button
                                 onClick={(e) => handleLikeClick(e, trip.id)}
                                 style={{
@@ -1305,6 +1327,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                               >
                                 {isLiked ? <FavoriteIcon sx={{ fontSize: 20 }} /> : <FavoriteBorderIcon sx={{ fontSize: 20 }} />}
                               </button>
+                              </>
                             )}
                           </div>
                         );
@@ -1329,7 +1352,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                     {2 - selectedRoutePoints.length === 1
                       ? '1 точку'
                       : `${2 - selectedRoutePoints.length} точки`}{' '}
-                    для маршруту
+                    для поїздки
                   </p>
                 )}
               {saveError && (
@@ -1395,7 +1418,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                     textAlign: 'center',
                   }}
                 >
-                  Увійдіть для перегляду деталей маршруту
+                  Увійдіть для перегляду деталей поїздки
                 </p>
               )}
             </div>
@@ -1419,12 +1442,12 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                   marginBottom: '12px',
                 }}
               >
-                Побудова маршруту
+                Побудова поїздки
               </div>
 
               {selectedRoutePoints.length === 0 ? (
                 <p style={{ fontSize: '13px', color: '#888', lineHeight: 1.5 }}>
-                  Натискайте на маркери на карті, щоб додати точки до маршруту
+                  Натискайте на маркери на карті, щоб додати точки до поїздки
                 </p>
               ) : (
                 <ol
@@ -1620,7 +1643,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                     marginBottom: '10px',
                   }}
                 >
-                  Переглянути маршрут у Itinerary
+                  Переглянути поїздку
                 </button>
               )}
 
@@ -1671,7 +1694,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
               >
                 {selectedRoutePoints.length === 0
                   ? 'Оберіть точки на карті'
-                  : `Route · ${selectedRoutePoints.length} ${selectedRoutePoints.length % 10 === 1 &&
+                  : `Trip · ${selectedRoutePoints.length} ${selectedRoutePoints.length % 10 === 1 &&
                     selectedRoutePoints.length % 100 !== 11
                     ? 'зупинка'
                     : [2, 3, 4].includes(selectedRoutePoints.length % 10) &&
@@ -2054,7 +2077,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
           )}
           <button
             onClick={() => setSidebarOpen((v) => !v)}
-            title={sidebarOpen ? 'Сховати маршрут' : 'Показати маршрут'}
+            title={sidebarOpen ? 'Сховати поїздку' : 'Показати поїздку'}
             style={{
               position: 'absolute',
               top: CTRL_TOP,

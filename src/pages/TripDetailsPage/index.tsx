@@ -107,7 +107,7 @@ export const TripDetailsPage: React.FC = () => {
             onClick={() => navigate('/my-trips')}
             sx={{ mb: 2 }}
           >
-            ← Back to my routes
+            ← Back to my trips
           </SecondaryButton>
         </Box>
 
@@ -138,7 +138,7 @@ export const TripDetailsPage: React.FC = () => {
               View on Map
             </PrimaryButton>
             <SecondaryButton variant="outlined" onClick={() => navigate(`/trip/${trip.id}/edit`)}>
-              Edit Itinerary
+              Edit Trip
             </SecondaryButton>
           </Box>
         </Paper>
@@ -222,7 +222,7 @@ export const TripDetailsPage: React.FC = () => {
             variant="outlined"
             onClick={() => navigate('/my-trips')}
           >
-            Back to my routes
+            Back to my trips
           </SecondaryButton>
         </Box>
       </Container>

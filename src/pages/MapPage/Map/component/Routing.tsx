@@ -79,7 +79,14 @@ const Routing: React.FC<RoutingProps> = ({ points, transportType }) => {
         addWaypoints: false,
         fitSelectedRoutes: false,
         createMarker: () => null,
+        collapsible: false,
       }).addTo(map);
+
+      // Hide the directions panel that leaflet-routing-machine injects into the DOM
+      const container = control.getContainer();
+      if (container) {
+        (container as HTMLElement).style.display = 'none';
+      }
 
       routingControlRef.current = control;
       transportTypeRef.current = transportType;
@@ -98,10 +105,19 @@ const Routing: React.FC<RoutingProps> = ({ points, transportType }) => {
   }, [map, points, transportType]);
 
   // Cleanup on unmount
+  // Wrapped in try/catch: leaflet-routing-machine може спробувати викликати
+  // _clearLines після анмаунту (in-flight XHR), що призводить до
+  // "Cannot read properties of null (reading 'removeLayer')".
   useEffect(() => {
     return () => {
-      if (map && routingControlRef.current) {
-        map.removeControl(routingControlRef.current);
+      if (routingControlRef.current) {
+        try {
+          // Скидаємо waypoints щоб скасувати pending routing request
+          routingControlRef.current.setWaypoints([]);
+        } catch (_) { /* ігноруємо — контрол вже може бути відчеплений */ }
+        try {
+          if (map) map.removeControl(routingControlRef.current);
+        } catch (_) { /* ігноруємо */ }
         routingControlRef.current = null;
       }
     };

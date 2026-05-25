@@ -434,11 +434,11 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
         const myReq =
           token && token !== 'null' && token !== 'undefined'
             ? api.get('/locations/', {
-                params: { filter_type: 'my' },
-                headers: {
-                  Authorization: `Bearer ${token.replace(/["']/g, '')}`,
-                },
-              })
+              params: { filter_type: 'my' },
+              headers: {
+                Authorization: `Bearer ${token.replace(/["']/g, '')}`,
+              },
+            })
             : Promise.resolve(null);
 
         const [publicResult, myResult] = await Promise.allSettled([
@@ -524,7 +524,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   useEffect(() => {
     if (!cityMeta) return;
     setCityTripsLoading(true);
-        const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
+    const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
 
     const filterByCity = (trips: Trip[]) =>
       trips.filter((trip) => {
@@ -542,8 +542,10 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       getAllTrips(),
       token && token !== 'null' && token !== 'undefined'
         ? getMyTrips(token)
-        : null,,
-      (token && token !== 'null' && token !== 'undefined') ? getLikedTrips(token) : null 
+        : null,
+      token && token !== 'null' && token !== 'undefined'
+        ? getLikedTrips(token)
+        : null,
     ];
 
     Promise.allSettled(promises)
@@ -583,7 +585,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     if (!token) return;
 
     const isLiked = likedTripIds.includes(tripId);
-    
+
     if (isLiked) {
       setLikedTripIds((prev) => prev.filter((id) => id !== tripId));
     } else {
@@ -607,8 +609,8 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     () =>
       cityMeta
         ? (apiLocations.find(
-            (loc) => loc.name.toLowerCase() === cityMeta.name.toLowerCase()
-          ) ?? null)
+          (loc) => loc.name.toLowerCase() === cityMeta.name.toLowerCase()
+        ) ?? null)
         : null,
     [cityMeta, apiLocations]
   );
@@ -1223,7 +1225,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                       Завантаження...
                     </div>
                   ) : (routeSource === 'my' ? myCityTrips : cityTrips)
-                      .length === 0 ? (
+                    .length === 0 ? (
                     <div
                       style={{ fontSize: '13px', color: '#bbb', padding: '8px 0' }}
                     >
@@ -1242,7 +1244,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                     >
                       {(routeSource === 'my' ? myCityTrips : cityTrips).map((trip) => {
                         const isLiked = likedTripIds.includes(trip.id); // 👈 Перевіряємо чи лайкнуто
-                        
+
                         return (
                           <div
                             key={trip.id}
@@ -1294,9 +1296,9 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                                   border: 'none',
                                   cursor: 'pointer',
                                   padding: '0 0 0 8px',
-                                  color: selectedCityTrip?.id === trip.id 
-                                    ? (isLiked ? '#ff4d4f' : 'rgba(255,255,255,0.7)') 
-                                    : (isLiked ? '#ff4d4f' : '#bbb'), 
+                                  color: selectedCityTrip?.id === trip.id
+                                    ? (isLiked ? '#ff4d4f' : 'rgba(255,255,255,0.7)')
+                                    : (isLiked ? '#ff4d4f' : '#bbb'),
                                   display: 'flex',
                                   alignItems: 'center',
                                 }}
@@ -1310,8 +1312,8 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
                     </div>
                   )}
 
-              <div style={{ flex: 1 }} />
-
+                  <div style={{ flex: 1 }} />
+                </>) }
               {/* ── Show Details button (завжди внизу) ── */}
               {selectedRoutePoints.length > 0 &&
                 selectedRoutePoints.length < 2 && (
@@ -1669,17 +1671,16 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
               >
                 {selectedRoutePoints.length === 0
                   ? 'Оберіть точки на карті'
-                  : `Route · ${selectedRoutePoints.length} ${
-                      selectedRoutePoints.length % 10 === 1 &&
-                      selectedRoutePoints.length % 100 !== 11
-                        ? 'зупинка'
-                        : [2, 3, 4].includes(selectedRoutePoints.length % 10) &&
-                            ![12, 13, 14].includes(
-                              selectedRoutePoints.length % 100
-                            )
-                          ? 'зупинки'
-                          : 'зупинок'
-                    }`}
+                  : `Route · ${selectedRoutePoints.length} ${selectedRoutePoints.length % 10 === 1 &&
+                    selectedRoutePoints.length % 100 !== 11
+                    ? 'зупинка'
+                    : [2, 3, 4].includes(selectedRoutePoints.length % 10) &&
+                      ![12, 13, 14].includes(
+                        selectedRoutePoints.length % 100
+                      )
+                      ? 'зупинки'
+                      : 'зупинок'
+                  }`}
               </div>
 
               {/* Empty-state hint */}
@@ -2473,7 +2474,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
             </div>
           )}
 
-          {}
+          { }
           <div
             style={{
               position: 'absolute',

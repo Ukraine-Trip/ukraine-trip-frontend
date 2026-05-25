@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -33,13 +33,16 @@ export const Header: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const navItems = [
+const navItems = [
     { label: 'Regions', path: '/create-route' },
+    { label: 'Trips', path: '/trips' },
     { label: 'Itinerary', path: '/itinerary', private: true },
     { label: 'My Trips', path: '/my-trips', private: true },
-    { label: 'My Locations', path: '/my-locations', private: true },
   ];
+
+  const isActive = (path: string) => location.pathname === path;
 
   const isAuthenticated = Boolean(token);
   const displayName = user?.full_name || user?.email || 'User';
@@ -88,7 +91,18 @@ export const Header: React.FC = () => {
               {navItems
                 .filter((item) => !item.private || isAuthenticated)
                 .map((item) => (
-                  <NavButton key={item.label} component={Link} to={item.path}>
+                  <NavButton
+                    key={item.label}
+                    component={Link}
+                    to={item.path}
+                    sx={{
+                      borderBottom: isActive(item.path)
+                        ? '2px solid #000'
+                        : 'none',
+                      pb: '2px',
+                      transition: 'all 0.3s ease',
+                    }}
+                  >
                     {item.label}
                   </NavButton>
                 ))}
@@ -176,7 +190,13 @@ export const Header: React.FC = () => {
           {navItems
             .filter((item) => !item.private || isAuthenticated)
             .map((item) => (
-              <ListItem key={item.label} disablePadding>
+              <ListItem
+                key={item.label}
+                disablePadding
+                sx={{
+                  backgroundColor: isActive(item.path) ? '#f0f0f0' : 'transparent',
+                }}
+              >
                 <ListItemButton
                   component={Link}
                   to={item.path}

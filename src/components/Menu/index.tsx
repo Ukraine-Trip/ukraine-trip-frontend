@@ -1,5 +1,5 @@
-import React, { useContext, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useContext, useMemo } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import MapOutlinedIcon from '@mui/icons-material/MapOutlined';
@@ -15,14 +15,41 @@ import { AuthContext } from '../../context/AuthContext.tsx';
 
 export const Menu: React.FC = () => {
   const { token } = useContext(AuthContext);
-  const [value, setValue] = useState(0);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const isAuthenticated = Boolean(token);
 
-  const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setValue(newValue);
+  // Обчислюємо активне значення на основі поточного маршруту
+  const activeValue = useMemo(() => {
+    if (isAuthenticated) {
+      switch (location.pathname) {
+        case '/':
+          return 0;
+        case '/create-route':
+          return 1;
+        case '/map-page':
+          return 2;
+        case '/account':
+          return 3;
+        default:
+          return false;
+      }
+    } else {
+      switch (location.pathname) {
+        case '/':
+          return 0;
+        case '/create-route':
+          return 1;
+        case '/account':
+          return 2;
+        default:
+          return false;
+      }
+    }
+  }, [location.pathname, isAuthenticated]);
 
+  const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
     if (isAuthenticated) {
       switch (newValue) {
         case 0:
@@ -35,7 +62,7 @@ export const Menu: React.FC = () => {
           navigate('/map-page');
           break;
         case 3:
-          navigate('/login');
+          navigate('/account');
           break;
         default:
           break;
@@ -61,7 +88,7 @@ export const Menu: React.FC = () => {
     <Paper elevation={3}>
       <BottomNavigation
         showLabels={false}
-        value={value}
+        value={activeValue}
         onChange={handleChange}
       >
         <BottomNavigationAction

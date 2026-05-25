@@ -8,7 +8,7 @@ interface RouteDrawerProps {
   weight?: number;
 }
 
-const RouteDrawer: React.FC<RouteDrawerProps> = ({
+const RouteDrawerComponent: React.FC<RouteDrawerProps> = ({
   coordinates,
   color = '#2A6FD9',
   weight = 5,
@@ -32,4 +32,12 @@ const RouteDrawer: React.FC<RouteDrawerProps> = ({
   );
 };
 
-export default RouteDrawer;
+export default React.memo(RouteDrawerComponent, (prevProps, nextProps) => {
+  // Check if coordinates array has changed
+  return (
+    prevProps.color === nextProps.color &&
+    prevProps.weight === nextProps.weight &&
+    prevProps.coordinates.length === nextProps.coordinates.length &&
+    JSON.stringify(prevProps.coordinates) === JSON.stringify(nextProps.coordinates)
+  );
+});

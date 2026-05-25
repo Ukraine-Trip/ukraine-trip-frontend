@@ -1,17 +1,17 @@
-import React, { useMemo, useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import React, { useMemo, useEffect, useRef, lazy, Suspense } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Box, CircularProgress } from '@mui/material';
 import type { Trip } from '../../types/types';
-import Routing from '../MapPage/Map/component/Routing';
+const Routing = lazy(() => import('../MapPage/Map/component/Routing'));
 
 type TransportType = 'car' | 'foot' | 'bike';
 
 const createCustomIcon = (color: string = '#1a1a2e', index: number, total: number) => {
   const isFirst = index === 0;
   const isLast = index === total - 1;
-  const bg = isFirst ? '#2e7d5a' : isLast ? '#c0392b' : '#1a1a2e';
+  const bg = isFirst ? '#2e7d5a' : isLast ? '#c0392b' : color;
 
   return L.divIcon({
     html: `
@@ -42,14 +42,13 @@ interface TripMapProps {
   transportType?: TransportType;
 }
 
-export const TripMap: React.FC<TripMapProps> = ({
+const TripMapComponent: React.FC<TripMapProps> = ({
   trip,
   loading = false,
   transportType = 'car',
 }) => {
   const mapRef = useRef<any>(null);
-  const [selectedTransport, setSelectedTransport] = useState<TransportType>(transportType);
-
+  const selectedTransport: TransportType = transportType;
   const sortedNodes = useMemo(() => {
     return [...trip.trip_nodes].sort((a, b) => a.order_index - b.order_index);
   }, [trip.trip_nodes]);
@@ -60,14 +59,27 @@ export const TripMap: React.FC<TripMapProps> = ({
       .map((n) => [n.location!.lat, n.location!.lon] as [number, number]);
   }, [sortedNodes]);
 
+  // Prefer backend-provided route geometry if available (GeoJSON coords are [lon, lat])
+  const backendRaw = (trip as any)?.route_geometry?.coordinates;
+  const routingPoints = useMemo((): [number, number][] => {
+    if (Array.isArray(backendRaw) && backendRaw.length > 1) {
+      try {
+        return backendRaw.map((c: any) => [c[1], c[0]] as [number, number]);
+      } catch {
+        return routeCoordinates;
+      }
+    }
+    return routeCoordinates;
+  }, [backendRaw, routeCoordinates]);
+
   const center = useMemo((): [number, number] => {
-    if (routeCoordinates.length === 0) return [48.3794, 31.1656];
+    if (routingPoints.length === 0) return [48.3794, 31.1656];
     const avgLat =
-      routeCoordinates.reduce((sum, c) => sum + c[0], 0) / routeCoordinates.length;
+      routingPoints.reduce((sum, c) => sum + c[0], 0) / routingPoints.length;
     const avgLng =
-      routeCoordinates.reduce((sum, c) => sum + c[1], 0) / routeCoordinates.length;
+      routingPoints.reduce((sum, c) => sum + c[1], 0) / routingPoints.length;
     return [avgLat, avgLng];
-  }, [routeCoordinates]);
+  }, [routingPoints]);
 
   const zoom = useMemo(() => {
     if (routeCoordinates.length === 0) return 6;
@@ -86,12 +98,19 @@ export const TripMap: React.FC<TripMapProps> = ({
     return 11;
   }, [routeCoordinates]);
 
+  // Memoize icon creation per node to avoid recreating on every render
+  const nodeIcons = useMemo(() => {
+    return sortedNodes.map((_, index) =>
+      createCustomIcon('#1a1a2e', index, sortedNodes.length)
+    );
+  }, [sortedNodes]);
+
   useEffect(() => {
-    if (mapRef.current && routeCoordinates.length > 0) {
-      const bounds = L.latLngBounds(routeCoordinates.map((c) => [c[0], c[1]]));
+    if (mapRef.current && routingPoints.length > 0) {
+      const bounds = L.latLngBounds(routingPoints.map((c) => [c[0], c[1]]));
       mapRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 13 });
     }
-  }, [routeCoordinates]);
+  }, [routingPoints]);
 
   if (loading) {
     return (
@@ -111,12 +130,12 @@ export const TripMap: React.FC<TripMapProps> = ({
     );
   }
 
-  const transportOptions: { type: TransportType; label: string }[] = [
-    { type: 'car', label: '🚗' },
-    { type: 'bike', label: '🚲' },
-    { type: 'foot', label: '🚶' },
-  ];
-
+  // const transportOptions: { type: TransportType; label: string }[] = [
+  //   { type: 'car', label: '🚗' },
+  //   { type: 'bike', label: '🚲' },
+  //   { type: 'foot', label: '🚶' },
+  // ];
+const limeOptions = { color: 'lime' }
   return (
     <Box sx={{ width: '100%', borderRadius: 1, overflow: 'hidden', boxShadow: 1, position: 'relative' }}>
       {/* Transport selector */}
@@ -136,43 +155,7 @@ export const TripMap: React.FC<TripMapProps> = ({
           width: '44px',
         }}
       >
-        {transportOptions.map(({ type, label }, i) => (
-          <React.Fragment key={type}>
-            {i > 0 && <Box sx={{ height: '1px', background: '#f0f0f0' }} />}
-            <button
-              onClick={() => setSelectedTransport(type)}
-              title={type === 'car' ? 'Автомобіль' : type === 'bike' ? 'Велосипед' : 'Пішки'}
-              style={{
-                background: selectedTransport === type ? '#000' : 'transparent',
-                color: selectedTransport === type ? 'white' : '#666',
-                border: 'none',
-                padding: '9px 0 7px',
-                cursor: 'pointer',
-                width: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '2px',
-                transition: 'background 0.2s, color 0.2s',
-                fontSize: '16px',
-              }}
-            >
-              {label}
-              <span
-                style={{
-                  fontSize: '8px',
-                  fontWeight: 700,
-                  letterSpacing: '0.4px',
-                  textTransform: 'uppercase',
-                  lineHeight: 1,
-                }}
-              >
-                {type}
-              </span>
-            </button>
-          </React.Fragment>
-        ))}
+
       </Box>
 
       <MapContainer
@@ -187,8 +170,10 @@ export const TripMap: React.FC<TripMapProps> = ({
           maxZoom={20}
         />
 
-        {routeCoordinates.length > 1 && (
-          <Routing points={routeCoordinates} transportType={selectedTransport} />
+        {routingPoints.length > 1 && (
+          <Suspense fallback={null}>
+            <Routing points={routingPoints} transportType={selectedTransport} />
+          </Suspense>
         )}
 
         {sortedNodes.map((node, index) =>
@@ -196,7 +181,7 @@ export const TripMap: React.FC<TripMapProps> = ({
             <Marker
               key={node.id}
               position={[node.location.lat, node.location.lon]}
-              icon={createCustomIcon('#1a1a2e', index, sortedNodes.length)}
+              icon={nodeIcons[index]}
             >
               <Popup>
                 <div style={{ minWidth: '220px' }}>
@@ -216,7 +201,20 @@ export const TripMap: React.FC<TripMapProps> = ({
             </Marker>
           ) : null
         )}
+        {routingPoints.length > 1 && (
+          <Polyline pathOptions={limeOptions} positions={routingPoints} />
+        )}
+
       </MapContainer>
     </Box>
   );
 };
+
+export const TripMap = React.memo(TripMapComponent, (prevProps, nextProps) => {
+  // Return true if props are equal (don't re-render), false if different (re-render)
+  return (
+    prevProps.trip.id === nextProps.trip.id &&
+    prevProps.loading === nextProps.loading &&
+    prevProps.transportType === nextProps.transportType
+  );
+});

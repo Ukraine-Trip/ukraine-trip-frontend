@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useContext, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useContext, useRef, useCallback, lazy, Suspense } from 'react';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 
@@ -20,7 +20,7 @@ import { ZoomHandler } from './component/ZoomHandler.tsx';
 import { MarkerPopup } from './component/MarkerPopup.tsx';
 import { useVisibleMarkers } from './useVisibleMarkers.ts';
 import { MapController } from './component/MapController.tsx';
-import Routing from './component/Routing.tsx';
+const Routing = lazy(() => import('./component/Routing.tsx'));
 import { UserLocation } from './component/UserLocation.tsx';
 import type { ItineraryPoint, Trip } from '../../../types/types.ts';
 import regionsData from '../../../librarian/cities.json';
@@ -109,8 +109,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   const CTRL_TOP = isMobile ? 16 : HEADER_H + 12;
   const { token } = useContext(AuthContext);
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
-  const [isOptimized, setIsOptimized] = useState(false);
-  const originalRoutePointsRef = useRef<ItineraryPoint[]>([]);
   const [activeLayer, setActiveLayer] = useState<LayerType>('grey');
   const [layerPanelOpen, setLayerPanelOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -131,8 +129,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   const [cityTripsLoading, setCityTripsLoading] = useState(false);
   const [selectedCityTrip, setSelectedCityTrip] = useState<Trip | null>(null);
   const [routeBuildingMode, setRouteBuildingMode] = useState(false);
-  const [saveMode, setSaveMode] = useState(false);
-  const [tripTitle, setTripTitle] = useState('');
   const [saveLoading, setSaveLoading] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [fetchedTripRoute, setFetchedTripRoute] = useState<[number, number][]>(
@@ -158,16 +154,18 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     return { center, zoom };
   }, [searchParams]);
 
-  const handleMapDragStart = (idx: number) => {
+  const handleMapDragStart = useCallback((idx: number) => {
     mapDragNodeRef.current = idx;
     setMapDraggingIdx(idx);
-  };
-  const handleMapDragOver = (e: React.DragEvent, idx: number) => {
+  }, []);
+
+  const handleMapDragOver = useCallback((e: React.DragEvent, idx: number) => {
     e.preventDefault();
     if (mapDragNodeRef.current !== null && mapDragNodeRef.current !== idx)
       setMapDragOverIdx(idx);
-  };
-  const handleMapDrop = (e: React.DragEvent, toIdx: number) => {
+  }, []);
+
+  const handleMapDrop = useCallback((e: React.DragEvent, toIdx: number) => {
     e.preventDefault();
     const fromIdx = mapDragNodeRef.current;
     if (fromIdx !== null && fromIdx !== toIdx) {
@@ -181,25 +179,29 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     mapDragNodeRef.current = null;
     setMapDraggingIdx(null);
     setMapDragOverIdx(null);
-  };
-  const handleMapDragEnd = () => {
+  }, []);
+
+  const handleMapDragEnd = useCallback(() => {
     mapDragNodeRef.current = null;
     setMapDraggingIdx(null);
     setMapDragOverIdx(null);
-  };
-  const handleMapTouchStart = (idx: number) => {
+  }, []);
+
+  const handleMapTouchStart = useCallback((idx: number) => {
     mapDragNodeRef.current = idx;
     setMapDraggingIdx(idx);
-  };
-  const handleMapTouchMove = (e: React.TouchEvent) => {
+  }, []);
+
+  const handleMapTouchMove = useCallback((e: React.TouchEvent) => {
     const touch = e.touches[0];
     const el = document.elementFromPoint(touch.clientX, touch.clientY);
     const item = el?.closest('[data-map-route-idx]') as HTMLElement | null;
     if (!item) return;
     const idx = parseInt(item.dataset.mapRouteIdx ?? '-1', 10);
     if (!isNaN(idx) && idx !== mapDragNodeRef.current) setMapDragOverIdx(idx);
-  };
-  const handleMapTouchEnd = () => {
+  }, []);
+
+  const handleMapTouchEnd = useCallback(() => {
     const fromIdx = mapDragNodeRef.current;
     setSelectedRoutePoints((prev) => {
       if (
@@ -216,7 +218,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     mapDragNodeRef.current = null;
     setMapDraggingIdx(null);
     setMapDragOverIdx(null);
-  };
+  }, [mapDragOverIdx]);
 
   useEffect(() => {
     const state = navLocation.state as any;
@@ -234,6 +236,29 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
           const response = await axios.get(
             `http://localhost:8000/api/v1/trips/${state.tripId}`
           );
+
+          // Prefer backend-provided route geometry (GeoJSON: [lon, lat]) when available
+          const backendCoords = response.data?.route_geometry?.coordinates;
+          if (Array.isArray(backendCoords) && backendCoords.length > 1) {
+            try {
+              const mapped = backendCoords
+                .map((c: any) => {
+                  if (Array.isArray(c) && c.length >= 2) {
+                    // swap [lon, lat] -> [lat, lon]
+                    return [c[1], c[0]] as [number, number];
+                  }
+                  return null;
+                })
+                .filter((x: any) => x !== null) as [number, number][];
+              if (mapped.length > 0) {
+                setFetchedTripRoute(mapped);
+                return;
+              }
+            } catch (err) {
+              console.warn('Failed to use backend route_geometry, falling back:', err);
+            }
+          }
+
           if (response.data && response.data.trip_nodes) {
             const sortedNodes = [...response.data.trip_nodes].sort(
               (a, b) => a.order_index - b.order_index
@@ -265,83 +290,23 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     }
   }, [navLocation.state]);
 
-  const handleSelectPoint = (point: ItineraryPoint) => {
+  const handleSelectPoint = useCallback((point: ItineraryPoint) => {
     const bounds = L.latLngBounds(ukraineBounds);
     if (!bounds.contains([point.lat, point.lng])) {
       return;
     }
 
-    if (isOptimized) {
-      const base =
-        originalRoutePointsRef.current.length > 0
-          ? originalRoutePointsRef.current
-          : selectedRoutePoints;
-      const isSelected = base.some((p) => p.id === point.id);
-      setSelectedRoutePoints(
-        isSelected ? base.filter((p) => p.id !== point.id) : [...base, point]
-      );
-      originalRoutePointsRef.current = [];
-      setIsOptimized(false);
-    } else {
-      setSelectedRoutePoints((prev) => {
-        const isSelected = prev.find((p) => p.id === point.id);
-        if (isSelected) return prev.filter((p) => p.id !== point.id);
-        return [...prev, point];
-      });
-    }
+    setSelectedRoutePoints((prev) => {
+      const isSelected = prev.some((p) => p.id === point.id);
+      return isSelected ? prev.filter((p) => p.id !== point.id) : [...prev, point];
+    });
     setActivePointDetails(point);
-  };
+  }, []);
 
-  const isPointSelected = (point: ItineraryPoint) => {
+  const isPointSelected = useCallback((point: ItineraryPoint) => {
     return selectedRoutePoints.some((p) => p.id === point.id);
-  };
+  }, [selectedRoutePoints]);
 
-  const nearestNeighborSort = (points: ItineraryPoint[]): ItineraryPoint[] => {
-    if (points.length <= 2) return [...points];
-
-    const unvisited = points.slice(1);
-    const result: ItineraryPoint[] = [points[0]];
-
-    while (unvisited.length > 0) {
-      const current = result[result.length - 1];
-      let minDist = Infinity;
-      let nearestIdx = 0;
-
-      unvisited.forEach((pt, idx) => {
-        const dLat = pt.lat - current.lat;
-        const dLng = pt.lng - current.lng;
-        const dist = dLat * dLat + dLng * dLng;
-        if (dist < minDist) {
-          minDist = dist;
-          nearestIdx = idx;
-        }
-      });
-
-      result.push(unvisited[nearestIdx]);
-      unvisited.splice(nearestIdx, 1);
-    }
-
-    return result;
-  };
-
-  const handleSmartRouteToggle = () => {
-    if (isOptimized) {
-      const restored = [...originalRoutePointsRef.current];
-      originalRoutePointsRef.current = [];
-      setIsOptimized(false);
-      if (restored.length > 0) {
-        setSelectedRoutePoints(restored);
-      }
-      return;
-    }
-
-    if (selectedRoutePoints.length < 2) return;
-
-    const optimized = nearestNeighborSort(selectedRoutePoints);
-    originalRoutePointsRef.current = [...selectedRoutePoints];
-    setSelectedRoutePoints([...optimized]);
-    setIsOptimized(true);
-  };
 
   const handleViewItinerary = () => {
     if (selectedRoutePoints.length === 0) return;
@@ -362,29 +327,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
         transport: transportType,
       },
     });
-  };
-
-  const handleSaveTrip = async () => {
-    if (!tripTitle.trim() || selectedRoutePoints.length < 2 || !token) return;
-    setSaveLoading(true);
-    setSaveError(null);
-    try {
-      await createTrip(
-        {
-          title: tripTitle.trim(),
-          location_ids: selectedRoutePoints.map((p) => p.id),
-          optimize: false,
-        },
-        token
-      );
-
-      navigate('/my-trips');
-    } catch (err: any) {
-      setSaveError(
-        err.response?.data?.detail || 'Помилка при збереженні маршруту'
-      );
-      setSaveLoading(false);
-    }
   };
 
   const handleShowDetails = async () => {
@@ -580,7 +522,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   }, [cityMeta, token]);
 
   // 👈 КРОК 4: Функція для обробки лайків
-  const handleLikeClick = async (e: React.MouseEvent, tripId: string) => {
+  const handleLikeClick = useCallback(async (e: React.MouseEvent, tripId: string) => {
     e.stopPropagation(); // 👈 ВАЖЛИВО: щоб при кліку на лайк не вибиралась картка і мапа не зумилась!
     if (!token) return;
 
@@ -603,7 +545,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
         setLikedTripIds((prev) => prev.filter((id) => id !== tripId));
       }
     }
-  };
+  }, [token, likedTripIds]);
 
   const cityLocation = useMemo(
     () =>
@@ -2118,48 +2060,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
             </svg>
           </button>
 
-          {selectedRoutePoints.length > 2 && (
-            <div
-              onClick={handleSmartRouteToggle}
-              style={{
-                position: 'absolute',
-                top: CTRL_TOP,
-                right: '16px',
-                zIndex: 999,
-                backgroundColor: isOptimized ? '#f0f4ff' : 'white',
-                padding: '10px 16px',
-                borderRadius: '30px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                cursor: 'pointer',
-                border: isOptimized ? '1px solid #3b5bdb' : '1px solid #eee',
-                transition: 'all 0.2s',
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={isOptimized}
-                readOnly
-                style={{
-                  cursor: 'pointer',
-                  transform: 'scale(1.2)',
-                  margin: 0,
-                  accentColor: '#3b5bdb',
-                }}
-              />
-              <span
-                style={{
-                  fontWeight: 800,
-                  fontSize: '12px',
-                  color: isOptimized ? '#3b5bdb' : '#111',
-                }}
-              >
-                {isOptimized ? 'SMART ROUTE' : 'MY ORDER'}
-              </span>
-            </div>
-          )}
 
           <div
             onClick={() => {
@@ -2657,10 +2557,12 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
             />
 
             {pointsForRouting.length > 1 && (
-              <Routing
-                points={pointsForRouting}
-                transportType={transportType}
-              />
+              <Suspense fallback={null}>
+                <Routing
+                  points={pointsForRouting}
+                  transportType={transportType}
+                />
+              </Suspense>
             )}
 
             <MarkerClusterGroup

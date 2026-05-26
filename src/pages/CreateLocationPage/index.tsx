@@ -111,37 +111,39 @@ export const CreateLocationPage: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Функція для запиту до OSRM API
+  // Функція для отримання маршруту з бекенду
   useEffect(() => {
-    const fetchRoute = async () => {
+    const fetchBackendRoute = async () => {
       if (waypoints.length < 2) {
         setRouteGeometry([]);
         return;
       }
 
       try {
-        // OSRM приймає координати у форматі "lon,lat;lon,lat"
-        const coordinatesString = waypoints.map(wp => `${wp[1]},${wp[0]}`).join(';');
-        
-        // Звертаємось до публічного OSRM API (маршрут для авто: driving)
-        const response = await fetch(
-          `https://router.project-osrm.org/route/v1/driving/${coordinatesString}?overview=full&geometries=geojson`
+        const response = await api.post(
+          '/routes/preview',
+          { waypoints },
+          token
+            ? { headers: { Authorization: `Bearer ${token}` } }
+            : undefined
         );
-        const data = await response.json();
 
-        if (data.code === 'Ok' && data.routes.length > 0) {
-          // OSRM повертає координати як [lon, lat], а Leaflet потребує [lat, lon]
-          const coords = data.routes[0].geometry.coordinates.map((c: [number, number]) => [c[1], c[0]]);
-          setRouteGeometry(coords);
+        const backendCoords = response?.data?.route_geometry?.coordinates;
+        if (Array.isArray(backendCoords) && backendCoords.length > 1) {
+          const mapped = backendCoords.map((c: any) => [c[1], c[0]] as [number, number]);
+          setRouteGeometry(mapped);
+        } else {
+          setRouteGeometry([]);
         }
-      } catch (err) {
-        console.error("Failed to fetch route API", err);
-        setError("Помилка при побудові маршруту через API.");
+      } catch (err: any) {
+        console.error('Failed to fetch backend route', err);
+        setError('Помилка при побудові маршруту через бекенд.');
+        setRouteGeometry([]);
       }
     };
 
-    fetchRoute();
-  }, [waypoints]);
+    fetchBackendRoute();
+  }, [waypoints, token]);
 
   const handleAddPoint = (lat: number, lng: number) => {
     setWaypoints(prev => [...prev, [lat, lng]]);

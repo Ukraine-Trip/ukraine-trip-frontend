@@ -16,8 +16,8 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 
 import { HeroSection as StyledHeroSection } from '../../style.tsx';
-import { searchOsmPOIs } from '../../../../services/overpassService.ts';
-import { parseTripQuery } from '../../../../utils/tripQueryParser.ts';
+// import { searchOsmPOIs } from '../../../../services/overpassService.ts';
+// import { parseTripQuery } from '../../../../utils/tripQueryParser.ts';
 import { createTripAI } from '../../../../api/trips.ts';
 import { AuthContext } from '../../../../context/AuthContext.tsx';
 

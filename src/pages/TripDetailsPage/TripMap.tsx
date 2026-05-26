@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useRef, lazy, Suspense } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup,} from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Box, CircularProgress } from '@mui/material';
@@ -135,7 +135,7 @@ const TripMapComponent: React.FC<TripMapProps> = ({
   //   { type: 'bike', label: '🚲' },
   //   { type: 'foot', label: '🚶' },
   // ];
-const blueOptions = { color: '#2A6FD9', weight: 5, opacity: 0.8 };
+// const blueOptions = { color: '#2A6FD9', weight: 5, opacity: 0.8 };
   return (
     <Box sx={{ width: '100%', borderRadius: 1, overflow: 'hidden', boxShadow: 1, position: 'relative' }}>
       {/* Transport selector */}

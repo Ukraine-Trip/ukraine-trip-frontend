@@ -126,7 +126,8 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   const [cityTrips, setCityTrips] = useState<Trip[]>([]);
   const [myCityTrips, setMyCityTrips] = useState<Trip[]>([]);
   const [routeSource, setRouteSource] = useState<'provided' | 'my'>('provided');
-  const [cityTripsLoading, setCityTripsLoading] = useState(false);
+  const [hasFetchedProvided, setHasFetchedProvided] = useState(false);
+  const [hasFetchedMy, setHasFetchedMy] = useState(false);
   const [selectedCityTrip, setSelectedCityTrip] = useState<Trip | null>(null);
   const [routeBuildingMode, setRouteBuildingMode] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
@@ -135,6 +136,8 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     []
   );
   const [isRouteLoading, setIsRouteLoading] = useState(false);
+
+  const [cityTripsLoading, setCityTripsLoading] = useState(false);
 
   const [mapDraggingIdx, setMapDraggingIdx] = useState<number | null>(null);
   const [mapDragOverIdx, setMapDragOverIdx] = useState<number | null>(null);
@@ -233,8 +236,9 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       const fetchTrip = async () => {
         setIsRouteLoading(true);
         try {
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
           const response = await axios.get(
-            `http://localhost:8000/api/v1/trips/${state.tripId}`
+            `${API_URL}/api/v1/trips/${state.tripId}`
           );
 
           // Prefer backend-provided route geometry (GeoJSON: [lon, lat]) when available
@@ -467,6 +471,11 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
 
   useEffect(() => {
     if (!cityMeta) return;
+
+    // Check if we already fetched for current source
+    if (routeSource === 'provided' && hasFetchedProvided) return;
+    if (routeSource === 'my' && hasFetchedMy) return;
+
     setCityTripsLoading(true);
     const norm = (s?: string | null) => s?.toLowerCase().trim() ?? '';
 
@@ -481,47 +490,43 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
         );
       });
 
-    // 👈 МИ ДОДАЛИ ТРЕТІЙ ПРОМІС ДЛЯ ЛАЙКІВ
-    const promises: [Promise<Trip[]>, Promise<Trip[]> | null, Promise<any> | null] = [
-      getAllTrips(),
-      token && token !== 'null' && token !== 'undefined'
+    const promises: [Promise<Trip[]> | null, Promise<Trip[]> | null, Promise<any> | null] = [
+      routeSource === 'provided' && !hasFetchedProvided ? getAllTrips() : null,
+      routeSource === 'my' && !hasFetchedMy && token && token !== 'null' && token !== 'undefined'
         ? getMyTrips(token)
         : null,
-      token && token !== 'null' && token !== 'undefined'
-        ? getLikedTrips(token)
-        : null,
+      // Always fetch likes if they haven't been fetched? Or just fetch them once.
+      // For simplicity, let's fetch likes with either source if not fetched.
+      token && token !== 'null' && token !== 'undefined' ? getLikedTrips(token) : null,
     ];
 
     Promise.allSettled(promises)
       .then(([allRes, myRes, likedRes]) => {
-        // Обробка всіх маршрутів
-        if (allRes.status === 'fulfilled') {
+        if (allRes.status === 'fulfilled' && allRes.value) {
           const trips = Array.isArray(allRes.value) ? allRes.value : [];
           setCityTrips(filterByCity(trips));
-        } else {
+          setHasFetchedProvided(true);
+        } else if (allRes.status === 'rejected' && routeSource === 'provided') {
           console.error('Error loading shared trips:', allRes.reason);
           setCityTrips([]);
         }
 
-        // Обробка моїх маршрутів
-        if (myRes && myRes.status === 'fulfilled') {
+        if (myRes && myRes.status === 'fulfilled' && myRes.value) {
           const trips = Array.isArray(myRes.value) ? myRes.value : [];
           setMyCityTrips(filterByCity(trips));
-        } else {
-          if (myRes && myRes.status === 'rejected') {
-            console.error('Error loading own trips:', myRes.reason);
-          }
+          setHasFetchedMy(true);
+        } else if (myRes && myRes.status === 'rejected' && routeSource === 'my') {
+          console.error('Error loading own trips:', myRes.reason);
           setMyCityTrips([]);
         }
 
-        // 👈 ОБРОБКА ЛАЙКІВ (записуємо їх у стейт)
-        if (likedRes && likedRes.status === 'fulfilled') {
+        if (likedRes && likedRes.status === 'fulfilled' && likedRes.value) {
           const likedData = Array.isArray(likedRes.value) ? likedRes.value : [];
           setLikedTripIds(likedData.map((t: Trip) => t.id));
         }
       })
       .finally(() => setCityTripsLoading(false));
-  }, [cityMeta, token]);
+  }, [cityMeta, token, routeSource, hasFetchedProvided, hasFetchedMy]);
 
   // 👈 КРОК 4: Функція для обробки лайків
   const handleLikeClick = useCallback(async (e: React.MouseEvent, tripId: string) => {
@@ -549,6 +554,10 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     }
   }, [token, likedTripIds]);
 
+  useEffect(() => {
+    setHasFetchedProvided(false);
+    setHasFetchedMy(false);
+  }, [cityMeta]);
   const cityLocation = useMemo(
     () =>
       cityMeta

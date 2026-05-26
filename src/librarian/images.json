@@ -1,0 +1,50 @@
+[
+  {
+    "id": 1,
+    "cityName": "Lviv",
+    "imageUrl": "https://i.pinimg.com/1200x/ad/67/ba/ad67ba9cf0586f3e526aeb88c52b9b9d.jpg",
+    "linkUrl": "/explore/lviv",
+    "lat": 49.839683,
+    "lng": 24.029717
+  },
+  {
+    "id": 2,
+    "cityName": "Chernivtsi",
+    "imageUrl": "https://i.pinimg.com/1200x/7f/75/42/7f7542f4b9bf5573df68d8b2feef2787.jpg",
+    "linkUrl": "/explore/chernivtsi",
+    "lat": 48.29149,
+    "lng": 25.935225
+  },
+  {
+    "id": 4,
+    "cityName": "Kiev",
+    "imageUrl": "https://i.pinimg.com/1200x/c0/6c/73/c06c732be84e32d477b342d27216dffd.jpg",
+    "linkUrl": "/explore/kiev",
+    "lat": 50.4501,
+    "lng": 30.5234
+  },
+  {
+    "id": 5,
+    "cityName": "Odesa",
+    "imageUrl": "https://i.pinimg.com/1200x/b0/66/6d/b0666dd82acccdf74f344563634c7274.jpg",
+    "linkUrl": "/explore/odesa",
+    "lat": 46.4825,
+    "lng": 30.7233
+  },
+  {
+    "id": 6,
+    "cityName": "Dnipro",
+    "imageUrl": "https://i.pinimg.com/1200x/41/be/66/41be66cd1350a57035c7362f2f808057.jpg",
+    "linkUrl": "/explore/dnipro",
+    "lat": 48.4647,
+    "lng": 35.0462
+  },
+  {
+    "id": 3,
+    "cityName": "Uzhorod",
+    "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/%D0%A3%D0%B6%D0%B3%D0%BE%D1%80%D0%BE%D0%B4%D1%81%D1%8C%D0%BA%D0%B8%D0%B9_%D0%BA%D0%B0%D1%84%D0%B5%D0%B4%D1%80%D0%B0%D0%BB%D1%8C%D0%BD%D0%B8%D0%B9_%D1%81%D0%BE%D0%B1%D0%BE%D1%80%2C_%D0%B0%D0%B5%D1%80%D0%BE%D1%84%D0%BE%D1%82%D0%BE_2.jpg/500px-%D0%A3%D0%B6%D0%B3%D0%BE%D1%80%D0%BE%D0%B4%D1%81%D1%8C%D0%BA%D0%B8%D0%B9_%D0%BA%D0%B0%D1%84%D0%B5%D0%B4%D1%80%D0%B0%D0%BB%D1%8C%D0%BD%D0%B8%D0%B9_%D1%81%D0%BE%D0%B1%D0%BE%D1%80%2C_%D0%B0%D0%B5%D1%80%D0%BE%D1%84%D0%BE%D1%82%D0%BE_2.jpg",
+    "linkUrl": "/explore/uzhhorod",
+    "lat": 48.6208,
+    "lng": 22.287883
+  }
+]

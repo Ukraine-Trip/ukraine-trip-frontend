@@ -171,7 +171,7 @@ export const CreateLocationPage: React.FC = () => {
     try {
       // Тут логіка відправки масиву точок на ВАШ бекенд.
       // Залежно від вашої API, ви можете надсилати waypoints або routeGeometry
-      await api.post(
+      const response = await api.post(
         '/routes/', // Замінив endpoint, оскільки тепер це маршрут
         {
           name: form.name,
@@ -183,6 +183,18 @@ export const CreateLocationPage: React.FC = () => {
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+
+      // Якщо бекенд повертає route_geometry (GeoJSON [lon, lat]), використаємо його для відмальовки
+      const backendCoords = response?.data?.route_geometry?.coordinates;
+      if (Array.isArray(backendCoords) && backendCoords.length > 1) {
+        try {
+          const mapped = backendCoords.map((c: any) => [c[1], c[0]] as [number, number]);
+          setRouteGeometry(mapped);
+        } catch (e) {
+          // якщо не вдалось, нічого не робимо — залишиться клієнтський preview
+        }
+      }
+
       setSuccess(true);
       setTimeout(() => navigate('/account?showLocations=1'), 1800);
     } catch (err: any) {

@@ -11,6 +11,16 @@ export const createTrip = (
     })
     .then((res) => res.data);
 
+    export const createTripAI = (
+  payload: { "prompt": string },
+  token: string,
+): Promise<Trip> =>
+  api
+    .post<Trip>('/trips/genarate-ai', payload, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    .then((res) => res.data);
+
 export const getAllTrips = (): Promise<Trip[]> =>
   api.get<Trip[]>('/trips/').then((res) => res.data);
 

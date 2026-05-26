@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -18,10 +18,12 @@ import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import { HeroSection as StyledHeroSection } from '../../style.tsx';
 import { searchOsmPOIs } from '../../../../services/overpassService.ts';
 import { parseTripQuery } from '../../../../utils/tripQueryParser.ts';
+import { createTripAI } from '../../../../api/trips.ts';
+import { AuthContext } from '../../../../context/AuthContext.tsx';
 
 export const HeroSection: React.FC = () => {
   const navigate = useNavigate();
-
+ const { token } = useContext(AuthContext);
   const [prompt, setPrompt] = useState('');
   const [isBuilding, setIsBuilding] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,40 +37,27 @@ export const HeroSection: React.FC = () => {
     setIsBuilding(true);
     setError(null);
     setHint('🌍 Шукаю місця через OpenStreetMap…');
+const cleanToken =
+      token && token !== 'null' && token !== 'undefined'
+        ? token.replace(/["']/g, '')
+        : null;
 
-    try {
-      // 1. Парсимо текст → регіони, тип, назва
-      const { regions, type } = parseTripQuery(prompt);
+    if (!cleanToken) {
+      navigate('/login');
+      return;
+    }
+try{
 
-      // 2. Рівень A — Overpass з фільтрами регіону + типу
-      let points = await searchOsmPOIs(regions, type, 8);
 
-      // 3. Рівень B — якщо мало: тільки тип, без регіону
-      if (points.length < 2 && type) {
-        setHint('🔍 Розширюю пошук по всій Україні…');
-        points = await searchOsmPOIs([], type, 8);
-      }
-
-      // 4. Рівень C — fallback: популярні туристичні місця без фільтрів
-      if (points.length < 2) {
-        setHint('📍 Підбираю найпопулярніші місця…');
-        points = await searchOsmPOIs([], undefined, 8);
-      }
-
-      if (points.length < 2) {
-        setError(
-          'OpenStreetMap не повернув результатів. Перевірте інтернет або спробуйте інший запит.',
-        );
-        return;
-      }
-
-      // 5. Передаємо точки на MapPage — маршрут будується через OSRM автоматично
-      navigate('/map-page', {
-        state: {
-          initialRoutePoints: points,
-          transport: 'car',
+const trip = await createTripAI(
+        {
+prompt: prompt.trim()
         },
-      });
+        cleanToken
+      );
+      navigate(`/trip/${trip.id}`);
+      // 1. Парсимо текст → регіони, тип, назва
+      
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : 'Помилка пошуку локацій. Спробуйте ще раз.';
@@ -79,12 +68,12 @@ export const HeroSection: React.FC = () => {
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleBuild();
-    }
-  };
+  // const handleKeyDown = (e: React.KeyboardEvent) => {
+  //   if (e.key === 'Enter' && !e.shiftKey) {
+  //     e.preventDefault();
+  //     handleBuild();
+  //   }
+  // };
 
   return (
     <>
@@ -116,7 +105,7 @@ export const HeroSection: React.FC = () => {
             onChange={(e) => {
               if (e.target.value.length <= 150) setPrompt(e.target.value);
             }}
-            onKeyDown={handleKeyDown}
+            // onKeyDown={handleKeyDown}
             placeholder="Напр.: замки Харківщини, музеї Львова…"
             fullWidth
             variant="outlined"

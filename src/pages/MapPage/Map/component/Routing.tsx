@@ -65,7 +65,7 @@ const Routing: React.FC<RoutingProps> = ({ points, transportType }) => {
       const serviceUrl = getServiceUrl(transportType);
       const profile = getOSRMProfile(transportType);
 
-      const control = L.Routing.control(({
+      const control = L.Routing.control({
         router: new CustomRouter({
           serviceUrl: serviceUrl,
           profile: profile,
@@ -80,7 +80,7 @@ const Routing: React.FC<RoutingProps> = ({ points, transportType }) => {
         fitSelectedRoutes: false,
         createMarker: () => null,
         collapsible: false,
-      } as any)).addTo(map);
+      }).addTo(map);
 
       // Hide the directions panel that leaflet-routing-machine injects into the DOM
       const container = control.getContainer();

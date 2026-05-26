@@ -156,15 +156,14 @@ export const EditTripPage: React.FC = () => {
       const locationId = String(node.location?.id ?? node.location_id);
       const found = locations.find((loc) => loc.id === locationId);
       if (found) return found;
-      const locAny = node.location as any;
       return {
         id: locationId,
         name: node.location?.name ?? 'Без назви',
         region: node.location?.region ?? '',
-        type: locAny?.type ?? 'landmark',
+        type: node.location?.type ?? 'landmark',
         lat: node.location?.lat ?? 0,
         lng: node.location?.lon ?? 0,
-        description: locAny?.description ?? '',
+        description: node.location?.description ?? '',
       };
     };
 

@@ -109,6 +109,8 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   const CTRL_TOP = isMobile ? 16 : HEADER_H + 12;
   const { token } = useContext(AuthContext);
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
+  const [isOptimized, setIsOptimized] = useState(false);
+  const originalRoutePointsRef = useRef<ItineraryPoint[]>([]);
   const [activeLayer, setActiveLayer] = useState<LayerType>('grey');
   const [layerPanelOpen, setLayerPanelOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -129,6 +131,8 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   const [cityTripsLoading, setCityTripsLoading] = useState(false);
   const [selectedCityTrip, setSelectedCityTrip] = useState<Trip | null>(null);
   const [routeBuildingMode, setRouteBuildingMode] = useState(false);
+  const [saveMode, setSaveMode] = useState(false);
+  const [tripTitle, setTripTitle] = useState('');
   const [saveLoading, setSaveLoading] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [fetchedTripRoute, setFetchedTripRoute] = useState<[number, number][]>(
@@ -267,10 +271,24 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       return;
     }
 
-    setSelectedRoutePoints((prev) => {
-      const isSelected = prev.some((p) => p.id === point.id);
-      return isSelected ? prev.filter((p) => p.id !== point.id) : [...prev, point];
-    });
+    if (isOptimized) {
+      const base =
+        originalRoutePointsRef.current.length > 0
+          ? originalRoutePointsRef.current
+          : selectedRoutePoints;
+      const isSelected = base.some((p) => p.id === point.id);
+      setSelectedRoutePoints(
+        isSelected ? base.filter((p) => p.id !== point.id) : [...base, point]
+      );
+      originalRoutePointsRef.current = [];
+      setIsOptimized(false);
+    } else {
+      setSelectedRoutePoints((prev) => {
+        const isSelected = prev.find((p) => p.id === point.id);
+        if (isSelected) return prev.filter((p) => p.id !== point.id);
+        return [...prev, point];
+      });
+    }
     setActivePointDetails(point);
   };
 
@@ -278,6 +296,52 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     return selectedRoutePoints.some((p) => p.id === point.id);
   };
 
+  const nearestNeighborSort = (points: ItineraryPoint[]): ItineraryPoint[] => {
+    if (points.length <= 2) return [...points];
+
+    const unvisited = points.slice(1);
+    const result: ItineraryPoint[] = [points[0]];
+
+    while (unvisited.length > 0) {
+      const current = result[result.length - 1];
+      let minDist = Infinity;
+      let nearestIdx = 0;
+
+      unvisited.forEach((pt, idx) => {
+        const dLat = pt.lat - current.lat;
+        const dLng = pt.lng - current.lng;
+        const dist = dLat * dLat + dLng * dLng;
+        if (dist < minDist) {
+          minDist = dist;
+          nearestIdx = idx;
+        }
+      });
+
+      result.push(unvisited[nearestIdx]);
+      unvisited.splice(nearestIdx, 1);
+    }
+
+    return result;
+  };
+
+  const handleSmartRouteToggle = () => {
+    if (isOptimized) {
+      const restored = [...originalRoutePointsRef.current];
+      originalRoutePointsRef.current = [];
+      setIsOptimized(false);
+      if (restored.length > 0) {
+        setSelectedRoutePoints(restored);
+      }
+      return;
+    }
+
+    if (selectedRoutePoints.length < 2) return;
+
+    const optimized = nearestNeighborSort(selectedRoutePoints);
+    originalRoutePointsRef.current = [...selectedRoutePoints];
+    setSelectedRoutePoints([...optimized]);
+    setIsOptimized(true);
+  };
 
   const handleViewItinerary = () => {
     if (selectedRoutePoints.length === 0) return;
@@ -298,6 +362,29 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
         transport: transportType,
       },
     });
+  };
+
+  const handleSaveTrip = async () => {
+    if (!tripTitle.trim() || selectedRoutePoints.length < 2 || !token) return;
+    setSaveLoading(true);
+    setSaveError(null);
+    try {
+      await createTrip(
+        {
+          title: tripTitle.trim(),
+          location_ids: selectedRoutePoints.map((p) => p.id),
+          optimize: false,
+        },
+        token
+      );
+
+      navigate('/my-trips');
+    } catch (err: any) {
+      setSaveError(
+        err.response?.data?.detail || 'Помилка при збереженні маршруту'
+      );
+      setSaveLoading(false);
+    }
   };
 
   const handleShowDetails = async () => {
@@ -2031,6 +2118,48 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
             </svg>
           </button>
 
+          {selectedRoutePoints.length > 2 && (
+            <div
+              onClick={handleSmartRouteToggle}
+              style={{
+                position: 'absolute',
+                top: CTRL_TOP,
+                right: '16px',
+                zIndex: 999,
+                backgroundColor: isOptimized ? '#f0f4ff' : 'white',
+                padding: '10px 16px',
+                borderRadius: '30px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                cursor: 'pointer',
+                border: isOptimized ? '1px solid #3b5bdb' : '1px solid #eee',
+                transition: 'all 0.2s',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={isOptimized}
+                readOnly
+                style={{
+                  cursor: 'pointer',
+                  transform: 'scale(1.2)',
+                  margin: 0,
+                  accentColor: '#3b5bdb',
+                }}
+              />
+              <span
+                style={{
+                  fontWeight: 800,
+                  fontSize: '12px',
+                  color: isOptimized ? '#3b5bdb' : '#111',
+                }}
+              >
+                {isOptimized ? 'SMART ROUTE' : 'MY ORDER'}
+              </span>
+            </div>
+          )}
 
           <div
             onClick={() => {

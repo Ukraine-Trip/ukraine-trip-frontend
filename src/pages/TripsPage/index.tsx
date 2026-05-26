@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Box, 
   Container, 
@@ -18,6 +19,7 @@ import type { Trip } from '../../types/types.ts';
 
 export const TripsPage: React.FC = () => {
   const { token } = useContext(AuthContext);
+  const navigate = useNavigate();
   
   const [trips, setTrips] = useState<Trip[]>([]);
   const [likedTripIds, setLikedTripIds] = useState<string[]>([]); 

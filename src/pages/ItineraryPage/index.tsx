@@ -511,7 +511,7 @@ export const ItineraryPage: React.FC = () => {
                       userSelect: 'none',
                       '&:hover': {
                         borderColor: filterOwner === value ? '#333' : '#999',
-                        bgcolor: filterOwner === value ? '#333' : () => alpha('#000', 0.04),
+                        bgcolor: filterOwner === value ? '#333' : (theme: any) => alpha('#000', 0.04),
                       },
                     }}
                   >

@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Polyline, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
@@ -24,8 +24,6 @@ import {
 } from '../../style/common.tsx';
 import { api } from '../../api/auth.ts';
 import { AuthContext } from '../../context/AuthContext';
-
-const Routing = lazy(() => import('../MapPage/Map/component/Routing.tsx'));
 
 // ... (UKRAINE_REGIONS та LOCATION_TYPES залишаються без змін)
 const UKRAINE_REGIONS = [
@@ -268,12 +266,7 @@ export const CreateLocationPage: React.FC = () => {
               <Marker key={idx} position={pos} icon={pinIcon} />
             ))}
 
-            {/* Відмальовуємо маршрут через Routing + API маршрут */}
-            {waypoints.length > 1 && (
-              <Suspense fallback={null}>
-                <Routing points={waypoints} transportType="car" />
-              </Suspense>
-            )}
+            {/* Відмальовуємо маршрут від API */}
             {routeGeometry.length > 1 && (
               <Polyline positions={routeGeometry} pathOptions={{ color: '#1565C0', weight: 4 }} />
             )}

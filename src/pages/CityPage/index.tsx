@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -41,10 +41,6 @@ const createClusterCustomIcon = (cluster: any) => {
     iconSize: L.point(33, 33, true),
   });
 };
-
-type TransportType = 'car' | 'foot' | 'bike';
-const transportType: TransportType = 'car';
-const Routing = lazy(() => import('../MapPage/Map/component/Routing.tsx'));
 
 const FlyToSelected: React.FC<{ center: [number, number] | null }> = ({ center }) => {
   const map = useMap();
@@ -342,12 +338,7 @@ export const CityPage: React.FC = () => {
         <FlyToSelected center={selectedTrip ? null : mapCenter} />
         <FlyToRoute trip={selectedTrip} />
 
-        {/* Відмальовуємо лінію маршруту через Routing + Polyline */}
-        {routeCoords.length > 1 && (
-          <Suspense fallback={null}>
-            <Routing points={routeCoords} transportType={transportType} />
-          </Suspense>
-        )}
+        {/* Відмальовуємо лінію маршруту через Polyline */}
         {routeCoords.length > 1 && (
           <Polyline
             positions={routeCoords}

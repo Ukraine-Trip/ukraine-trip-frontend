@@ -2556,19 +2556,18 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
               }
             />
 
-            {pointsForRouting.length > 1 && (
+            {fetchedTripRoute.length > 1 ? (
+              <Polyline
+                positions={fetchedTripRoute}
+                pathOptions={{ color: '#1976d2', weight: 4, opacity: 0.85 }}
+              />
+            ) : pointsForRouting.length > 1 && (
               <Suspense fallback={null}>
                 <Routing
                   points={pointsForRouting}
                   transportType={transportType}
                 />
               </Suspense>
-            )}
-            {pointsForRouting.length > 1 && (
-              <Polyline
-                positions={pointsForRouting}
-                pathOptions={{ color: '#1976d2', weight: 4, opacity: 0.85 }}
-              />
             )}
 
             <MarkerClusterGroup

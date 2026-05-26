@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -72,7 +72,7 @@ const FlyToRoute: React.FC<{ trip: Trip | null }> = ({ trip }) => {
     const coords = trip.trip_nodes
       .filter((n) => n.location?.lat != null && n.location?.lon != null)
       .sort((a, b) => a.order_index - b.order_index)
-      .map((n) => [n.location.lat, n.location.lon] as [number, number]);
+      .map((n) => [n.location!.lat, n.location!.lon] as [number, number]);
 
     if (coords.length === 0) return;
     if (coords.length === 1) {
@@ -137,7 +137,6 @@ export const CityPage: React.FC = () => {
 
   const normalize = (s?: string | null) => s?.toLowerCase().trim() ?? '';
 
-
   const regionTrips = trips.filter((trip) =>
     trip.trip_nodes.some((node) => {
       const locRegion = normalize(node.location?.region);
@@ -149,7 +148,6 @@ export const CityPage: React.FC = () => {
     }),
   );
 
-
   const mapCenter: [number, number] | null =
     selectedLocation
       ? [selectedLocation.lat, selectedLocation.lon]
@@ -157,12 +155,29 @@ export const CityPage: React.FC = () => {
         ? [navState.lat, navState.lng]
         : null;
 
-  const routeCoords: [number, number][] = selectedTrip
-    ? selectedTrip.trip_nodes
-        .filter((n) => n.location?.lat != null && n.location?.lon != null)
-        .sort((a, b) => a.order_index - b.order_index)
-        .map((n) => [n.location.lat, n.location.lon])
-    : [];
+  // Формування координат для маршруту з урахуванням геометрії з бекенду
+  const routeCoords = useMemo((): [number, number][] => {
+    if (!selectedTrip) return [];
+
+    const nodesCoords = selectedTrip.trip_nodes
+      .filter((n) => n.location?.lat != null && n.location?.lon != null)
+      .sort((a, b) => a.order_index - b.order_index)
+      .map((n) => [n.location!.lat, n.location!.lon] as [number, number]);
+
+    // Якщо бекенд передає детальну геометрію маршруту
+    const backendRaw = (selectedTrip as any)?.route_geometry?.coordinates;
+    if (Array.isArray(backendRaw) && backendRaw.length > 1) {
+      try {
+        // GeoJSON повертає [lon, lat], перетворюємо на [lat, lon] для Leaflet
+        return backendRaw.map((c: any) => [c[1], c[0]] as [number, number]);
+      } catch {
+        return nodesCoords;
+      }
+    }
+    
+    // Якщо детальної геометрії немає, повертаємо звичайні точки
+    return nodesCoords;
+  }, [selectedTrip]);
 
   const handleRouteClick = (trip: Trip) => {
     setSelectedTrip((prev) => (prev?.id === trip.id ? null : trip));
@@ -323,10 +338,11 @@ export const CityPage: React.FC = () => {
         <FlyToSelected center={selectedTrip ? null : mapCenter} />
         <FlyToRoute trip={selectedTrip} />
 
+        {/* Відмальовуємо лінію маршруту через Polyline */}
         {routeCoords.length > 1 && (
           <Polyline
             positions={routeCoords}
-            pathOptions={{ color: '#1976d2', weight: 4, opacity: 0.85, dashArray: undefined }}
+            pathOptions={{ color: '#1976d2', weight: 4, opacity: 0.85 }}
           />
         )}
 

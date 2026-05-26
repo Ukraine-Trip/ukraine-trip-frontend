@@ -1,6 +1,6 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Polyline, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
@@ -12,8 +12,9 @@ import {
   FormControl,
   Alert,
   Snackbar,
+  Button
 } from '@mui/material';
-import RoomIcon from '@mui/icons-material/Room';
+import RouteIcon from '@mui/icons-material/Route';
 import {
   PageWrapper,
   PageTitle,
@@ -24,41 +25,21 @@ import {
 import { api } from '../../api/auth.ts';
 import { AuthContext } from '../../context/AuthContext';
 
+// ... (UKRAINE_REGIONS та LOCATION_TYPES залишаються без змін)
 const UKRAINE_REGIONS = [
-  'Vinnytsia Oblast',
-  'Volyn Oblast',
-  'Dnipropetrovsk Oblast',
-  'Donetsk Oblast',
-  'Zhytomyr Oblast',
-  'Zakarpattia Oblast',
-  'Zaporizhzhia Oblast',
-  'Ivano-Frankivsk Oblast',
-  'Kyiv Oblast',
-  'Kirovohrad Oblast',
-  'Luhansk Oblast',
-  'Lviv Oblast',
-  'Mykolaiv Oblast',
-  'Odesa Oblast',
-  'Poltava Oblast',
-  'Rivne Oblast',
-  'Sumy Oblast',
-  'Ternopil Oblast',
-  'Kharkiv Oblast',
-  'Kherson Oblast',
-  'Khmelnytskyi Oblast',
-  'Cherkasy Oblast',
-  'Chernivtsi Oblast',
-  'Chernihiv Oblast',
+  'Vinnytsia Oblast', 'Volyn Oblast', 'Dnipropetrovsk Oblast', 'Donetsk Oblast',
+  'Zhytomyr Oblast', 'Zakarpattia Oblast', 'Zaporizhzhia Oblast', 'Ivano-Frankivsk Oblast',
+  'Kyiv Oblast', 'Kirovohrad Oblast', 'Luhansk Oblast', 'Lviv Oblast',
+  'Mykolaiv Oblast', 'Odesa Oblast', 'Poltava Oblast', 'Rivne Oblast',
+  'Sumy Oblast', 'Ternopil Oblast', 'Kharkiv Oblast', 'Kherson Oblast',
+  'Khmelnytskyi Oblast', 'Cherkasy Oblast', 'Chernivtsi Oblast', 'Chernihiv Oblast',
   'Kyiv City',
 ];
 
 const LOCATION_TYPES = [
-  { value: 'city', label: 'City' },
-  { value: 'landmark', label: 'Landmark' },
-  { value: 'park', label: 'Park' },
-  { value: 'culture', label: 'Culture' },
-  { value: 'cafe', label: 'Cafe' },
-  { value: 'stop', label: 'Stop' },
+  { value: 'city', label: 'City' }, { value: 'landmark', label: 'Landmark' },
+  { value: 'park', label: 'Park' }, { value: 'culture', label: 'Culture' },
+  { value: 'cafe', label: 'Cafe' }, { value: 'stop', label: 'Stop' },
 ];
 
 const pinIcon = L.divIcon({
@@ -76,26 +57,27 @@ const pinIcon = L.divIcon({
   iconAnchor: [14, 28],
 });
 
-interface LocationPickerProps {
-  onSelect: (lat: number, lng: number) => void;
-}
-
 const ukraineBounds: L.LatLngBoundsLiteral = [
   [44.3863, 22.1372], // Southwest
   [52.3791, 40.2277], // Northeast
 ];
 
-const LocationPicker: React.FC<LocationPickerProps> = ({ onSelect }) => {
+interface RoutePickerProps {
+  onAddPoint: (lat: number, lng: number) => void;
+}
+
+// Компонент для обробки кліків по мапі
+const RoutePicker: React.FC<RoutePickerProps> = ({ onAddPoint }) => {
   const map = useMapEvents({
     click(e) {
       const bounds = L.latLngBounds(ukraineBounds);
       if (bounds.contains(e.latlng)) {
-        onSelect(e.latlng.lat, e.latlng.lng);
+        onAddPoint(e.latlng.lat, e.latlng.lng);
       }
     },
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     map.setMaxBounds(L.latLngBounds(ukraineBounds));
   }, [map]);
 
@@ -113,7 +95,11 @@ export const CreateLocationPage: React.FC = () => {
   const { token } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const [selectedPos, setSelectedPos] = useState<{ lat: number; lng: number } | null>(null);
+  // Стейт для зберігання всіх вибраних точок (waypoints)
+  const [waypoints, setWaypoints] = useState<[number, number][]>([]);
+  // Стейт для зберігання геометрії маршруту з API
+  const [routeGeometry, setRouteGeometry] = useState<[number, number][]>([]);
+  
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -125,31 +111,74 @@ export const CreateLocationPage: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Функція для запиту до OSRM API
+  useEffect(() => {
+    const fetchRoute = async () => {
+      if (waypoints.length < 2) {
+        setRouteGeometry([]);
+        return;
+      }
+
+      try {
+        // OSRM приймає координати у форматі "lon,lat;lon,lat"
+        const coordinatesString = waypoints.map(wp => `${wp[1]},${wp[0]}`).join(';');
+        
+        // Звертаємось до публічного OSRM API (маршрут для авто: driving)
+        const response = await fetch(
+          `https://router.project-osrm.org/route/v1/driving/${coordinatesString}?overview=full&geometries=geojson`
+        );
+        const data = await response.json();
+
+        if (data.code === 'Ok' && data.routes.length > 0) {
+          // OSRM повертає координати як [lon, lat], а Leaflet потребує [lat, lon]
+          const coords = data.routes[0].geometry.coordinates.map((c: [number, number]) => [c[1], c[0]]);
+          setRouteGeometry(coords);
+        }
+      } catch (err) {
+        console.error("Failed to fetch route API", err);
+        setError("Помилка при побудові маршруту через API.");
+      }
+    };
+
+    fetchRoute();
+  }, [waypoints]);
+
+  const handleAddPoint = (lat: number, lng: number) => {
+    setWaypoints(prev => [...prev, [lat, lng]]);
+  };
+
+  const handleClearRoute = () => {
+    setWaypoints([]);
+    setRouteGeometry([]);
+  };
+
   const handleSubmit = async () => {
-    if (!selectedPos) {
-      setError('Please select a location on the map');
+    if (waypoints.length === 0) {
+      setError('Please select at least one location on the map');
       return;
     }
     if (!form.name.trim()) {
-      setError('Place name is required');
+      setError('Place/Route name is required');
       return;
     }
     if (!form.region) {
       setError('Please select a region');
       return;
     }
+    
     setLoading(true);
     setError(null);
     try {
+      // Тут логіка відправки масиву точок на ВАШ бекенд.
+      // Залежно від вашої API, ви можете надсилати waypoints або routeGeometry
       await api.post(
-        '/locations/',
+        '/routes/', // Замінив endpoint, оскільки тепер це маршрут
         {
           name: form.name,
           description: form.description,
           region: form.region,
           type: form.type,
-          lat: selectedPos.lat,
-          lon: selectedPos.lng,
+          waypoints: waypoints, // відправляємо масив координат
           priority: form.priority,
         },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -157,7 +186,7 @@ export const CreateLocationPage: React.FC = () => {
       setSuccess(true);
       setTimeout(() => navigate('/account?showLocations=1'), 1800);
     } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Failed to create location. Please try again.');
+      setError(err?.response?.data?.detail || 'Failed to create route. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -167,7 +196,7 @@ export const CreateLocationPage: React.FC = () => {
     <PageWrapper>
       <Box sx={{ maxWidth: '900px', margin: '0 auto', px: 3 }}>
         <SubTitle>Contribute</SubTitle>
-        <PageTitle>Create Place</PageTitle>
+        <PageTitle>Create Route</PageTitle>
 
         {/* Map */}
         <Box
@@ -182,7 +211,7 @@ export const CreateLocationPage: React.FC = () => {
             position: 'relative',
           }}
         >
-          {!selectedPos && (
+          {waypoints.length === 0 && (
             <Box
               sx={{
                 position: 'absolute',
@@ -200,7 +229,7 @@ export const CreateLocationPage: React.FC = () => {
               }}
             >
               <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#444', letterSpacing: '0.5px' }}>
-                Click on the map to select location
+                Click on the map to start building a route
               </Typography>
             </Box>
           )}
@@ -216,13 +245,22 @@ export const CreateLocationPage: React.FC = () => {
               url="https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"
               attribution="&copy; Stadia Maps"
             />
-            <LocationPicker onSelect={(lat, lng) => setSelectedPos({ lat, lng })} />
-            {selectedPos && <Marker position={[selectedPos.lat, selectedPos.lng]} icon={pinIcon} />}
+            <RoutePicker onAddPoint={handleAddPoint} />
+            
+            {/* Малюємо всі вибрані маркери */}
+            {waypoints.map((pos, idx) => (
+              <Marker key={idx} position={pos} icon={pinIcon} />
+            ))}
+
+            {/* Відмальовуємо маршрут від API */}
+            {routeGeometry.length > 1 && (
+              <Polyline positions={routeGeometry} pathOptions={{ color: '#1565C0', weight: 4 }} />
+            )}
           </MapContainer>
         </Box>
 
-        {/* Selected location badge */}
-        {selectedPos && (
+        {/* Інформація про маршрут */}
+        {waypoints.length > 0 && (
           <Box
             sx={{
               display: 'flex',
@@ -235,38 +273,33 @@ export const CreateLocationPage: React.FC = () => {
               borderRadius: '4px',
             }}
           >
-            <RoomIcon sx={{ color: '#1565C0', fontSize: '1.4rem', flexShrink: 0 }} />
+            <RouteIcon sx={{ color: '#1565C0', fontSize: '1.4rem', flexShrink: 0 }} />
             <Box sx={{ flexGrow: 1 }}>
-              <Typography sx={{ fontWeight: 700, fontSize: '0.85rem' }}>Selected location</Typography>
-              <Typography sx={{ fontSize: '0.75rem', color: '#777', fontFamily: 'monospace' }}>
-                {selectedPos.lat.toFixed(4)}, {selectedPos.lng.toFixed(4)}
+              <Typography sx={{ fontWeight: 700, fontSize: '0.85rem' }}>
+                {waypoints.length} points selected
+              </Typography>
+              <Typography sx={{ fontSize: '0.75rem', color: '#777' }}>
+                {routeGeometry.length > 0 ? "Route generated successfully" : "Add more points to build a route"}
               </Typography>
             </Box>
-            <Typography
-              onClick={() => setSelectedPos(null)}
-              sx={{
-                fontSize: '0.75rem',
-                color: '#1565C0',
-                cursor: 'pointer',
-                fontWeight: 600,
-                flexShrink: 0,
-                '&:hover': { textDecoration: 'underline' },
-              }}
+            <Button
+              size="small"
+              color="error"
+              onClick={handleClearRoute}
+              sx={{ fontWeight: 600, textTransform: 'none' }}
             >
-              Adjust marker
-            </Typography>
+              Clear Route
+            </Button>
           </Box>
         )}
 
-        {/* Form */}
+        {/* Форма залишається майже без змін, лише адаптована під відправку масиву точок */}
         <Stack spacing={3}>
           <Box>
-            <SubTitle>
-              Place Name <span style={{ color: '#e53935' }}>*</span>
-            </SubTitle>
+            <SubTitle>Route Name <span style={{ color: '#e53935' }}>*</span></SubTitle>
             <CommonInput
               fullWidth
-              placeholder="Enter place name"
+              placeholder="Enter route name"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
@@ -278,41 +311,20 @@ export const CreateLocationPage: React.FC = () => {
               fullWidth
               multiline
               rows={4}
-              placeholder="Describe this place..."
+              placeholder="Describe this route..."
               value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value.slice(0, 300) })
-              }
+              onChange={(e) => setForm({ ...form, description: e.target.value.slice(0, 300) })}
               helperText={`${form.description.length}/300`}
             />
           </Box>
 
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: { xs: 'column', sm: 'row' },
-              gap: 3,
-            }}
-          >
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 3 }}>
             <Box sx={{ flex: 1 }}>
-              <SubTitle>
-                Region <span style={{ color: '#e53935' }}>*</span>
-              </SubTitle>
+              <SubTitle>Region <span style={{ color: '#e53935' }}>*</span></SubTitle>
               <FormControl fullWidth>
-                <Select
-                  value={form.region}
-                  onChange={(e) => setForm({ ...form, region: e.target.value })}
-                  displayEmpty
-                  sx={selectSx}
-                >
-                  <MenuItem value="" disabled>
-                    <em style={{ color: '#aaa', fontStyle: 'normal' }}>Select region</em>
-                  </MenuItem>
-                  {UKRAINE_REGIONS.map((r) => (
-                    <MenuItem key={r} value={r}>
-                      {r}
-                    </MenuItem>
-                  ))}
+                <Select value={form.region} onChange={(e) => setForm({ ...form, region: e.target.value })} displayEmpty sx={selectSx}>
+                  <MenuItem value="" disabled><em style={{ color: '#aaa', fontStyle: 'normal' }}>Select region</em></MenuItem>
+                  {UKRAINE_REGIONS.map((r) => (<MenuItem key={r} value={r}>{r}</MenuItem>))}
                 </Select>
               </FormControl>
             </Box>
@@ -320,16 +332,8 @@ export const CreateLocationPage: React.FC = () => {
             <Box sx={{ flex: 1 }}>
               <SubTitle>Type</SubTitle>
               <FormControl fullWidth>
-                <Select
-                  value={form.type}
-                  onChange={(e) => setForm({ ...form, type: e.target.value })}
-                  sx={selectSx}
-                >
-                  {LOCATION_TYPES.map((t) => (
-                    <MenuItem key={t.value} value={t.value}>
-                      {t.label}
-                    </MenuItem>
-                  ))}
+                <Select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} sx={selectSx}>
+                  {LOCATION_TYPES.map((t) => (<MenuItem key={t.value} value={t.value}>{t.label}</MenuItem>))}
                 </Select>
               </FormControl>
             </Box>
@@ -337,40 +341,24 @@ export const CreateLocationPage: React.FC = () => {
             <Box sx={{ flex: 1 }}>
               <SubTitle>Priority</SubTitle>
               <FormControl fullWidth>
-                <Select
-                  value={form.priority}
-                  onChange={(e) => setForm({ ...form, priority: Number(e.target.value) })}
-                  sx={selectSx}
-                >
-                  {[1, 2, 3, 4, 5].map((p) => (
-                    <MenuItem key={p} value={p}>
-                      {p} {p === 1 ? '— High' : p === 5 ? '— Low' : ''}
-                    </MenuItem>
-                  ))}
+                <Select value={form.priority} onChange={(e) => setForm({ ...form, priority: Number(e.target.value) })} sx={selectSx}>
+                  {[1, 2, 3, 4, 5].map((p) => (<MenuItem key={p} value={p}>{p} {p === 1 ? '— High' : p === 5 ? '— Low' : ''}</MenuItem>))}
                 </Select>
               </FormControl>
             </Box>
           </Box>
 
-          {error && (
-            <Alert severity="error" sx={{ borderRadius: 0 }}>
-              {error}
-            </Alert>
-          )}
+          {error && <Alert severity="error" sx={{ borderRadius: 0 }}>{error}</Alert>}
 
           <Box sx={{ pt: 1 }}>
-            <PrimaryButton onClick={handleSubmit} disabled={loading} fullWidth>
-              {loading ? 'Creating...' : 'Create Place'}
+            <PrimaryButton onClick={handleSubmit} disabled={loading || waypoints.length === 0} fullWidth>
+              {loading ? 'Saving...' : 'Create Route'}
             </PrimaryButton>
           </Box>
         </Stack>
       </Box>
 
-      <Snackbar
-        open={success}
-        message="Place created successfully! Redirecting..."
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      />
+      <Snackbar open={success} message="Route created successfully! Redirecting..." anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} />
     </PageWrapper>
   );
 };

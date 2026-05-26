@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Popup } from 'react-leaflet';
 import type { ItineraryPoint } from '../../../../types/types.ts';
 import regionsData from '../../../../librarian/cities.json';
@@ -17,6 +17,15 @@ const DANGEROUS_REGIONS = [
   'ODESA OBLAST', 'ODESA'
 ];
 
+const getRegionForCity = (cityName: string) => {
+  const foundRegion = regionsData.find(
+    (region) =>
+      region.center === cityName ||
+      region.cities.some((city) => city.name === cityName)
+  );
+  return foundRegion ? foundRegion.name : null;
+};
+
 interface MarkerPopupProps {
   point: ItineraryPoint;
   region?: string;
@@ -24,22 +33,15 @@ interface MarkerPopupProps {
   isSelected: boolean;
 }
 
-export const MarkerPopup: React.FC<MarkerPopupProps> = ({
+const MarkerPopupComponent: React.FC<MarkerPopupProps> = ({
   point,
   region,
   onSelectPoint,
   isSelected,
 }) => {
-  const getRegionForCity = (cityName: string) => {
-    const foundRegion = regionsData.find(
-      (region) =>
-        region.center === cityName ||
-        region.cities.some((city) => city.name === cityName)
-    );
-    return foundRegion ? foundRegion.name : null;
-  };
-
-  const regionName = point.region || getRegionForCity(point.name);
+  const regionName = useMemo(() => {
+    return point.region || getRegionForCity(point.name);
+  }, [point.region, point.name]);
 
   return (
     <Popup minWidth={200}>
@@ -118,3 +120,11 @@ export const MarkerPopup: React.FC<MarkerPopupProps> = ({
     </Popup>
   );
 };
+
+export const MarkerPopup = React.memo(MarkerPopupComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.point.id === nextProps.point.id &&
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.region === nextProps.region
+  );
+});

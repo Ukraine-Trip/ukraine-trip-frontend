@@ -14,9 +14,9 @@ export const createTrip = (
     export const createTripAI = (
   payload: { "prompt": string },
   token: string,
-): Promise<Trip> =>
+): Promise<{ trip_id: string, message: "string" }> =>
   api
-    .post<Trip>('/trips/genarate-ai', payload, {
+    .post<{ trip_id: string, message: "string" }>('/trips/generate-ai', payload, {
       headers: { Authorization: `Bearer ${token}` },
     })
     .then((res) => res.data);

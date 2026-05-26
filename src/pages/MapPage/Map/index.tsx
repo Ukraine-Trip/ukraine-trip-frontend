@@ -356,6 +356,8 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
         cleanToken
       );
       navigate(`/trip/${trip.id}`);
+
+    
     } catch (err: any) {
       setSaveError(
         err.response?.data?.detail || 'Помилка при створенні маршруту'

@@ -49,13 +49,13 @@ const cleanToken =
 try{
 
 
-const trip = await createTripAI(
+const result = await createTripAI(
         {
 prompt: prompt.trim()
         },
         cleanToken
       );
-      navigate(`/trip/${trip.id}`);
+      navigate(`/trip/${result.trip_id}`);
       // 1. Парсимо текст → регіони, тип, назва
       
     } catch (err: unknown) {

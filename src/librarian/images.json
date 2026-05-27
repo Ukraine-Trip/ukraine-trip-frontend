@@ -17,7 +17,7 @@
   },
   {
     "id": 4,
-    "cityName": "Kiev",
+    "cityName": "Kyiv",
     "imageUrl": "https://i.pinimg.com/1200x/c0/6c/73/c06c732be84e32d477b342d27216dffd.jpg",
     "linkUrl": "/explore/kiev",
     "lat": 50.4501,
@@ -41,7 +41,7 @@
   },
   {
     "id": 3,
-    "cityName": "Uzhorod",
+    "cityName": "Uzhhorod",
     "imageUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/%D0%A3%D0%B6%D0%B3%D0%BE%D1%80%D0%BE%D0%B4%D1%81%D1%8C%D0%BA%D0%B8%D0%B9_%D0%BA%D0%B0%D1%84%D0%B5%D0%B4%D1%80%D0%B0%D0%BB%D1%8C%D0%BD%D0%B8%D0%B9_%D1%81%D0%BE%D0%B1%D0%BE%D1%80%2C_%D0%B0%D0%B5%D1%80%D0%BE%D1%84%D0%BE%D1%82%D0%BE_2.jpg/500px-%D0%A3%D0%B6%D0%B3%D0%BE%D1%80%D0%BE%D0%B4%D1%81%D1%8C%D0%BA%D0%B8%D0%B9_%D0%BA%D0%B0%D1%84%D0%B5%D0%B4%D1%80%D0%B0%D0%BB%D1%8C%D0%BD%D0%B8%D0%B9_%D1%81%D0%BE%D0%B1%D0%BE%D1%80%2C_%D0%B0%D0%B5%D1%80%D0%BE%D1%84%D0%BE%D1%82%D0%BE_2.jpg",
     "linkUrl": "/explore/uzhhorod",
     "lat": 48.6208,

@@ -30,6 +30,8 @@ const HEADER_H = 80;
 const UKRAINE_CENTER: [number, number] = [48.3794, 31.1656];
 const DEFAULT_ZOOM = 6;
 
+const STADIA_KEY = import.meta.env.VITE_STADIA_API_KEY;
+
 interface TripMeta {
   title: string;
   description: string | null;
@@ -62,7 +64,7 @@ const layerConfig: Record<
   { url: string; attribution: string; maxZoom: number }
 > = {
   grey: {
-    url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png',
+    url: `https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png?api_key=${STADIA_KEY}`,
     attribution: '&copy; Stadia Maps',
     maxZoom: 20,
   },

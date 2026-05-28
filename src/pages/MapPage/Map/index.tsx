@@ -2553,7 +2553,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
             )}
             {activeLayer === 'satellite' && (
               <TileLayer
-                url="https://tiles.stadiamaps.com/tiles/stamen_toner_labels/{z}/{x}/{y}{r}.png"
+                url={`https://tiles.stadiamaps.com/tiles/stamen_toner_labels/{z}/{x}/{y}{r}.png?api_key=${STADIA_KEY}`}
                 attribution=""
                 opacity={0.7}
                 maxZoom={18}

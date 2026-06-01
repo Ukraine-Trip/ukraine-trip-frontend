@@ -1,18 +1,12 @@
-import React, { useState, useMemo, useEffect, useContext, useRef, useCallback, lazy, Suspense } from 'react';
-import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
+import React, { useState, useMemo, useEffect, useContext, useCallback, lazy, Suspense } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Polyline } from 'react-leaflet';
 
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { api } from '../../../api/auth.ts';
-import { AuthContext } from '../../../context/AuthContext.tsx';
 import axios from 'axios';
-import { Alert } from '@mui/material';
-import FavoriteIcon from '@mui/icons-material/Favorite'; // 👈 ДОДАЛИ
-import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
-
-type LayerType = 'grey' | 'satellite' | 'none';
 
 import { MapWrapper, MapPageLayout, RouteSidebar, MapArea } from './style.tsx';
 import { createCustomIcon } from './icons.tsx';
@@ -23,26 +17,26 @@ import { MapController } from './component/MapController.tsx';
 const Routing = lazy(() => import('./component/Routing.tsx'));
 import { UserLocation } from './component/UserLocation.tsx';
 import type { ItineraryPoint, Trip } from '../../../types/types.ts';
-import regionsData from '../../../librarian/cities.json';
 import { getAllTrips, getMyTrips, createTrip, getLikedTrips, toggleTripLike } from '../../../api/trips.ts';
+
+// State management
+import { useMapState } from './hooks/useMapState';
+
+// Components
+import { SidebarTripMetaContent } from './components/sidebar/SidebarTripMetaContent';
+import { SidebarCityMetaContent } from './components/sidebar/SidebarCityMetaContent';
+import { SidebarDefaultContent } from './components/sidebar/SidebarDefaultContent';
+import { SidebarRouteBuildingContent } from './components/sidebar/SidebarRouteBuildingContent';
+import { LayerPanel } from './components/controls/LayerPanel';
+import { TransportSelector } from './components/controls/TransportSelector';
+
+// Utils
+import { getRegionForCity } from './utils/mapHelpers';
+
 
 const HEADER_H = 80;
 const UKRAINE_CENTER: [number, number] = [48.3794, 31.1656];
 const DEFAULT_ZOOM = 6;
-
-interface TripMeta {
-  title: string;
-  description: string | null;
-  start_date: string | null;
-  end_date: string | null;
-  waypoints: Array<{ name: string; order_index: number }>;
-}
-
-interface CityMeta {
-  name: string;
-  lat: number;
-  lng: number;
-}
 
 const ukraineBounds: L.LatLngBoundsLiteral = [
   [44.3863, 22.1372], // Southwest
@@ -73,18 +67,19 @@ const layerConfig: Record<
   },
 };
 
-const formatDate = (start: string | null, end: string | null): string => {
-  if (!start) return '';
-  const fmt = (d: Date) =>
-    d.toLocaleString('uk-UA', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-  const s = new Date(start);
-  if (!end || start === end) return fmt(s);
-  return `${fmt(s)} — ${fmt(new Date(end))}`;
-};
+interface TripMeta {
+  title: string;
+  description: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  waypoints: Array<{ name: string; order_index: number }>;
+}
+
+interface CityMeta {
+  name: string;
+  lat: number;
+  lng: number;
+}
 
 const DANGEROUS_REGIONS = [
   'Donetsk',
@@ -102,46 +97,105 @@ const DANGEROUS_REGIONS = [
 
 type TransportType = 'car' | 'foot' | 'bike';
 
+const formatDate = (start: string | null, end: string | null): string => {
+  if (!start) return '';
+  const fmt = (d: Date) =>
+    d.toLocaleString('uk-UA', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  const s = new Date(start);
+  if (!end || start === end) return fmt(s);
+  return `${fmt(s)} — ${fmt(new Date(end))}`;
+};
+
+const pointsLabel = (count: number): string => {
+  if (count % 10 === 1 && count % 100 !== 11) return `${count} точка`;
+  if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100))
+    return `${count} точки`;
+  return `${count} точок`;
+};
+
+const getRegionForCity = (cityName: string) => {
+  const regionsData = require('../../../librarian/cities.json');
+  const foundRegion = regionsData.find(
+    (region: any) =>
+      region.center === cityName ||
+      region.cities.some((city: any) => city.name === cityName)
+  );
+  return foundRegion ? foundRegion.name : null;
+};
+
 export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   itinerary = [],
 }) => {
-  const isMobile = window.innerWidth <= 768;
-  const CTRL_TOP = isMobile ? 16 : HEADER_H + 12;
-  const { token } = useContext(AuthContext);
-  const [zoom, setZoom] = useState(DEFAULT_ZOOM);
-  const [activeLayer, setActiveLayer] = useState<LayerType>('grey');
-  const [layerPanelOpen, setLayerPanelOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [searchParams] = useSearchParams();
-  const navLocation = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  // Use the custom state hook
+  const {
+    zoom,
+    setZoom,
+    activeLayer,
+    setActiveLayer,
+    layerPanelOpen,
+    setLayerPanelOpen,
+    sidebarOpen,
+    setSidebarOpen,
+    routeBuildingMode,
+    setRouteBuildingMode,
+    isMobile,
+    selectedRoutePoints,
+    setSelectedRoutePoints,
+    transportType,
+    setTransportType,
+    pointsForRouting,
+    setPointsForRouting,
+    activePointDetails,
+    setActivePointDetails,
+    selectedCityTrip,
+    setSelectedCityTrip,
+    cityTrips,
+    setCityTrips,
+    myCityTrips,
+    setMyCityTrips,
+    likedTripIds,
+    setLikedTripIds,
+    apiLocations,
+    setApiLocations,
+    saveLoading,
+    setSaveLoading,
+    saveError,
+    setSaveError,
+    isRouteLoading,
+    setIsRouteLoading,
+    cityTripsLoading,
+    setCityTripsLoading,
+    routeSource,
+    setRouteSource,
+    hasFetchedProvided,
+    setHasFetchedProvided,
+    hasFetchedMy,
+    setHasFetchedMy,
+    fetchedTripRoute,
+    setFetchedTripRoute,
+    mapDraggingIdx,
+    mapDragOverIdx,
+    mapDragNodeRef,
+    tripMeta,
+    cityMeta,
+    handleMapDragStart,
+    handleMapDragOver,
+    handleMapDrop,
+    handleMapDragEnd,
+    handleMapTouchStart,
+    handleMapTouchMove,
+    handleMapTouchEnd,
+    token,
+  } = useMapState(itinerary);
 
-  const [selectedRoutePoints, setSelectedRoutePoints] = useState<
-    ItineraryPoint[]
-  >([]);
-  const [transportType, setTransportType] = useState<TransportType>('car');
-  const [likedTripIds, setLikedTripIds] = useState<string[]>([]);
-  const [activePointDetails, setActivePointDetails] =
-    useState<ItineraryPoint | null>(null);
-  const [cityTrips, setCityTrips] = useState<Trip[]>([]);
-  const [myCityTrips, setMyCityTrips] = useState<Trip[]>([]);
-  const [routeSource, setRouteSource] = useState<'provided' | 'my'>('provided');
-  const [hasFetchedProvided, setHasFetchedProvided] = useState(false);
-  const [hasFetchedMy, setHasFetchedMy] = useState(false);
-  const [selectedCityTrip, setSelectedCityTrip] = useState<Trip | null>(null);
-  const [routeBuildingMode, setRouteBuildingMode] = useState(false);
-  const [saveLoading, setSaveLoading] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [fetchedTripRoute, setFetchedTripRoute] = useState<[number, number][]>(
-    []
-  );
-  const [isRouteLoading, setIsRouteLoading] = useState(false);
-
-  const [cityTripsLoading, setCityTripsLoading] = useState(false);
-
-  const [mapDraggingIdx, setMapDraggingIdx] = useState<number | null>(null);
-  const [mapDragOverIdx, setMapDragOverIdx] = useState<number | null>(null);
-  const mapDragNodeRef = useRef<number | null>(null);
+  const CTRL_TOP = isMobile ? 16 : HEADER_H + 12;
 
   const urlView = useMemo(() => {
     const latParam = searchParams.get('lat');
@@ -156,143 +210,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
 
     return { center, zoom };
   }, [searchParams]);
-
-  const handleMapDragStart = useCallback((idx: number) => {
-    mapDragNodeRef.current = idx;
-    setMapDraggingIdx(idx);
-  }, []);
-
-  const handleMapDragOver = useCallback((e: React.DragEvent, idx: number) => {
-    e.preventDefault();
-    if (mapDragNodeRef.current !== null && mapDragNodeRef.current !== idx)
-      setMapDragOverIdx(idx);
-  }, []);
-
-  const handleMapDrop = useCallback((e: React.DragEvent, toIdx: number) => {
-    e.preventDefault();
-    const fromIdx = mapDragNodeRef.current;
-    if (fromIdx !== null && fromIdx !== toIdx) {
-      setSelectedRoutePoints((prev) => {
-        const u = [...prev];
-        const [m] = u.splice(fromIdx, 1);
-        u.splice(toIdx, 0, m);
-        return u;
-      });
-    }
-    mapDragNodeRef.current = null;
-    setMapDraggingIdx(null);
-    setMapDragOverIdx(null);
-  }, []);
-
-  const handleMapDragEnd = useCallback(() => {
-    mapDragNodeRef.current = null;
-    setMapDraggingIdx(null);
-    setMapDragOverIdx(null);
-  }, []);
-
-  const handleMapTouchStart = useCallback((idx: number) => {
-    mapDragNodeRef.current = idx;
-    setMapDraggingIdx(idx);
-  }, []);
-
-  const handleMapTouchMove = useCallback((e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    const el = document.elementFromPoint(touch.clientX, touch.clientY);
-    const item = el?.closest('[data-map-route-idx]') as HTMLElement | null;
-    if (!item) return;
-    const idx = parseInt(item.dataset.mapRouteIdx ?? '-1', 10);
-    if (!isNaN(idx) && idx !== mapDragNodeRef.current) setMapDragOverIdx(idx);
-  }, []);
-
-  const handleMapTouchEnd = useCallback(() => {
-    const fromIdx = mapDragNodeRef.current;
-    setSelectedRoutePoints((prev) => {
-      if (
-        fromIdx === null ||
-        mapDragOverIdx === null ||
-        fromIdx === mapDragOverIdx
-      )
-        return prev;
-      const u = [...prev];
-      const [m] = u.splice(fromIdx, 1);
-      u.splice(mapDragOverIdx, 0, m);
-      return u;
-    });
-    mapDragNodeRef.current = null;
-    setMapDraggingIdx(null);
-    setMapDragOverIdx(null);
-  }, [mapDragOverIdx]);
-
-  useEffect(() => {
-    const state = navLocation.state as any;
-    if (state?.initialRoutePoints && Array.isArray(state.initialRoutePoints)) {
-      setSelectedRoutePoints(state.initialRoutePoints);
-    }
-    if (state?.transport) {
-      setTransportType(state.transport);
-    }
-
-    if (state?.tripId) {
-      const fetchTrip = async () => {
-        setIsRouteLoading(true);
-        try {
-          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-          const response = await axios.get(
-            `${API_URL}/api/v1/trips/${state.tripId}`
-          );
-
-          // Prefer backend-provided route geometry (GeoJSON: [lon, lat]) when available
-          const backendCoords = response.data?.route_geometry?.coordinates;
-          if (Array.isArray(backendCoords) && backendCoords.length > 1) {
-            try {
-              const mapped = backendCoords
-                .map((c: any) => {
-                  if (Array.isArray(c) && c.length >= 2) {
-                    // swap [lon, lat] -> [lat, lon]
-                    return [c[1], c[0]] as [number, number];
-                  }
-                  return null;
-                })
-                .filter((x: any) => x !== null) as [number, number][];
-              if (mapped.length > 0) {
-                setFetchedTripRoute(mapped);
-                return;
-              }
-            } catch (err) {
-              console.warn('Failed to use backend route_geometry, falling back:', err);
-            }
-          }
-
-          if (response.data && response.data.trip_nodes) {
-            const sortedNodes = [...response.data.trip_nodes].sort(
-              (a, b) => a.order_index - b.order_index
-            );
-            const coords: [number, number][] = sortedNodes
-              .map((node: any) => {
-                if (
-                  node.location &&
-                  node.location.lat != null &&
-                  node.location.lon != null
-                ) {
-                  return [node.location.lat, node.location.lon] as [
-                    number,
-                    number,
-                  ];
-                }
-                return null;
-              })
-              .filter((coord: any) => coord !== null) as [number, number][];
-            setFetchedTripRoute(coords);
-          }
-        } catch (error) {
-          console.error('Failed to fetch trip details:', error);
-        } finally {
-          setIsRouteLoading(false);
-        }
-      };
-      fetchTrip();
-    }
-  }, [navLocation.state]);
 
   const handleSelectPoint = useCallback((point: ItineraryPoint) => {
     const bounds = L.latLngBounds(ukraineBounds);
@@ -310,7 +227,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   const isPointSelected = useCallback((point: ItineraryPoint) => {
     return selectedRoutePoints.some((p) => p.id === point.id);
   }, [selectedRoutePoints]);
-
 
   const handleViewItinerary = () => {
     if (selectedRoutePoints.length === 0) return;
@@ -360,8 +276,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
         cleanToken
       );
       navigate(`/trip/${trip.id}`);
-
-    
     } catch (err: any) {
       setSaveError(
         err.response?.data?.detail || 'Помилка при створенні маршруту'
@@ -370,11 +284,9 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     }
   };
 
-  const tripMeta: TripMeta | undefined = (navLocation.state as any)?.tripMeta;
-  const cityMeta: CityMeta | undefined = (navLocation.state as any)?.cityMeta;
+  const tripMeta_: TripMeta | undefined = (tripMeta as any)?.tripMeta;
 
-  const [apiLocations, setApiLocations] = useState<ItineraryPoint[]>([]);
-
+  // Load locations from API
   useEffect(() => {
     const fetchLocations = async () => {
       try {
@@ -424,13 +336,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
               imageUrl: loc.image_url ?? '',
               region: loc.region,
             }));
-        } else if (myResult.status === 'rejected') {
-          if (myResult.reason?.response?.status !== 401) {
-            console.error(
-              'Не вдалось завантажити приватні локації:',
-              myResult.reason
-            );
-          }
         }
 
         setApiLocations([...publicLocations, ...myLocations]);
@@ -446,10 +351,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
   }, [token]);
 
   const activeData = itinerary.length > 0 ? itinerary : apiLocations;
-
-  const [pointsForRouting, setPointsForRouting] = useState<[number, number][]>(
-    []
-  );
 
   useEffect(() => {
     if (selectedCityTrip) {
@@ -495,8 +396,6 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       routeSource === 'my' && !hasFetchedMy && token && token !== 'null' && token !== 'undefined'
         ? getMyTrips(token)
         : null,
-      // Always fetch likes if they haven't been fetched? Or just fetch them once.
-      // For simplicity, let's fetch likes with either source if not fetched.
       token && token !== 'null' && token !== 'undefined' ? getLikedTrips(token) : null,
     ];
 
@@ -528,9 +427,8 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       .finally(() => setCityTripsLoading(false));
   }, [cityMeta, token, routeSource, hasFetchedProvided, hasFetchedMy]);
 
-  // 👈 КРОК 4: Функція для обробки лайків
   const handleLikeClick = useCallback(async (e: React.MouseEvent, tripId: string) => {
-    e.stopPropagation(); // 👈 ВАЖЛИВО: щоб при кліку на лайк не вибиралась картка і мапа не зумилась!
+    e.stopPropagation();
     if (!token) return;
 
     const isLiked = likedTripIds.includes(tripId);
@@ -545,7 +443,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
       await toggleTripLike(tripId, token);
     } catch (err) {
       console.error('Like error:', err);
-      // Відкат при помилці
+      // Rollback on error
       if (isLiked) {
         setLikedTripIds((prev) => [...prev, tripId]);
       } else {
@@ -558,6 +456,7 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     setHasFetchedProvided(false);
     setHasFetchedMy(false);
   }, [cityMeta]);
+
   const cityLocation = useMemo(
     () =>
       cityMeta
@@ -568,20 +467,20 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     [cityMeta, apiLocations]
   );
 
-  const pointsLabel = (count: number): string => {
-    if (count % 10 === 1 && count % 100 !== 11) return `${count} точка`;
-    if ([2, 3, 4].includes(count % 10) && ![12, 13, 14].includes(count % 100))
-      return `${count} точки`;
-    return `${count} точок`;
+  const layerPanelPosition = {
+    top:
+      selectedRoutePoints.length > 2
+        ? CTRL_TOP + 162 + 56
+        : CTRL_TOP + 162,
+    right: 16,
   };
 
-  const getRegionForCity = (cityName: string) => {
-    const foundRegion = regionsData.find(
-      (region) =>
-        region.center === cityName ||
-        region.cities.some((city) => city.name === cityName)
-    );
-    return foundRegion ? foundRegion.name : null;
+  const transportSelectorPosition = {
+    top:
+      selectedRoutePoints.length > 2
+        ? CTRL_TOP + 56
+        : CTRL_TOP,
+    right: 16,
   };
 
   return (
@@ -596,244 +495,334 @@ export const MapComponent: React.FC<{ itinerary?: ItineraryPoint[] }> = ({
     >
       <MapPageLayout>
         <RouteSidebar $collapsed={!sidebarOpen}>
-          <div style={{ padding: '16px 20px 0' }}>
-            <button
-              onClick={() => navigate(-1)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: '#555',
-                fontSize: '13px',
-                fontWeight: 600,
-                padding: '6px 0',
-                letterSpacing: '0.3px',
-              }}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-              BACK
-            </button>
-          </div>
-
           {tripMeta ? (
-            <div style={{ padding: '12px 20px 24px', flex: 1 }}>
-              <h1
-                style={{
-                  fontSize: '22px',
-                  fontWeight: 800,
-                  color: '#1a1a2e',
-                  margin: '0 0 8px',
-                  lineHeight: 1.2,
-                  letterSpacing: '-0.3px',
-                }}
-              >
-                {tripMeta.title}
-              </h1>
-
-              {(tripMeta.start_date || tripMeta.end_date) && (
-                <div
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    background: '#f0f4ff',
-                    border: '1px solid #d0daff',
-                    borderRadius: '20px',
-                    padding: '4px 10px',
-                    fontSize: '12px',
-                    color: '#3b5bdb',
-                    fontWeight: 600,
-                    marginBottom: '16px',
-                  }}
-                >
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                  >
-                    <rect x="3" y="4" width="18" height="18" rx="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                  </svg>
-                  {formatDate(tripMeta.start_date, tripMeta.end_date)}
-                </div>
-              )}
-
-              {tripMeta.description && (
-                <p
-                  style={{
-                    fontSize: '14px',
-                    color: '#555',
-                    lineHeight: 1.6,
-                    margin: '0 0 20px',
-                  }}
-                >
-                  {tripMeta.description}
-                </p>
-              )}
-
-              {tripMeta.waypoints.length > 0 && (
-                <>
-                  <div
-                    style={{
-                      height: '1px',
-                      background: '#ebebeb',
-                      margin: '0 0 16px',
-                    }}
-                  />
-                  <div
-                    style={{
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      color: '#999',
-                      letterSpacing: '1px',
-                      textTransform: 'uppercase',
-                      marginBottom: '12px',
-                    }}
-                  >
-                    Trip · {tripMeta.waypoints.length} stops
-                  </div>
-
-                  <ol
-                    style={{
-                      listStyle: 'none',
-                      margin: 0,
-                      padding: 0,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '4px',
-                    }}
-                  >
-                    {tripMeta.waypoints.map((wp, i) => (
-                      <li
-                        key={i}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '10px',
-                          padding: '8px 10px',
-                          borderRadius: '8px',
-                          background:
-                            i === 0
-                              ? '#f0f7f4'
-                              : i === tripMeta.waypoints.length - 1
-                                ? '#f7f0f0'
-                                : 'transparent',
-                        }}
-                      >
-                        <span
-                          style={{
-                            width: '22px',
-                            height: '22px',
-                            borderRadius: '50%',
-                            background:
-                              i === 0
-                                ? '#2e7d5a'
-                                : i === tripMeta.waypoints.length - 1
-                                  ? '#c0392b'
-                                  : '#e8e8e8',
-                            color:
-                              i === 0 || i === tripMeta.waypoints.length - 1
-                                ? '#fff'
-                                : '#555',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            flexShrink: 0,
-                          }}
-                        >
-                          {i + 1}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: '13px',
-                            color: '#222',
-                            fontWeight: 500,
-                          }}
-                        >
-                          {wp.name}
-                        </span>
-                      </li>
-                    ))}
-                  </ol>
-                </>
-              )}
-            </div>
+            <SidebarTripMetaContent tripMeta={tripMeta} onBack={() => navigate(-1)} />
           ) : cityMeta && !routeBuildingMode ? (
+            <SidebarCityMetaContent
+              cityMeta={cityMeta}
+              cityLocation={cityLocation}
+              selectedRoutePoints={selectedRoutePoints}
+              activePointDetails={activePointDetails}
+              routeBuildingMode={routeBuildingMode}
+              token={token}
+              cityTrips={cityTrips}
+              myCityTrips={myCityTrips}
+              cityTripsLoading={cityTripsLoading}
+              selectedCityTrip={selectedCityTrip}
+              likedTripIds={likedTripIds}
+              routeSource={routeSource}
+              mapDraggingIdx={mapDraggingIdx}
+              mapDragOverIdx={mapDragOverIdx}
+              saveError={saveError}
+              saveLoading={saveLoading}
+              onSelectPoint={handleSelectPoint}
+              onMapDragStart={handleMapDragStart}
+              onMapDragOver={handleMapDragOver}
+              onMapDrop={handleMapDrop}
+              onMapDragEnd={handleMapDragEnd}
+              onMapTouchStart={handleMapTouchStart}
+              onMapTouchMove={handleMapTouchMove}
+              onMapTouchEnd={handleMapTouchEnd}
+              onSetActivePointDetails={setActivePointDetails}
+              onSetRouteSource={setRouteSource}
+              onSetSelectedCityTrip={setSelectedCityTrip}
+              onLikeClick={handleLikeClick}
+              onShowDetails={handleShowDetails}
+              onNavigateToItinerary={(filterRegion) =>
+                navigate('/itinerary', {
+                  state: { filterRegion, selectedRoutePoints: [] },
+                })
+              }
+            />
+          ) : routeBuildingMode ? (
+            <SidebarRouteBuildingContent
+              cityMeta={cityMeta}
+              selectedRoutePoints={selectedRoutePoints}
+              activePointDetails={activePointDetails}
+              mapDraggingIdx={mapDraggingIdx}
+              mapDragOverIdx={mapDragOverIdx}
+              onSelectPoint={handleSelectPoint}
+              onMapDragStart={handleMapDragStart}
+              onMapDragOver={handleMapDragOver}
+              onMapDrop={handleMapDrop}
+              onMapDragEnd={handleMapDragEnd}
+              onMapTouchStart={handleMapTouchStart}
+              onMapTouchMove={handleMapTouchMove}
+              onMapTouchEnd={handleMapTouchEnd}
+              onSetActivePointDetails={setActivePointDetails}
+              onViewItinerary={handleViewItinerary}
+              onExitRouteBuildingMode={() => {
+                setRouteBuildingMode(false);
+                setSelectedRoutePoints([]);
+                setActivePointDetails(null);
+              }}
+            />
+          ) : (
+            <SidebarDefaultContent
+              selectedRoutePoints={selectedRoutePoints}
+              activePointDetails={activePointDetails}
+              mapDraggingIdx={mapDraggingIdx}
+              mapDragOverIdx={mapDragOverIdx}
+              saveError={saveError}
+              saveLoading={saveLoading}
+              token={token}
+              onSelectPoint={handleSelectPoint}
+              onMapDragStart={handleMapDragStart}
+              onMapDragOver={handleMapDragOver}
+              onMapDrop={handleMapDrop}
+              onMapDragEnd={handleMapDragEnd}
+              onMapTouchStart={handleMapTouchStart}
+              onMapTouchMove={handleMapTouchMove}
+              onMapTouchEnd={handleMapTouchEnd}
+              onSetActivePointDetails={setActivePointDetails}
+              onShowDetails={handleShowDetails}
+            />
+          )}
+        </RouteSidebar>
+
+        <MapArea>
+          {isRouteLoading && (
             <div
               style={{
-                padding: '12px 20px 24px',
-                flex: 1,
-                overflowY: 'auto',
+                position: 'absolute',
+                inset: 0,
+                background: 'rgba(255,255,255,0.88)',
+                zIndex: 1000,
                 display: 'flex',
-                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              {/* City title */}
-              <h1
-                style={{
-                  fontSize: '22px',
-                  fontWeight: 800,
-                  color: '#1a1a2e',
-                  margin: '0 0 4px',
-                  lineHeight: 1.2,
-                  letterSpacing: '-0.3px',
-                }}
-              >
-                {cityMeta.name}
-              </h1>
-
-              {cityLocation?.description && (
-                <p
+              <div style={{ textAlign: 'center' }}>
+                <div
                   style={{
-                    fontSize: '13px',
-                    color: '#888',
-                    lineHeight: 1.5,
-                    margin: '0 0 12px',
+                    width: 40,
+                    height: 40,
+                    border: '4px solid #ddd',
+                    borderTop: '4px solid #1d4ed8',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite',
+                    margin: '0 auto 12px',
                   }}
-                >
-                  {cityLocation.description.length > 80
-                    ? cityLocation.description.slice(0, 80) + '…'
-                    : cityLocation.description}
-                </p>
-              )}
+                />
+                <div style={{ color: '#444', fontSize: 14 }}>Будуємо маршрут...</div>
+              </div>
+            </div>
+          )}
 
-              {/* ── Selected points list (always visible when any selected) ── */}
-              {selectedRoutePoints.length > 0 && (
-                <>
-                  <div
-                    style={{
-                      fontSize: '10px',
-                      fontWeight: 700,
-                      color: '#aaa',
-                      letterSpacing: '1px',
-                      textTransform: 'uppercase',
-                      marginBottom: '6px',
-                    }}
-                  >
-                    Обрані точки · {selectedRoutePoints.length}
-                  </div>
+          <LayerPanel
+            activeLayer={activeLayer}
+            onLayerSelect={setActiveLayer}
+            onClose={() => setLayerPanelOpen(false)}
+            position={{ top: CTRL_TOP + 162, right: 16 }}
+          />
+
+          <TransportSelector
+            activeTransport={transportType}
+            onTransportChange={setTransportType}
+            position={{ top: CTRL_TOP, right: 16 }}
+          />
+
+          <MapContainer
+            center={urlView.center || UKRAINE_CENTER}
+            zoom={urlView.zoom || DEFAULT_ZOOM}
+            zoomControl={false}
+            scrollWheelZoom
+            style={{ height: '100%', width: '100%' }}
+          >
+            {activeLayer !== 'none' && (
+              <TileLayer
+                key={activeLayer}
+                url={layerConfig[activeLayer].url}
+                attribution={layerConfig[activeLayer].attribution}
+                maxZoom={layerConfig[activeLayer].maxZoom}
+              />
+            )}
+
+            {activeLayer === 'satellite' && (
+              <TileLayer
+                url="https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}@2x.png"
+                attribution="&copy; OpenStreetMap contributors & CartoDB"
+                maxZoom={19}
+                opacity={0.85}
+                zIndex={2}
+              />
+            )}
+
+            <ZoomHandler setZoom={setZoom} />
+            <MapController center={urlView.center || UKRAINE_CENTER} zoom={urlView.zoom || DEFAULT_ZOOM} />
+            <UserLocation />
+
+            {pointsForRouting.length > 1 && (
+              <Routing points={pointsForRouting} transportType={transportType} />
+            )}
+
+            {pointsForRouting.length > 1 && (
+              <Polyline
+                positions={pointsForRouting}
+                pathOptions={{ color: '#2563eb', weight: 4, opacity: 0.8 }}
+              />
+            )}
+
+            <MarkerClusterGroup
+              chunkedLoading
+              iconCreateFunction={createClusterCustomIcon}
+            >
+              {activeData.map((point) => (
+                <Marker
+                  key={point.id}
+                  position={[point.lat, point.lng]}
+                  icon={createCustomIcon(point)}
+                  eventHandlers={{ click: () => handleSelectPoint(point) }}
+                >
+                  <MarkerPopup
+                    point={point}
+                    region={point.region}
+                    onSelectPoint={handleSelectPoint}
+                    isSelected={isPointSelected(point)}
+                  />
+                </Marker>
+              ))}
+            </MarkerClusterGroup>
+          </MapContainer>
+        </MapArea>
+      </MapPageLayout>
+    </MapWrapper>
+  );
+};
+
+export default MapComponent;
+              onMapDragStart={handleMapDragStart}
+              onMapDragOver={handleMapDragOver}
+              onMapDrop={handleMapDrop}
+              onMapDragEnd={handleMapDragEnd}
+              onMapTouchStart={handleMapTouchStart}
+              onMapTouchMove={handleMapTouchMove}
+              onMapTouchEnd={handleMapTouchEnd}
+              onSetActivePointDetails={setActivePointDetails}
+              onSetRouteSource={setRouteSource}
+              onSetSelectedCityTrip={setSelectedCityTrip}
+              onLikeClick={handleLikeClick}
+              onShowDetails={handleShowDetails}
+              onNavigateToItinerary={(filterRegion) =>
+                navigate('/itinerary', {
+                  state: {
+                    filterRegion,
+                    selectedRoutePoints: [],
+                  },
+                })
+              }
+            />
+          ) : routeBuildingMode ? (
+            <SidebarRouteBuildingContent
+              cityMeta={cityMeta}
+              selectedRoutePoints={selectedRoutePoints}
+              activePointDetails={activePointDetails}
+              mapDraggingIdx={mapDraggingIdx}
+              mapDragOverIdx={mapDragOverIdx}
+              onSelectPoint={handleSelectPoint}
+              onMapDragStart={handleMapDragStart}
+              onMapDragOver={handleMapDragOver}
+              onMapDrop={handleMapDrop}
+              onMapDragEnd={handleMapDragEnd}
+              onMapTouchStart={handleMapTouchStart}
+              onMapTouchMove={handleMapTouchMove}
+              onMapTouchEnd={handleMapTouchEnd}
+              onSetActivePointDetails={setActivePointDetails}
+              onViewItinerary={handleViewItinerary}
+              onExitRouteBuildingMode={() => {
+                setRouteBuildingMode(false);
+                setSelectedRoutePoints([]);
+                setActivePointDetails(null);
+              }}
+            />
+          ) : (
+            <SidebarDefaultContent
+              selectedRoutePoints={selectedRoutePoints}
+              activePointDetails={activePointDetails}
+              mapDraggingIdx={mapDraggingIdx}
+              mapDragOverIdx={mapDragOverIdx}
+              saveError={saveError}
+              saveLoading={saveLoading}
+              token={token}
+              onSelectPoint={handleSelectPoint}
+              onMapDragStart={handleMapDragStart}
+              onMapDragOver={handleMapDragOver}
+              onMapDrop={handleMapDrop}
+              onMapDragEnd={handleMapDragEnd}
+              onMapTouchStart={handleMapTouchStart}
+              onMapTouchMove={handleMapTouchMove}
+              onMapTouchEnd={handleMapTouchEnd}
+              onSetActivePointDetails={setActivePointDetails}
+              onShowDetails={handleShowDetails}
+            />
+          )}
+        </RouteSidebar>
+
+        <MapArea>
+          {isRouteLoading && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(255, 255, 255, 0.9)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000,
+              }}
+            >
+              <div style={{ textAlign: 'center' }}>
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    border: '4px solid #e0e0e0',
+                    borderTop: '4px solid #3b5bdb',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite',
+                    margin: '0 auto 16px',
+                  }}
+                />
+                <p style={{ color: '#666', fontSize: '14px', margin: 0 }}>Будуємо маршрут...</p>
+              </div>
+            </div>
+          )}
+
+          {/* Layer Panel Control */}
+          <LayerPanel
+            activeLayer={activeLayer}
+            onLayerSelect={setActiveLayer}
+            onClose={() => setLayerPanelOpen(false)}
+            position={layerPanelPosition}
+          />
+
+          {/* Transport Selector Control */}
+          <TransportSelector
+            activeTransport={transportType}
+            onTransportChange={setTransportType}
+            position={transportSelectorPosition}
+          />
+
+          <MapContainer
+            center={urlView.center || UKRAINE_CENTER}
+            zoom={urlView.zoom || DEFAULT_ZOOM}
+            zoomControl={false}
+            scrollWheelZoom={true}
+            style={{ height: '100%', width: '100%' }}
+          >
+            {activeLayer !== 'none' && (
+              <TileLayer
+                key={activeLayer}
+                url={layerConfig[activeLayer].url}
+                attribution={layerConfig[activeLayer].attribution}
+                maxZoom={layerConfig[activeLayer].maxZoom}
+              />
+            )}
+            {activeLayer === 'satellite' && (
                   <ol
                     style={{
                       listStyle: 'none',
